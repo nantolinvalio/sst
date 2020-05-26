@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="recepcion">
+	
+	<resultMap type="Recepcion" id="recepcionesOT">
+			<result property="id"						column="id_recepcion"/>
+			<result property="ubicacion.id"				column="id_ubicacion"/>
+			<result property="ubicacion.tipo"			column="s_tipo_ubicacion"/>
+			<result property="ubicacion.nombre"			column="s_nombre_ubicacion"/>
+			<result property="usuario.nombreCompleto"	column="s_usuario"/>
+			<result property="usuario.email"			column="s_email"/>
+			<result property="usuario.anexo"			column="s_interno"/>
+			<result property="fechaRecepcion"			column="d_fecha_recepcion"/>
+			<result property="guia.numero"				column="i_nmro_guia"/>
+			<result property="guia.origen.id"			column="id_origen_guia"/>
+			<result property="guia.origen.nombre"		column="nombre_origen_guia"/>
+			<result property="observacion"				column="s_observacion"/>
+			<result property="estado.descripcion"		column="s_descripcion_estado"/>
+	</resultMap>
+	
+	<select id="listRecepcionesByOT" parameterType="Long" resultMap="recepcionesOT">
+           select
+                r.id_recepcion
+			   ,r.id_origen as id_origen_guia
+			   ,ub1.s_nombre as nombre_origen_guia
+			   ,ub.id_ubicacion
+			   ,pa.s_descripcion as s_tipo_ubicacion
+			   ,ub.s_nombre as s_nombre_ubicacion
+			   ,u.s_nombre || ' ' || u.s_apellido_paterno as s_usuario
+			   ,u.s_email
+			   ,u.s_interno
+			   ,r.d_fecha_recepcion
+			   ,r.i_nmro_guia
+			   ,r.s_observacion
+			   ,e.s_nombre as s_descripcion_estado
+			from 
+			   sstt_recepciones r
+<!-- 			   left join sstt_guias g on g.i_numero = r.i_nmro_guia -->
+			   left join sstt_ubicaciones ub1 on ub1.id_ubicacion = r.id_origen 
+			   left join sstt_ubicaciones ub on ub.id_ubicacion = r.id_ubicacion
+			   left join sstt_usuarios u on u.id_usuario = r.id_usuario
+			   left join sstt_estados e on e.id_estado = r.id_estado
+			   left join sstt_parametros pa on pa.s_nombre = ub.s_tipo and pa.s_string1 like 'UBIC'
+			where 
+			    r.id_ot =  #{idOT}
+			    order by r.d_fecha_recepcion asc 
+	</select>
+	
+	
+	<select id="getExisteRecepcion" parameterType="Recepcion" resultType="Integer">
+		select count(1)         
+        from sstt_recepciones r
+        where r.id_ot = #{guia.ordenTrabajo.id}
+        and r.i_nmro_guia = #{guia.numero}
+        and r.id_ubicacion = #{ubicacion.id}
+	</select>
+	
+	<insert id="saveRecepcionOT" parameterType="Recepcion" keyColumn="id_recepcion" keyProperty="id">
+		<selectKey resultType="Integer" keyProperty="id" order="BEFORE">
+			select ssts_recepciones.nextval from dual
+		</selectKey>	
+	 	insert into sstt_recepciones(
+	 		id_recepcion,
+		 	id_ot, 
+		 	id_usuario, 
+		 	id_estado, 
+		 	d_fecha_recepcion, 
+		 	d_fecha_registro, 
+		 	i_nmro_guia, 
+		 	s_observacion, 
+		 	id_ubicacion, 
+		 	id_origen
+	 	)values(
+	 		#{id},
+		 	#{guia.ordenTrabajo.id}, 
+		 	#{usuario.id}, 
+		 	#{estado.id}, 
+		 	#{fechaRecepcion},  
+		 	sysdate, 
+		 	#{guia.numero}, 
+		 	#{observacion}, 
+		 	#{ubicacion.id},
+		 	#{origen.id}
+		 )
+	 </insert>
+	 
+	 <select id="getRecepcionByGuia" parameterType="Guia" resultMap="recepcionesOT">
+	 	select 
+		    r.id_recepcion
+		    ,r.id_ot
+		    ,r.id_usuario
+		    ,r.id_estado
+		    ,r.d_fecha_recepcion
+		    ,r.d_fecha_registro
+		    ,r.i_nmro_guia
+		    ,r.s_observacion
+		    ,r.id_ubicacion
+		    ,r.id_origen
+		from
+		    sstt_recepciones r
+		    inner join sstt_guias g on g.i_numero = r.i_nmro_guia
+            inner join sstt_ubicaciones u on u.id_ubicacion = r.id_origen and u.s_tipo in ('SC','CD','BR')
+		where
+		    g.id_guia = #{id}
+	 </select>
+</mapper>
+

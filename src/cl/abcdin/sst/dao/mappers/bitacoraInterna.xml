@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<mapper namespace="bitacoraInterna">
+	<insert id="saveBitacoraInterna" parameterType="BitacoraInterna" keyColumn="id_bitacora_interna" keyProperty="id">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_bitacoras_internas.nextval from dual
+		</selectKey>
+		insert into sstt_bitacoras_internas (
+			id_bitacora_interna
+			,id_bitacora
+			,id_estado
+			,d_fecha_inicio
+			,d_fecha_termino
+			,id_ubicacion_interna
+			,id_despacho
+			,id_recepcion
+			,id_ot
+			,s_clasificacion
+		    )
+		values(
+			#{id}
+			,#{bitacora.id}
+			,#{estado.id}
+			,SYSDATE
+			,#{fechaTermino}
+			,#{ubicacionInterna.id}
+			,#{despachoInterno.id}
+			,#{recepcion.id}
+			,#{ordenTrabajo.id}
+			,#{clasificacion.codigo}
+			)
+	</insert>
+	
+	<update id="cerrarBitacoraInternaByIdOT" parameterType="Long">
+        update sstt_bitacoras_internas
+            set d_fecha_termino = SYSDATE
+        where id_ot = #{idOT} and d_fecha_termino is null
+	</update>
+	
+	<resultMap type="BitacoraInterna" id="bitacoraInternaResumen">
+		<result property="id"                                 column="id_bitacora_interna" />
+		<result property="fechaInicio"                        column="d_fecha_inicio" />
+		<result property="fechaTermino"                       column="d_fecha_termino" />
+		<result property="vigente"                            column="s_vigente" />
+		<result property="estado.id"                          column="id_estado" />
+		<result property="ubicacionInterna.id"                column="id_ubicacion_interna"/>
+		<result property="ubicacionInterna.descripcion"       column="s_descripcion"/>
+		<result property="numeroIT"       			          column="i_nmro_it"/>
+		<result property="clasificacion.codigo"       	      column="s_clasificacion"/>
+		<result property="ordenTrabajo.id"       			  column="id_ot"/>		
+	</resultMap>
+	
+	<select id="listResumenBitacorasInternasByBitacora" parameterType="Bitacora" resultMap="bitacoraInternaResumen">
+		select 
+		    b.id_bitacora_interna,
+		    b.d_fecha_inicio,
+		    b.d_fecha_termino,
+		    CASE WHEN b.d_fecha_inicio IS NOT NULL AND b.d_fecha_termino IS NULL THEN
+		        'S'
+		    ELSE
+		        'N'
+		    END AS s_vigente,
+		    b.id_estado,
+		    e.s_nombre
+		from 
+		    sstt_bitacoras_internas b
+		    inner join sstt_estados e on e.id_estado = b.id_estado 
+		where 
+		    b.id_bitacora = #{id}
+		order by b.id_bitacora_interna ASC
+	</select>
+	
+	<select id="getBitacoraInternaById" resultMap="bitacoraInternaResumen" parameterType="Long">
+		select 
+		    b.id_bitacora_interna,
+		    b.d_fecha_inicio,
+		    b.d_fecha_termino,
+		    'S' as s_vigente,
+		    b.id_estado,
+		    e.s_nombre,
+		    b.id_ubicacion_interna
+		from 
+		    sstt_bitacoras_internas b
+		    inner join sstt_estados e on e.id_estado = b.id_estado 
+		where 
+		    b.id_ot = #{idOT}
+		    and b.d_fecha_termino is null
+	</select>
+	
+	<select id="getUltimaBitacoraInternaByIdOT" parameterType="Long" resultMap="bitacoraInternaResumen">
+		select 
+		    bi.id_bitacora_interna
+		    ,bi.id_estado
+		    ,bi.id_ubicacion_interna
+		    ,ub.s_descripcion
+		    ,bi.s_clasificacion
+		    ,bi.id_ot
+		from
+		    sstt_bitacoras_internas bi
+		    inner join sstt_ubicaciones_internas ub on ub.id_ubicacion_interna = bi.id_ubicacion_interna
+		where 
+		    bi.d_fecha_termino is null
+		    and id_bitacora_interna = (select max(bi1.id_bitacora_interna)
+		                                from sstt_bitacoras_internas bi1
+		                                where bi1.id_ot = #{idOT})
+	</select>
+	
+	<update id="updateNumeroItByIdBitacoraInterna" parameterType="BitacoraInterna">
+        update sstt_bitacoras_internas
+            set i_nmro_it = #{numeroIT}
+        where id_bitacora_interna = #{id}
+	</update>
+	
+	<select id="getBitacoraInternaByBitacora" parameterType="Long" resultMap="bitacoraInternaResumen">
+		select 
+		    bi.id_bitacora_interna
+		    ,id_estado
+		    ,d_fecha_inicio
+		    ,d_fecha_termino
+		    ,id_ubicacion_interna,id_ot
+		from
+		    sstt_bitacoras_internas bi
+		where 
+		    bi.id_bitacora = #{id}
+	</select>
+	
+	<update id="abrirBitacoraInternaByIdOT" parameterType="Long">
+        update sstt_bitacoras_internas
+            set d_fecha_termino = null
+        where 
+        	id_bitacora_interna = (select max(bi1.id_bitacora_interna)
+		                                from sstt_bitacoras_internas bi1
+		                                where bi1.id_ot = #{idOT})
+	</update>
+</mapper>

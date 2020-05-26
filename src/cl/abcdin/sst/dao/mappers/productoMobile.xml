@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="productoMobile">
+	<resultMap type="ProductoMobile" id="producto">
+		<result property="codigoCorto"      column="id_producto"/>
+		<result property="descripcion"      column="s_descripcion"/>
+		<result property="marca"            column="s_marca"/>
+	</resultMap>
+	
+	<select id="listProductosByIdIventarioUbicacion" parameterType="Long" resultMap="producto">
+		select 
+			p.id_producto
+			,p.s_descripcion
+			,m.s_nombre as s_marca
+		from sstt_inventario_productos ip
+  			left join sstt_ordenes_trabajo ot on ot.id_ot = ip.id_ot
+  			left join owv_productos p on p.id_producto = ot.id_producto
+  			left join owv_marcas m on m.id_marca = p.id_marca
+		where ip.id_inventario_ubicacion = #{idInventarioUbicacion}
+			and ip.s_inventariado='S'
+	</select>
+	
+	<select id="getProductoByIdOT" parameterType="Long" resultMap="producto">
+		select 
+			p.id_producto
+			,p.s_descripcion
+			,m.s_nombre as s_marca
+		from sstt_ordenes_trabajo ot
+			left join owv_productos p on p.id_producto = ot.id_producto
+  			left join owv_marcas m on m.id_marca = p.id_marca
+  		where ot.id_ot = #{idOT}
+	</select>
+</mapper>

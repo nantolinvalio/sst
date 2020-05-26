@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="estado">
+
+	<resultMap type="Estado" id="estado">
+		<result property="id"                  column="id_estado"/>
+		<result property="glosa"               column="s_nombre"/>
+		<result property="icono"               column="s_icono"/>
+		<result property="estadoSiguiente.id"  column="id_estado_siguiente"/>
+	</resultMap>
+
+	<select id="listEstadosByGrupo" parameterType="String" resultMap="estado">
+		SELECT 
+		    id_estado, 
+		    s_nombre,
+		    s_icono,
+		    id_estado_siguiente
+		FROM 
+		    sstt_estados 
+		WHERE 
+		    s_grupo = #{id}
+		ORDER BY 
+			id_estado ASC
+	</select>
+	
+	<select id="getNextEstadoByIdEstado" parameterType="Long" resultMap="estado">
+		select
+			es.id_estado 
+			,es.s_nombre
+			,es.s_icono
+			,es.id_estado_siguiente
+		from sstt_estados e
+            inner join sstt_estados es on es.id_estado = e.id_estado_siguiente
+		where e.id_estado = #{idEstado}
+	</select>
+	
+	<select id="getEstadoById" parameterType="Long" resultMap="estado">
+		select
+			id_estado 
+			,s_nombre
+			,s_icono,
+			id_estado_siguiente
+		from sstt_estados e
+		where id_estado = #{idEstado}
+	</select>
+	
+	<select id="listEstadoOTFallaFabricacion" resultMap="estado">
+		select 
+			id_estado,
+			s_nombre,
+			s_icono    
+		from
+		    sstt_estados 
+		where 
+		    id_estado in (10032000,10033000,10034000,10035000)
+	</select>
+	
+	<select id="listEstadoRecepcionGuia" resultMap="estado">
+		select 
+		    id_estado,
+		    s_nombre,
+		    s_grupo     
+		from 
+		    sstt_estados
+		where 
+		    id_estado in (50007000,50008000,50009000)
+	</select>
+	
+	<select id="listEstadoDespacho" resultMap="estado">
+		select 
+		    id_estado,
+		    s_nombre,
+		    s_grupo     
+		from 
+		    sstt_estados
+		where 
+		    id_estado in (90001000,90001500,90002000)
+	</select>
+</mapper>

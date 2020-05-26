@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="guiaAgrupada">
+	
+	<resultMap type="OrdenTrabajo" id="otPendienteGuia">
+		<result property="producto.id" column="id_producto"/>
+		<result property="id" column="id_ot"/>
+	</resultMap>
+	
+	<resultMap type="GuiaPendienteAgrupada" id="guiaPendienteAgrupada">
+		<result column="id_guia"            property="id"/>
+		<result column="s_tipo_cambio"      property="tipo.codigo"/>
+		<result column="s_descripcion"      property="tipo.glosa"/>
+		<result column="id_destino"         property="destino.id"/>
+		<result column="s_tipo_ubicacion"   property="destino.tipo"/>
+		<result column="s_nombre"           property="destino.nombre"/>
+		<result column="s_direccion"        property="destino.direccion"/>
+		<result column="s_estado_guia"      property="estado.glosa"/>
+		<result column="id_estado"          property="estado.id"/>
+		<result column="id_origen"          property="origen.id"/>
+		<result column="i_cant_ot"          property="cantidadOT"/>
+		<result column="i_cant_prod"        property="cantidadProductos"/>
+	</resultMap>
+	
+	<resultMap type="Guia" id="guia">
+		<result column="id_guia"           property="id"/>
+		<result column="i_numero"          property="numero"/>
+		<result column="d_fecha_emision"   property="fechaEmision"/>
+		<result column="id_transportista"  property="transportista.id"/>
+		<result column="id_destino"        property="destino.id"/> 
+		<result column="id_origen"         property="origen.id"/>      
+		<result column="s_patente"         property="transportista.patente"/>
+		<result column="id_estado"         property="estado.id"/>
+		<result column="s_vigente"         property="vigente"/>
+		<result column="s_nombre"          property="origen.nombre"/>
+		<result column="s_tipo_origen"     property="origen.tipo"/>
+		<result column="s_direccion"  	   property="origen.direccion"/>
+		<result column="s_comuna"          property="origen.comuna.glosa"/>
+		<result column="s_tipo_guia"       property="tipoGuia"/>
+		<result column="s_procesado_ow"	   property="procesadoOW"/>
+		<result column="i_nmro_ts_to"	   property="numeroTSTO"/>
+		<result column="i_nmro_to"	       property="numeroTO"/>
+	</resultMap>
+	
+	<select id="getGuiaRecepcionAgrupada" parameterType="Guia" resultMap="guia">
+		select 
+		    g.id_guia
+		    ,g.i_numero 
+		    ,g.d_fecha_emision
+		    ,g.id_transportista      
+		    ,g.id_destino        
+		    ,g.id_origen    
+		    ,g.s_patente      
+		    ,g.id_estado      
+		    ,g.s_vigente      
+		    ,o.s_nombre
+		    ,o.s_tipo as s_tipo_origen
+		    ,o.s_direccion
+		    ,c.s_nombre as s_comuna 
+		from 
+		    sstt_ordenes_trabajo ot
+		    inner join sstt_bitacoras b on b.id_ot = ot.id_ot
+		    inner join sstt_guias g on b.id_guia = g.id_guia
+		                           and g.id_estado in (50002000, 50008000,50009000) 
+		    inner join sstt_ubicaciones o on o.id_ubicacion = g.id_origen
+		    inner join sstt_comunas c on c.id_comuna = o.id_comuna
+		    inner join sstt_recepciones_camion_guias rcg on rcg.id_guia = g.id_guia
+		    inner join sstt_recepciones_camion rc on rc.id_recepcion_camion = rcg.id_recepcion_camion
+		                                         and rc.id_estado = 80001000
+		    inner join owv_transportistas t on t.id_transportista = rc.id_transportista
+		where 
+			ot.id_ot = #{ordenTrabajo.id}
+			and ((g.id_origen = #{origen.id} and g.id_destino = #{destino.id}) or (g.id_origen = #{origen.id} and g.id_destino = 11))
+	</select>
+	
+	<select id="listOtPendientesPorGuia" parameterType="FilterGuiasPendientes" resultMap="otPendienteGuia">
+		select 
+		    ot.id_producto,
+		    ot.id_ot
+		from
+		    sstt_ordenes_trabajo ot
+		where
+		        ot.s_vigente = 'S'
+		    and ot.s_cerrada = 'N'
+		    and ot.s_cerrada_cliente = 'S'
+		    and ot.id_estado = 10003000
+		    and not exists (select 1 from sstt_guias g where g.id_ot = ot.id_ot)
+		    and (ot.s_tipo_cambio = #{tipoCambio}
+		    	or ot.s_tipo_cambio_jt = #{tipoCambioJT})
+		    and ot.id_sucursal = #{idUbicacion}
+		    and ot.s_procesado_ow = #{procesadaOW}
+		order by
+		    ot.id_producto
+	</select>
+	
+	<delete id="deletePorEnviarByUbicacion" parameterType="FilterGuiasPendientes">
+		delete
+		    sstt_guias g
+		where
+		        g.s_vigente = 'S'
+		    and g.id_estado = 50001000
+		    and g.id_origen = #{idUbicacion}
+		    and g.id_ot is null
+	</delete>
+	
+	<select id="getPorEnviarByUbicacion" parameterType="FilterGuiasPendientes" resultMap="guia">
+		select 
+			g.id_guia
+		    ,g.id_origen
+		    ,g.id_destino
+		    ,g.s_vigente
+		    ,g.s_tipo_guia
+		from
+			sstt_guias g
+		where
+		    g.s_vigente = 'S'
+		    and g.id_estado = 50001000
+		    and g.id_origen = #{idUbicacion}
+		    and g.id_ot is null
+	</select>
+	
+	<select id="listGuiasAgrupadasPendientes"  parameterType="FilterGuiasPendientes" resultMap="guiaPendienteAgrupada">
+		select 
+            a.id_guia, 
+            a.i_numero,
+            a.id_destino, 
+            a.s_tipo_ubicacion, 
+            a.s_nombre,
+            a.s_direccion, 
+            a.s_estado_guia, 
+            a.id_estado,
+            a.id_origen,
+            a.s_tipo_cambio,
+            p.s_descripcion,
+            sum(i_cant_ot) as i_cant_ot,
+            sum(i_cant_prod) as i_cant_prod
+        from (
+	        select   
+	            g.id_guia, 
+	            g.i_numero,
+	            g.id_destino, 
+	            u.s_tipo AS s_tipo_ubicacion, 
+	            u.s_nombre,
+	            u.s_direccion, 
+	            e.s_nombre AS s_estado_guia, 
+	            e.id_estado,
+	            g.id_origen,
+	            case when ot.s_tipo_cambio = 'JT' then
+	                ot.s_tipo_cambio_jt
+	            else
+	                ot.s_tipo_cambio
+	            end as s_tipo_cambio,
+	            count(distinct ot.id_ot) as i_cant_ot,
+	            count(distinct ot.id_producto) as i_cant_prod
+	        from 
+	            sstt_guias g  
+	            inner join sstt_bitacoras b on b.id_guia = g.id_guia
+	            inner join sstt_ordenes_trabajo ot on ot.id_ot = b.id_ot 
+	            left join sstt_ubicaciones u on u.id_ubicacion = g.id_destino
+	            left join sstt_estados e on e.id_estado = g.id_estado
+	        where 
+	                g.s_vigente = 'S'
+	            and g.id_estado IN (50001000, 50001500, 50002000)
+	            and g.id_origen = #{idOrigen}
+	            and g.id_ot is null
+	        group by
+	            g.id_guia, 
+	            g.i_numero,
+	            g.id_destino, 
+	            u.s_tipo, 
+	            u.s_nombre,
+	            u.s_direccion, 
+	            e.s_nombre, 
+	            e.id_estado,
+	            g.id_origen,
+	            ot.s_tipo_cambio,
+	            ot.s_tipo_cambio_jt ) a
+	        left join sstt_parametros p on p.s_nombre = a.s_tipo_cambio and p.s_string1 = 'TICA'
+        group by
+            a.id_guia, 
+            a.i_numero,
+            a.id_destino, 
+            a.s_tipo_ubicacion, 
+            a.s_nombre,
+            a.s_direccion, 
+            a.s_estado_guia, 
+            a.id_estado,
+            a.id_origen,
+            p.s_descripcion,
+            a.s_tipo_cambio
+		<if test="orderBy == null or orderBy.equals('')">
+			order by a.id_estado asc, a.s_tipo_cambio desc
+		</if>
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="listGuiasAgrupadasPendientesFF"  parameterType="FilterGuiasPendientes" resultMap="guiaPendienteAgrupada">
+		select   
+		    g.id_guia, 
+		    g.i_numero,
+		    g.id_destino, 
+		    u.s_tipo AS s_tipo_ubicacion, 
+		    u.s_nombre,
+		    u.s_direccion, 
+		    e.s_nombre AS s_estado_guia, 
+		    e.id_estado,
+		    g.id_origen,
+		    count(distinct ot.id_ot) as i_cant_ot,
+		    count(distinct ot.id_producto) as i_cant_prod
+		from 
+		    sstt_guias g  
+		    inner join sstt_bitacoras b on b.id_guia = g.id_guia
+		    inner join sstt_ordenes_trabajo ot on ot.id_ot = b.id_ot 
+		    left join sstt_ubicaciones u on u.id_ubicacion = g.id_destino
+		    left join sstt_estados e on e.id_estado = g.id_estado
+		where 
+		        g.s_vigente = 'S'
+		    and g.id_estado IN (50001000, 50001500)
+		    and g.id_origen = #{idUbicacion}
+		    and g.id_destino = 11
+		    and g.id_ot is null
+		group by
+		    g.id_guia, 
+		    g.i_numero,
+		    g.id_destino, 
+		    u.s_tipo, 
+		    u.s_nombre,
+		    u.s_direccion, 
+		    e.s_nombre, 
+		    e.id_estado,
+		    g.id_origen,
+		    g.id_estado
+	    <if test="orderBy == null">
+			 order by g.id_estado asc
+		</if>
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTotalGuiasAgrupadasPendientes"  parameterType="FilterGuiasPendientes" resultType="Integer">
+		select   
+		    count(distinct g.id_guia)
+		from 
+		    sstt_guias g  
+		    inner join sstt_bitacoras b on b.id_guia = g.id_guia
+		    inner join sstt_ordenes_trabajo ot on ot.id_ot = b.id_ot 
+		where 
+		        g.s_vigente = 'S'
+		    and g.id_estado IN (50001000, 50001500, 50002000)
+		    and g.id_origen = #{idUbicacion}
+		    and g.id_ot is null
+	</select>
+	
+	<select id="getTotalGuiasAgrupadasPendientesFF"  parameterType="FilterGuiasPendientes" resultType="Integer">
+		select   
+		    count(distinct g.id_guia)
+		from 
+		    sstt_guias g  
+		    inner join sstt_bitacoras b on b.id_guia = g.id_guia
+		    inner join sstt_ordenes_trabajo ot on ot.id_ot = b.id_ot 
+		where 
+		        g.s_vigente = 'S'
+		    and g.id_estado IN (50001000, 50001500)
+		    and g.id_origen = #{idUbicacion}
+		    and g.id_destino = 11
+		    and g.id_ot is null
+	</select>
+	
+	<select id="getTotalGuiasAgrupadasPendientesSinEmitir"  parameterType="FilterGuiasPendientes" resultType="Integer">
+		select   
+		    count(distinct g.id_guia)
+		from 
+		    sstt_guias g  
+		    inner join sstt_bitacoras b on b.id_guia = g.id_guia
+		    inner join sstt_ordenes_trabajo ot on ot.id_ot = b.id_ot 
+		where 
+		        g.s_vigente = 'S'
+		    and g.id_estado in (50001000,50001500)
+		    and g.id_origen = #{idUbicacion}
+		    and g.id_ot is null
+	</select>
+	
+	<resultMap type="ProductoReport" id="productoReport">
+		<result property="producto.id"           column="id_producto"/>
+		<result property="producto.descripcion"  column="s_descripcion"/>
+		<result property="producto.marca.nombre" column="s_nombre"/>
+		<result property="cantidadAccesorios"    column="cant_accesorios"/>
+		<result property="cantidadOT"            column="cant_ot"/>
+		<result property="producto.precioVenta"  column="i_costo"/>
+	</resultMap>
+	
+	<select id="listDetalleGuiaAgrupadaByGuia" parameterType="Guia" resultMap="productoReport">
+		select 
+		    ot.id_producto,
+		    p.s_descripcion,
+		    m.s_nombre,
+		    count(distinct ac.id_accesorio) as cant_accesorios,
+		    count(distinct ot.id_ot) as cant_ot,
+            OWF_OBTENER_COSTO_PRODUCTO(ot.id_producto) as i_costo
+		from
+		    sstt_guias g
+		    inner join sstt_bitacoras b on b.id_guia = g.id_guia
+		    inner join sstt_ordenes_trabajo ot on ot.id_ot = b.id_ot
+		    left join owv_productos p on p.id_producto = ot.id_producto
+		    left join owv_marcas m on m.id_marca = p.id_marca
+		    left join sstt_accesorios ac on ((ac.id_producto = p.id_producto) or (ac.id_familia = p.id_familia )) and ac.s_vigente = 'S'
+		where 
+		    g.id_guia = #{id}
+		group by
+		    ot.id_producto,
+		    p.s_descripcion,
+		    m.s_nombre
+	</select>
+	
+	<select id="getGuiaAgrupadabyGuia" parameterType="Guia" resultMap="guia">
+		select
+			g.id_guia
+			,g.id_estado
+			,g.id_ot
+			,g.id_origen
+			,g.id_destino
+			,g.id_usuario
+			,g.id_transportista
+			,g.i_numero
+			,g.d_fecha_emision
+			,g.d_fecha_registro
+			,g.s_patente
+			,g.s_vigente
+			,g.s_observacion
+			,g.s_entrega_cliente
+			,g.d_fecha_impresion
+			,g.id_estado_actual
+			,g.d_fecha_ultimo_estado
+		    ,g.s_procesado_ow
+            ,g.i_nmro_ts_to
+            ,g.i_nmro_to
+		from sstt_guias g
+		where g.id_guia = #{id}
+	</select>
+	
+	<resultMap type="OrdenTrabajo" id="otPendienteGuiaATRansportista">
+		<result property="idRecepcionCamion"  column="id_recepcion_camion"/>
+		<result property="id"                 column="id_ot"/>
+		<result property="producto.id"        column="id_producto"/>
+	</resultMap>
+	
+	
+	<select id="listOtPendientesPorGuiaATransportista" parameterType="FilterGuiasPendientes" resultMap="otPendienteGuiaATRansportista">
+		select 
+		    ot.id_ot
+		    ,rcg.id_recepcion_camion
+		    ,ot.id_producto
+		from 
+		    sstt_ordenes_trabajo ot
+		    inner join sstt_bitacoras b on b.id_ot = ot.id_ot 
+		                               and b.d_fecha_salida is null
+		                               and b.id_estado = #{idEstadoBitacora}
+		                               and b.id_ubicacion = #{idUbicacion}
+		    inner join sstt_bitacoras c on c.id_ot = ot.id_ot
+		                               and c.id_bitacora = (select max(d.id_bitacora) 
+		                                                    from sstt_bitacoras d
+		                                                    where
+		                                                            d.id_ot = ot.id_ot
+		                                                        and d.id_ubicacion is not null
+		                                                        and d.id_bitacora != b.id_bitacora)
+		    inner join sstt_recepciones_camion_guias rcg on rcg.id_guia = c.id_guia
+		where 
+		    ot.id_estado = #{idEstadoOT}
+		    and ot.s_vigente = 'S'
+		    and ot.s_cerrada = 'N'
+		    and ot.s_cerrada_cliente = 'S'
+		    and not exists (select 1 from sstt_guias g where g.id_ot = ot.id_ot)
+	</select>
+</mapper>

@@ -1,0 +1,364 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="reglaComercial">
+
+	<resultMap type="ReglaComercial" id="reglaComercial">
+		<result column="id_regla_comercial"           property="id"/>
+		<result column="s_nombre"                     property="nombre"/>
+		<result column="s_descripcion"                property="descripcion"/>
+		<result column="i_precio_limite_cambio_aut"   property="cambioAutomatico.precioLimite"/>
+		<result column="i_cant_fallas_cambio_aut"     property="cambioAutomatico.numeroFallas"/>
+		<result column="i_cant_dias_cambio_aut"       property="cambioAutomatico.diasTope"/>
+		<result column="i_dias_falla_fabricacion"     property="fallaFabricacion.diasTope"/>
+		<result column="i_precio_falla_fabricacion"   property="fallaFabricacion.precioLimite"/>
+		<result column="s_vigente"                    property="vigente"/>
+		<result column="d_vigencia_desde"             property="fechaInicio"/>
+		<result column="d_vigencia_hasta"             property="fechaTermino"/>
+		<result column="s_usuario_creacion"           property="usuarioCreacion.nombreCompleto"/>
+		<result column="d_fecha_creacion"             property="fechaCreacion"/>
+		<result column="s_autorizacion_prooveedor"    property="reglaCambioProoveedor.autorizadoProveedor"/>
+		<result column="s_motivo_prooveedor"          property="reglaCambioProoveedor.notaProoveedor"/>
+		<result column="inicio_certificado_falla"     property="certificacionFalla.inicio"/>
+		<result column="termino_certificado_falla"    property="certificacionFalla.termino"/>
+	</resultMap>
+
+	<select id="listByFilter" parameterType="FilterRegla" resultMap="reglaComercial">
+		select 
+		    rc.id_regla_comercial
+		    ,rc.s_nombre
+		    ,rc.s_descripcion
+		    ,rc.i_precio_limite_cambio_aut
+		    ,rc.i_cant_fallas_cambio_aut
+		    ,rc.i_cant_dias_cambio_aut
+		    ,rc.i_dias_falla_fabricacion
+		    ,rc.i_precio_falla_fabricacion
+		    ,rc.s_vigente
+		    ,rc.d_vigencia_desde
+		    ,rc.d_vigencia_hasta
+		    ,u.s_nombre || ' ' || u.s_apellido_paterno || ' ' || u.s_apellido_materno s_usuario_creacion
+		    ,rc.d_fecha_creacion
+		    ,rc.s_autorizacion_prooveedor
+		    ,rc.s_motivo_prooveedor
+		from 
+		    sstt_reglas_comerciales rc
+		    left join sstt_usuarios u on u.id_usuario = rc.id_usuario
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>		
+		<if test="orderBy == null">
+			order by rc.s_vigente desc  
+		</if>		
+	</select>
+
+	<select id="getTotalByFilter" parameterType="FilterRegla" resultType="Integer">
+		select 
+		    count(1)
+		from 
+		    sstt_reglas_comerciales rc
+	</select>
+
+	<select id="get" parameterType="Long" resultMap="reglaComercial">
+		select 
+		    rc.id_regla_comercial
+		    ,rc.s_nombre
+		    ,rc.s_descripcion
+		    ,rc.i_precio_limite_cambio_aut
+		    ,rc.i_cant_fallas_cambio_aut
+		    ,rc.i_cant_dias_cambio_aut
+		    ,rc.i_dias_falla_fabricacion
+		    ,rc.i_precio_falla_fabricacion
+		    ,rc.s_vigente
+		    ,rc.d_vigencia_desde
+		    ,rc.d_vigencia_hasta
+		    ,u.s_nombre || ' ' || u.s_apellido_paterno || ' ' || u.s_apellido_materno s_usuario_creacion
+		    ,rc.d_fecha_creacion
+		    ,rc.s_autorizacion_prooveedor
+		    ,rc.s_motivo_prooveedor
+		    ,rc.inicio_certificado_falla
+            ,rc.termino_certificado_falla
+		from 
+		    sstt_reglas_comerciales rc
+		    left join sstt_usuarios u on u.id_usuario = rc.id_usuario
+		where id_regla_comercial = #{id}
+	</select>
+
+	<insert id="save" parameterType="ReglaComercial" keyColumn="id_regla_comercial" keyProperty="id">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_reglas_comerciales.nextval from dual
+		</selectKey>
+		insert into SSTT_REGLAS_COMERCIALES(
+			id_regla_comercial
+			,s_nombre
+			,s_descripcion
+			,i_precio_limite_cambio_aut	
+			,i_cant_fallas_cambio_aut	
+			,i_cant_dias_cambio_aut
+			,i_dias_falla_fabricacion
+			,i_precio_falla_fabricacion	
+			,s_vigente	
+			,d_vigencia_desde	
+			,d_vigencia_hasta	
+			,id_usuario	
+			,d_fecha_creacion
+		    ,s_autorizacion_prooveedor
+		    ,s_motivo_prooveedor
+		    ,inicio_certificado_falla
+		    ,termino_certificado_falla
+		) values (
+			#{id}
+			,#{nombre}
+			,#{descripcion}
+			,#{cambioAutomatico.precioLimite}
+			,#{cambioAutomatico.numeroFallas}
+			,#{cambioAutomatico.diasTope}
+			,#{fallaFabricacion.diasTope}
+			,#{fallaFabricacion.precioLimite}
+			,#{vigente}
+			,#{fechaInicio}
+			,#{fechaTermino}
+			,#{usuarioCreacion.id}
+			,sysdate
+			,#{reglaCambioProoveedor.autorizadoProveedor}
+			,#{reglaCambioProoveedor.notaProoveedor}
+			,#{certificacionFalla.inicio}
+			,#{certificacionFalla.termino}
+		)	
+	</insert>
+
+	<update id="update" parameterType="ReglaComercial">
+		update SSTT_REGLAS_COMERCIALES set 
+			s_nombre                     =  #{nombre}                       
+			,s_descripcion                =  #{descripcion}                  
+			,i_precio_limite_cambio_aut	  =  #{cambioAutomatico.precioLimite}
+			,i_cant_fallas_cambio_aut	  =  #{cambioAutomatico.numeroFallas}
+			,i_cant_dias_cambio_aut       =  #{cambioAutomatico.diasTope}    
+			,i_dias_falla_fabricacion     =  #{fallaFabricacion.diasTope}    
+			,i_precio_falla_fabricacion	  =  #{fallaFabricacion.precioLimite}
+			,s_vigente	                  =  #{vigente}                      
+			,d_vigencia_desde	          =  #{fechaInicio}                  
+			,d_vigencia_hasta	          =  #{fechaTermino}                 
+			,id_usuario	                  =  #{usuarioCreacion.id}           
+			,d_fecha_creacion             =  sysdate      
+		    ,s_autorizacion_prooveedor    =  #{reglaCambioProoveedor.autorizadoProveedor}
+		    ,s_motivo_prooveedor          =  #{reglaCambioProoveedor.notaProoveedor}   
+		    ,inicio_certificado_falla	  =  #{certificacionFalla.inicio}
+		    ,termino_certificado_falla    =  #{certificacionFalla.termino}            
+		where
+			id_regla_comercial            =  #{id}
+	</update>
+
+	<insert id="saveHistorial" parameterType="ReglaComercial" keyColumn="id_regla_comercial_hist" keyProperty="idHistorico">
+		<selectKey resultType="Long" keyProperty="idHistorico" order="BEFORE">
+			select ssts_reglas_comerciales.nextval from dual
+		</selectKey>
+		insert into SSTT_REGLAS_COMERCIALES_HIST(
+			id_regla_comercial_hist
+			,id_regla_comercial
+			,s_nombre
+			,s_descripcion
+			,i_precio_limite_cambio_aut	
+			,i_cant_fallas_cambio_aut	
+			,i_cant_dias_cambio_aut
+			,i_dias_falla_fabricacion
+			,i_precio_falla_fabricacion	
+			,s_vigente	
+			,d_vigencia_desde	
+			,d_vigencia_hasta	
+			,id_usuario	
+			,d_fecha_creacion
+		    ,s_autorizacion_prooveedor
+		    ,s_motivo_prooveedor
+		    ,termino_certificado_falla
+		    ,inicio_certificado_falla
+		) values (
+			#{idHistorico}
+			,#{id}
+			,#{nombre}
+			,#{descripcion}
+			,#{cambioAutomatico.precioLimite}
+			,#{cambioAutomatico.numeroFallas}
+			,#{cambioAutomatico.diasTope}
+			,#{fallaFabricacion.diasTope}
+			,#{fallaFabricacion.precioLimite}
+			,#{vigente}
+			,#{fechaInicio}
+			,#{fechaTermino}
+			,#{usuarioCreacion.id}
+			,#{fechaCreacion}
+			,#{reglaCambioProoveedor.autorizadoProveedor}
+			,#{reglaCambioProoveedor.notaProoveedor}
+			,#{certificacionFalla.termino}
+			,#{certificacionFalla.inicio}
+		)	
+	</insert>
+	
+	<insert id="saveReglaEntidad" keyProperty="id" keyColumn="id_regla_entidad" parameterType="ReglaEntidad">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_regla_entidad.nextval from dual
+		</selectKey>
+		insert into SSTT_REGLA_ENTIDAD (
+			id_regla_entidad,
+			id_regla_comercial,
+			s_entidad,
+			<if test='entidadRegla.equals("P")'>
+			id_producto
+			</if>
+			<if test='entidadRegla.equals("F")'>
+			id_familia
+			</if>
+			<if test='entidadRegla.equals("L")'>
+			id_linea
+			</if>
+			<if test='entidadRegla.equals("T")'>
+			id_tienda
+			</if>
+			<if test='entidadRegla.equals("Z")'>
+			id_zona
+			</if>
+		) values (
+			#{id}
+			,#{reglaComercial.id}
+			,#{entidadRegla}
+			,#{idEntidad}
+		)
+	</insert>
+	
+	<insert id="saveReglaEntidadHistorial" keyProperty="id" keyColumn="id_regla_entidad_hist" parameterType="ReglaEntidad">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_regla_entidad_hist.nextval from dual
+		</selectKey>
+		insert into SSTT_REGLA_ENTIDAD_HIST (
+			id_regla_entidad_hist,
+			id_regla_comercial_hist,
+			id_regla_comercial,
+			s_entidad,
+			<if test='entidadRegla.equals("P")'>
+			id_producto
+			</if>
+			<if test='entidadRegla.equals("F")'>
+			id_familia
+			</if>
+			<if test='entidadRegla.equals("L")'>
+			id_linea
+			</if>
+			<if test='entidadRegla.equals("T")'>
+			id_tienda
+			</if>
+			<if test='entidadRegla.equals("Z")'>
+			id_zona
+			</if>
+		) values (
+			#{id}
+			,#{reglaComercial.idHistorico}
+			,#{reglaComercial.id}
+			,#{entidadRegla}
+			,#{idEntidad}
+		)
+	</insert>
+	
+	<delete id="deleteAllReglaEntidadByRegla" parameterType="ReglaComercial">
+		delete SSTT_REGLA_ENTIDAD where id_regla_comercial = #{id}
+	</delete>
+	
+	<select id="listUsuariosReglasComerciales" resultType="Usuario">
+		select distinct 
+		    rch.id_usuario id,
+		    u.s_nombre || ' ' || u.s_apellido_paterno || ' ' || u.s_apellido_materno nombreCompleto
+		from 
+		    sstt_reglas_comerciales_hist rch
+		    inner join sstt_usuarios u on u.id_usuario = rch.id_usuario
+	</select>
+
+	
+	<select id="getReglaComercialVigenteByFilter" parameterType="FilterRegla" resultMap="reglaComercial">
+		select 
+		    rc.id_regla_comercial
+		    ,rc.s_nombre
+		    ,rc.s_descripcion
+		    ,rc.i_precio_limite_cambio_aut
+		    ,rc.i_cant_fallas_cambio_aut
+		    ,rc.i_cant_dias_cambio_aut
+		    ,rc.i_dias_falla_fabricacion
+		    ,rc.i_precio_falla_fabricacion
+		    ,rc.s_vigente
+		    ,rc.d_vigencia_desde
+		    ,rc.d_vigencia_hasta
+		    ,u.s_nombre || ' ' || u.s_apellido_paterno || ' ' || u.s_apellido_materno s_usuario_creacion
+		    ,rc.d_fecha_creacion
+		    ,rc.s_autorizacion_prooveedor
+		    ,rc.s_motivo_prooveedor
+		    ,rc.inicio_certificado_falla
+		    ,rc.termino_certificado_falla
+		from 
+		    sstt_reglas_comerciales rc
+		    inner join sstt_usuarios u on u.id_usuario = rc.id_usuario
+        where
+                rc.s_vigente = 'S'
+            <if test="fechaInicio == null and fechaTermino == null">
+	            and (rc.d_vigencia_hasta &gt;= sysdate or rc.d_vigencia_hasta is null)
+			    and rc.d_vigencia_desde &lt;= sysdate
+		    </if>
+            <if test="fechaInicio != null or fechaTermino != null">
+				<if test="fechaInicio != null">
+		    		and (rc.d_vigencia_hasta &gt;= #{fechaInicio} or rc.d_vigencia_hasta is null)
+			    </if>
+			    <if test="fechaTermino != null">
+			    	and rc.d_vigencia_desde &lt;= #{fechaTermino}
+			    </if>
+		    </if>
+            <if test="idTipoAutorizacion != null and idTipoAutorizacion.equals('VA')">
+				and rc.i_precio_limite_cambio_aut is not null
+			</if>
+			<if test="idTipoAutorizacion != null and idTipoAutorizacion.equals('FF')">
+				and rc.i_dias_falla_fabricacion is not null and rc.i_precio_falla_fabricacion is not null
+			</if>
+			<if test="idTipoAutorizacion != null and idTipoAutorizacion.equals('FR')">
+				and rc.i_cant_fallas_cambio_aut is not null and rc.i_cant_dias_cambio_aut is not null
+			</if>
+			<if test="idTipoAutorizacion != null and idTipoAutorizacion.equals('CP')">
+				and rc.s_autorizacion_prooveedor = 'S'
+			</if><if test="idTipoAutorizacion != null and idTipoAutorizacion.equals('CF')">
+				and rc.inicio_certificado_falla is not null and rc.termino_certificado_falla is not null
+			</if>
+			<if test="idZona !=null">
+				and exists (select 1 from sstt_regla_entidad rehz where
+								    rehz.id_regla_comercial = rc.id_regla_comercial
+								and rehz.s_entidad = 'Z'
+								and rehz.id_zona = #{idZona})
+			</if>
+			<if test="idTienda !=null">
+				and exists (select 1 from sstt_regla_entidad rehz where
+								    rehz.id_regla_comercial = rc.id_regla_comercial
+								and rehz.s_entidad = 'T'
+								and rehz.id_tienda = #{idTienda})
+			</if>
+			<if test="idLinea !=null  and !idLinea.equals('')">
+				and exists (select 1 from sstt_regla_entidad rehz where
+								    rehz.id_regla_comercial = rc.id_regla_comercial
+								and rehz.s_entidad = 'L'
+								and rehz.id_linea = #{idLinea})
+			</if>
+			<if test="idFamilia !=null and !idFamilia.equals('')">
+				and exists (select 1 from sstt_regla_entidad rehz where
+								    rehz.id_regla_comercial = rc.id_regla_comercial
+								and rehz.s_entidad = 'F'
+								and rehz.id_familia = #{idFamilia})
+			</if>
+			<if test="idProducto != null">
+				and exists (select 1 from sstt_regla_entidad rehz where
+								    rehz.id_regla_comercial = rc.id_regla_comercial
+								and rehz.s_entidad = 'P'
+								and rehz.id_producto = #{idProducto})
+			</if>
+			<if test="idProducto == null and idFamilia == null and idLinea == null and idTienda == null and idZona == null">
+				and not exists (select 1 from sstt_regla_entidad re where rc.id_regla_comercial = re.id_regla_comercial)
+			</if>	
+	</select>
+	
+</mapper>

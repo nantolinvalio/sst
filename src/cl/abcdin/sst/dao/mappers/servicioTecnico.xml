@@ -1,0 +1,806 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="servicioTecnico">
+	
+	<resultMap type="ServicioTecnico" id="servicioTecnicoOT">
+		<result property="ot.id"					column="id_ot"/>
+		<result property="id"						column="id_stecnico"/>
+		<result property="glosa" 					column="s_nombre_stecnico"/>
+		<result property="direccion"				column="s_direccion"/>
+		<result property="rut"						column="s_rut_stecnico" typeHandler="RunTypeHandler" />
+		<result property="telefono"					column="s_telefono"/>
+		<result property="comuna.glosa"				column="s_comuna"/>
+		<result property="region.glosa"				column="s_region"/>
+		<result property="ot.numeroContrato"		column="s_contrato"/>
+		<result property="ot.estado.id"				column="id_estado"/>
+		<result property="ot.contratoEmitido"		column="s_contrato_emitido"/>
+		<result property="ot.diagnostico"			column="s_diagnostico"/>
+		<result property="cliente.nombreCompleto"	column="s_cliente"/>
+		<result property="ot.producto.id"			column="id_producto"/>
+		<result property="ot.producto.descripcion"	column="s_descripcion_producto"/>
+		<result property="ot.producto.marca.nombre"	column="s_marca"/>
+		<result property="ot.tipo.codigo"			column="s_tipo"/>
+		<result property="ot.tipo.glosa"			column="s_tipo_glosa"/>
+		<result property="ot.servicioTecnico.id"	column="id_stecnico"/>
+		<result property="ot.calificaFR"			column="s_califica_fr"/>
+	</resultMap>
+	
+	<select	id="getServicioTecnicoByOT" parameterType="Long" resultMap="servicioTecnicoOT">
+		select
+			ot.id_ot
+			,ot.id_stecnico
+			,ot.id_estado
+		 	,st.s_nombre as s_nombre_stecnico
+         	,st.s_direccion
+         	,st.i_rut as s_rut_stecnico
+         	,st.s_telefono
+         	,c.s_nombre AS s_comuna
+         	,r.s_nombre AS s_region
+         	,ot.s_contrato
+         	,ot.s_contrato_emitido
+         	,ot.s_diagnostico         
+         	,cl.s_nombre AS s_cliente
+         	,ot.id_producto
+         	,p.s_descripcion as s_descripcion_producto
+         	,m.s_nombre AS s_marca
+         	,ot.s_tipo
+         	,par.s_descripcion as s_tipo_glosa         	
+         	,ot.id_stecnico
+         	,ot.s_califica_fr
+     	from 
+     		sstt_ordenes_trabajo ot 
+     		left  join sstt_ubicaciones st on st.id_ubicacion = ot.id_stecnico
+          	inner join sstt_comunas c on c.id_comuna = st.id_comuna
+          	inner join sstt_provincias pr on pr.id_provincia = c.id_provincia
+          	inner join sstt_regiones r on r.id_region = pr.id_region
+          	left join sstt_clientes cl on cl.id_cliente = ot.id_cliente
+          	left join owv_productos p on p.id_producto = ot.id_producto
+          	left join owv_marcas m on m.id_marca = p.id_marca  
+          	left join sstt_parametros par on par.s_nombre = ot.s_tipo and par.s_string1 = 'TIOT'        	
+		    where ot.id_ot = #{idOT} 
+				
+	</select>
+	
+	<resultMap type="ServicioTecnico" id="servicioTecnicoMap">
+		<result property="id"					column="id_ubicacion"/>
+		<result property="nombre"				column="s_nombre"/>
+		<result property="telefono"				column="s_telefono"/>
+		<result property="direccion"			column="s_direccion"/>
+		<result property="comuna.id"			column="id_comuna"/>
+		<result property="comuna.glosa"			column="s_nombre_comuna"/>
+		<result property="region.glosa"			column="s_nombre_region"/>
+		<result property="region.id"            column="id_region"/>
+		<result property="rut"					column="s_rut" typeHandler="RunTypeHandler"/>
+		<result property="giro"					column="s_giro"/>
+		<result	property="vigente"				column="s_vigente"/>
+		<result property="cantidadProductos"	column="i_cantidad_productos"/>
+		<result property="region.orden"			column="i_orden"/>
+	</resultMap>
+	
+	<resultMap type="ServicioTecnicoProducto" id="servicioTecnicoProducto2">
+		<result property="id"                                  column="id_stecnico_producto"/> 
+		<result property="servicioTecnico.nombre"              column="s_nombre"/> 
+		<result property="servicioTecnico.rut"                 column="i_rut" typeHandler="RunTypeHandler"/>
+		<result property="servicioTecnico.direccion"           column="s_direccion"/>
+		<result property="servicioTecnico.region.glosa"        column="s_region"/>
+		<result property="servicioTecnico.comuna.glosa"        column="s_comuna" />
+		<result property="servicioTecnico.cantidadProductos"   column="i_cantidad_productos"/>
+		<result property="servicioTecnico.vigente"             column="s_vigente"/>
+		<result property="tipoGarantia"                        column="s_garantia"/>
+	</resultMap>
+	
+	<select id="listServicioTecnicoProducto" parameterType="FilterServicioTecnico" resultMap="servicioTecnicoProducto2">
+		select   
+		    stp.id_stecnico_producto, 
+		    ub.s_nombre, 
+		    ub.i_rut, 
+		    ub.s_direccion,
+		    r.s_nombre as s_region, 
+		    c.s_nombre as s_comuna,
+		    ub.i_cantidad_productos, 
+		    ub.s_vigente,
+            par.s_descripcion as s_garantia
+		from sstt_stecnicos_productos stp 
+		    inner join sstt_ubicaciones ub on ub.id_ubicacion = stp.id_stecnico
+		    inner join sstt_comunas c on c.id_comuna = ub.id_comuna
+		    inner join sstt_provincias p on p.id_provincia = c.id_provincia
+		    inner join sstt_regiones r on r.id_region = p.id_region
+            inner join sstt_parametros par on par.s_nombre = stp.s_garantia and s_string1 = 'TIOT'
+		where 
+			    ub.s_tipo = 'ST'
+			and stp.s_vigente = 'S'
+		    and stp.id_producto = #{idProducto}
+	    <if test="orderBy == null or orderBy.equals('')">
+		order by stp.s_vigente desc, r.i_orden asc, c.s_nombre asc, ub.s_nombre asc
+		</if>
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+		
+	</select>
+	
+	<select id="getTotalServicioTecnicoProducto" parameterType="FilterServicioTecnico" resultType="Integer">
+		select   
+		    count(1)
+		from sstt_stecnicos_productos stp 
+		    inner join sstt_ubicaciones ub on ub.id_ubicacion = stp.id_stecnico
+		    inner join sstt_comunas c on c.id_comuna = ub.id_comuna
+		    inner join sstt_provincias p on p.id_provincia = c.id_provincia
+		    inner join sstt_regiones r on r.id_region = p.id_region
+		where 
+			    ub.s_tipo = 'ST'
+			and stp.s_vigente = 'S'
+		    and stp.id_producto = #{idProducto}
+		order by stp.s_vigente desc, r.i_orden asc, c.s_nombre asc, ub.s_nombre asc
+	</select>
+	
+	<select id="listAllServiciosTecnicosProductoCheck" parameterType="FilterServicioTecnico" resultType="CheckForFlexigrid">
+		select   
+		    
+            stp.id_stecnico_producto as "id",
+           	'N' as "check"
+		from sstt_stecnicos_productos stp 
+		    inner join sstt_ubicaciones ub on ub.id_ubicacion = stp.id_stecnico
+		    inner join sstt_comunas c on c.id_comuna = ub.id_comuna
+		    inner join sstt_provincias p on p.id_provincia = c.id_provincia
+		    inner join sstt_regiones r on r.id_region = p.id_region
+            inner join sstt_parametros par on par.s_nombre = stp.s_garantia and s_string1 = 'TIOT'
+		where 
+			    ub.s_tipo = 'ST'
+			and stp.s_vigente = 'S'
+		    and stp.id_producto = #{idProducto}
+		order by stp.s_vigente desc, r.i_orden asc, c.s_nombre asc, ub.s_nombre asc
+	</select>
+	
+	<select id="listServicioTecnico"  parameterType="FilterServicioTecnico" resultMap="servicioTecnicoMap" >
+        select 
+			ub.id_ubicacion
+      		,ub.s_nombre 
+      		,ub.s_telefono
+      		,ub.s_direccion
+      		,c.id_comuna
+      		,c.s_nombre as s_nombre_comuna
+      		,r.id_region 
+      		,r.s_nombre as s_nombre_region
+      		,to_char(ub.i_rut) as s_rut
+      		,ub.s_giro
+      		,ub.s_vigente
+      		,r.i_orden
+            ,ub.i_cantidad_productos
+  		from sstt_ubicaciones ub
+ 			inner join sstt_comunas c on c.id_comuna = ub.id_comuna
+ 			inner join sstt_provincias p on p.id_provincia = c.id_provincia
+ 			inner join sstt_regiones r on r.id_region = p.id_region
+ 		where 
+            ub.s_tipo = 'ST'
+			<if test="rut != null and !rut.equals('')">
+				and ub.i_rut = #{rut,typeHandler=RunTypeHandler}
+			</if>
+			<if test="nombre != null and !nombre.equals('')">
+			    and upper(ub.s_nombre) like '%'||upper(#{nombre})||'%' 
+			</if>
+			<if test="idComuna != null">
+				and ub.id_comuna = #{idComuna}
+		    </if>
+		    <if test="idRegion != null">
+				and p.id_region = #{idRegion}
+		    </if>
+		    <if test="idProducto != null">
+		    	and exists (select 1 from sstt_stecnicos_productos stp where stp.id_stecnico = ub.id_ubicacion and stp.id_producto = #{idProducto} ) 
+		    </if>
+			<if test="orderBy == null or orderBy.equals('')">
+		 	 order by ub.s_vigente desc ,ub.s_nombre  asc ,r.i_orden    asc ,c.id_comuna  asc
+			</if>
+			<if test="orderBy != null and !orderBy.equals('')">
+				order by ${orderBy}
+				<if test="sortOrder != null and !sortOrder.equals('')">
+					${sortOrder}
+				</if>	
+		    </if>
+	</select>
+		
+	<select id="getTotalServiciosTecnicos" parameterType="FilterServicioTecnico" resultType="Integer">
+		select 
+			count(1)
+  		from sstt_ubicaciones ub
+ 			inner join sstt_comunas c on c.id_comuna = ub.id_comuna
+ 			inner join sstt_provincias p on p.id_provincia = c.id_provincia
+ 			inner join sstt_regiones r on r.id_region = p.id_region
+ 		where 
+				ub.s_tipo = 'ST'
+			<if test="rut != null and !rut.equals('')">
+				and ub.i_rut = #{rut,typeHandler=RunTypeHandler}
+			</if>
+			<if test="nombre != null and !nombre.equals('')">
+			    and upper(ub.s_nombre) like '%'||upper(#{nombre})||'%' 
+			</if>
+			<if test="idComuna != null">
+				and ub.id_comuna = #{idComuna}
+		    </if>
+		    <if test="idRegion != null">
+				and p.id_region = #{idRegion}
+		    </if>
+		    <if test="idProducto != null">
+		    	and exists (select 1 from sstt_stecnicos_productos stp where stp.id_stecnico = ub.id_ubicacion and stp.id_producto = #{idProducto} ) 
+		    </if>
+	</select>
+	
+	<select id="listAllServiciosTecnicosCheck" parameterType="FilterServicioTecnico" resultType="CheckForFlexigrid">
+        select 
+	    	ub.id_ubicacion as "id",
+	    	'N' as "check"
+  		from sstt_ubicaciones ub
+ 			inner join sstt_comunas c on c.id_comuna = ub.id_comuna
+ 			inner join sstt_provincias p on p.id_provincia = c.id_provincia
+ 			inner join sstt_regiones r on r.id_region = p.id_region
+		where
+			ub.s_tipo = 'ST'
+			<if test="rut != null and !rut.equals('')">
+				and ub.i_rut = #{rut,typeHandler=RunTypeHandler}
+			</if>
+			<if test="nombre != null and !nombre.equals('')">
+			    and upper(ub.s_nombre) like '%'||upper(#{nombre})||'%' 
+			</if>
+			<if test="idComuna != null">
+				and ub.id_comuna = #{idComuna}
+		    </if>
+		    <if test="idRegion != null">
+				and p.id_region = #{idRegion}
+		    </if>
+		    <if test="idProducto != null">
+		    	and exists (select 1 from sstt_stecnicos_productos stp where stp.id_stecnico = ub.id_ubicacion and stp.id_producto = #{idProducto} ) 
+		    </if>
+	</select>
+	
+	<select id="listServicioTecnicoGM" resultMap="servicioTecnicoMap">
+		select distinct
+			ub.id_ubicacion
+      		,ub.s_nombre
+      		,ub.s_telefono
+      		,ub.s_direccion
+      		,c.id_comuna
+      		,c.s_nombre as s_nombre_comuna
+      		,r.s_nombre as s_nombre_region
+      		,to_char(ub.i_rut) as s_rut
+      		,ub.s_giro
+      		,ub.s_vigente
+      		,ub.i_cantidad_productos
+      		,r.i_orden  
+		from sstt_ubicaciones ub 
+			INNER JOIN sstt_stecnicos_productos stp ON stp.id_stecnico = ub.id_ubicacion 
+			INNER JOIN sstt_comunas c ON c.id_comuna = ub.id_comuna
+ 			inner join sstt_provincias p on p.id_provincia = c.id_provincia
+ 			inner join sstt_regiones r on r.id_region = p.id_region 
+		where 
+			stp.s_vigente = 'S'   
+			AND stp.s_garantia = 'GM'   
+			AND ub.s_vigente = 'S' 
+		order by ub.s_nombre ASC
+	</select>
+	
+	<select id="asignarSTecnicoOT" parameterType="ServicioTecnico">
+		update sstt_ordenes_trabajo ot 
+		set ot.id_stecnico = #{id}
+		where ot.id_ot = #{ot.id}
+	</select>
+	
+	<resultMap type="ServicioTecnico" id="servicioTecnicoProducto">
+		<result property="id"			column="i_destino"/>
+		<result property="glosa"		column="s_nombre"/>
+		<result property="direccion"	column="s_direccion"/>
+		<result property="comuna.glosa"	column="s_comuna"/>
+		<result property="telefono"		column="s_telefono"/>
+		<result property="tipo"			column="s_tipo"/>
+		<result property="tipoGlosa"	column="s_tipo_glosa"/>
+	</resultMap>
+	
+	<select id="listServicioTecnicoByOrigenProductoGarantia" parameterType="Map" resultMap="servicioTecnicoProducto">
+		select d.i_destino
+            ,u.s_nombre
+            ,u.s_direccion
+            ,c.s_nombre AS s_comuna
+            ,u.s_telefono
+            ,u.s_tipo
+        from sstt_destinos d
+            inner join sstt_ubicaciones u ON u.id_ubicacion = d.i_destino
+            inner join sstt_stecnicos_productos stp ON stp.id_stecnico = u.id_ubicacion
+            inner join sstt_comunas c ON c.id_comuna = u.id_comuna
+        where d.s_vigente = 'S'
+              and u.s_vigente = 'S'
+              and stp.s_vigente = 'S'
+              and d.id_origen =  #{idUbicacion}
+              and stp.id_producto =  #{idProducto}
+              <if test="tipoOT.equals('GPC')">
+	              and stp.s_garantia = 'GP'
+              </if>
+              <if test="!tipoOT.equals('GPC')">
+	              and stp.s_garantia = #{tipoOT}
+	          </if>
+        order by s_tipo desc
+	</select>
+	
+	<select id="listSTecnicoByFilter" resultMap="servicioTecnicoProducto" parameterType="FilterServicioTecnico">
+	    select 
+	    	distinct
+	        d.i_destino, 
+	        u.s_nombre, 
+	        u.s_direccion, 
+	        c.s_nombre as s_comuna,
+           	u.s_telefono, 
+	        u.s_tipo,
+              p.s_descripcion s_tipo_glosa
+	    from 
+	        sstt_destinos d 
+	        inner join sstt_ubicaciones u on u.id_ubicacion = d.i_destino 
+	        inner join sstt_stecnicos_productos stp on stp.id_stecnico = u.id_ubicacion 
+	        inner join sstt_comunas c on c.id_comuna = u.id_comuna 
+			inner join sstt_parametros p on p.s_nombre = u.s_tipo  and p.s_string1 = 'UBIC'
+	    where
+	         d.s_vigente = 'S'   
+	         and u.s_vigente = 'S'   
+	         and stp.s_vigente = 'S'  
+	         <if test="idOrigen != null">
+				and d.id_origen = #{idOrigen}		         
+	         </if>
+	         <if test="idProducto != null">
+				and stp.id_producto = #{idProducto}		         
+	         </if>
+	         <if test="tipoOT != null and !tipoOT.equals('')">
+	             <if test="tipoOT.equals('GPC')">
+					and stp.s_garantia = 'GP'		         
+	             </if>
+	             <if test="!tipoOT.equals('GPC')">
+					and stp.s_garantia = #{tipoOT}
+				 </if>		         
+	         </if> 
+	    order by s_nombre asc
+	</select>
+	
+	<select id="listSTecnicoFromProductoByUbicacion" parameterType="FilterServicioTecnico" resultMap="servicioTecnicoProducto">
+		select 
+		    stp.id_stecnico as i_destino, 
+		    u.s_nombre, 
+		    u.s_direccion, 
+		    c.s_nombre as s_comuna,
+		    u.s_telefono,
+		    pa.s_descripcion as s_tipo_glosa
+		from 
+		    sstt_stecnicos_productos stp
+		    inner join sstt_ubicaciones u on stp.id_stecnico = u.id_ubicacion 
+		    inner join sstt_comunas c on c.id_comuna = u.id_comuna
+		    inner join sstt_parametros pa on pa.s_nombre = stp.s_garantia and pa.s_string1 = 'TIOT'
+		where
+		        stp.s_vigente = 'S'
+		     and u.s_vigente = 'S'
+		     and stp.id_producto = #{idProducto}
+		     <if test="soloMisDestinos != null and soloMisDestinos.equals(true)">
+				and exists (select 1 from sstt_destinos d where d.i_destino = stp.id_stecnico and d.id_origen = #{idOrigen} )		     
+		     </if>
+		<if test="orderBy == null or orderBy.equals('')">
+		order by pa.s_descripcion desc, u.s_nombre asc
+		</if>
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+					${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTotalSTecnicoFromProductoByUbicacion" parameterType="FilterServicioTecnico" resultType="Integer">
+		select 
+		    count(1)
+		from 
+		    sstt_stecnicos_productos stp
+		    inner join sstt_ubicaciones u on stp.id_stecnico = u.id_ubicacion 
+		    inner join sstt_comunas c on c.id_comuna = u.id_comuna
+		    inner join sstt_parametros pa on pa.s_nombre = stp.s_garantia and pa.s_string1 = 'TIOT'
+		where
+		        stp.s_vigente = 'S'
+		     and u.s_vigente = 'S'
+		     and stp.id_producto = #{idProducto}
+		     <if test="soloMisDestinos != null and soloMisDestinos.equals(true)">
+				and exists (select 1 from sstt_destinos d where d.i_destino = stp.id_stecnico and d.id_origen = #{idOrigen} )		     
+		     </if>
+	</select>
+
+	<select id="listSBodegasByFilter" resultMap="servicioTecnicoProducto" parameterType="FilterServicioTecnico">
+		select 
+	        d.i_destino, 
+	        u.s_nombre, 
+	        u.s_direccion, 
+	        c.s_nombre as s_comuna, 
+           	u.s_telefono,
+	        u.s_tipo,
+            p.s_descripcion  s_tipo_glosa
+	    from 
+	        sstt_destinos d 
+	        inner join sstt_ubicaciones u on u.id_ubicacion = d.i_destino 
+	        inner join sstt_comunas c on c.id_comuna = u.id_comuna 
+            inner join sstt_parametros p on p.s_nombre = u.s_tipo  and p.s_string1 = 'UBIC'
+	    where 
+	        u.s_tipo IN ('BR','CD')    
+	        and u.s_vigente = 'S'   
+	        and d.s_vigente = 'S'   
+	        and d.id_origen = #{idOrigen} 
+	    order by s_nombre asc
+	</select>
+	
+	<resultMap type="ServicioTecnicoProducto" id="servicioTecnicoProductoMap">
+		<result property="id"                    column="id_stecnico_producto"    />
+		<result property="servicioTecnico.id"    column="id_stecnico"             />
+		<result property="producto.id"           column="id_producto"             />
+		<result property="tipoGarantia"          column="s_garantia"              />
+		<result property="vigente"               column="s_vigente"               />
+	</resultMap>
+	
+	<select id="getByFilter" parameterType="FilterServicioTecnico" resultMap="servicioTecnicoProductoMap">
+		select 
+			stp.id_stecnico_producto,
+			stp.id_stecnico,
+			stp.id_producto,
+			stp.s_garantia,
+			stp.s_vigente
+		from 
+		    sstt_stecnicos_productos stp
+        where
+	        	stp.id_producto = #{idProducto}
+			and stp.id_stecnico = #{idServicioTecnico}
+            <if test="tipoOT.equals('GPC')">
+				and stp.s_garantia = 'GP'
+			</if>
+            <if test="!tipoOT.equals('GPC')">
+				and stp.s_garantia = #{tipoOT}
+			</if>
+	</select>
+	
+		<insert id="saveServicioTecnicoProducto" parameterType="ServicioTecnicoProducto">
+	    <selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_stecnicos_productos.nextval from dual
+		</selectKey>
+		insert into sstt_stecnicos_productos (
+			id_stecnico_producto,
+			id_producto, 
+			id_stecnico, 
+			s_garantia, 
+			s_vigente
+		) values (
+			#{id},
+			#{producto.id}, 
+			#{servicioTecnico.id}, 
+			#{tipoGarantia}, 
+			#{vigente}
+		)
+	</insert>
+	
+	<update id="updateVigencia" parameterType="ServicioTecnicoProducto">
+		update sstt_stecnicos_productos
+		set s_vigente = #{vigente}
+		where id_stecnico_producto = #{id}
+	</update>
+	
+	<update id="updateVigenciaServTec" parameterType="ServicioTecnico">
+		update sstt_ubicaciones
+		set s_vigente = #{vigente}
+		where id_ubicacion = #{id}
+	</update>
+	
+	<resultMap type="ServicioTecnico" id="sTecnico">
+		<result property="id"                   column="id_ubicacion"/>
+		<result property="rut"					column="i_rut" typeHandler="RunTypeHandler"/>
+		<result property="nombre"				column="s_nombre"/>
+		<result property="comuna.id"			column="id_comuna"/>
+		<result property="comuna.glosa"			column="s_comuna"/>
+		<result property="region.glosa"			column="s_region"/>
+		<result property="direccion"			column="s_direccion"/>
+		<result property="vigente"				column="s_vigente"/>
+		<result property="cantidadProductos"	column="i_cantidad_productos"/>
+	</resultMap>
+	
+	<select id="getSTecnicoById" parameterType="Long" resultMap="sTecnico">
+		select
+			id_ubicacion 
+			,i_rut
+			,s_nombre
+			,s_telefono
+			,id_comuna
+			,s_comuna
+			,s_region
+			,s_direccion
+			,s_vigente
+			,s_giro
+			,i_cantidad_productos
+		from sstv_stecnicos
+		where id_ubicacion = #{id}
+	</select>
+	<update id="updateSTecnicoOT" parameterType="OrdenTrabajo">
+		update sstt_ordenes_trabajo ot
+		set ot.s_contrato_emitido = #{contratoEmitido}
+			,ot.s_contrato      = #{numeroContrato}
+			,ot.s_diagnostico   = #{diagnostico}
+			<if test="calificaFR != null">
+				,ot.s_califica_fr   = #{calificaFR}              
+			</if>
+        where ot.id_ot = #{id}
+	</update>
+	
+	<resultMap type="ServicioTecnico" id="sTBuscadorOT">
+		<result property="id"				column="id_ubicacion"/>
+		<result property="glosa"			column="s_nombre"/>
+		<result property="rut"				column="i_rut" typeHandler="RunTypeHandler"/>
+		<result property="direccion"		column="s_direccion"/>
+		<result property="telefono"			column="s_telefono"/>
+		<result property="comuna.id"		column="id_comuna"/>
+		<result property="comuna.ciudad"	column="s_comuna"/>
+		<result property="region.glosa"		column="s_region"/>
+	</resultMap>
+	
+	<select id="ListServiciosTecnicosBuscadorOT" parameterType="FilterServicioTecnico" resultMap="sTBuscadorOT">
+		select distinct 
+			st.id_ubicacion
+			,st.s_nombre
+			,st.i_rut
+			,st.s_direccion
+			,st.s_telefono
+			,st.id_comuna
+			,c.s_nombre as s_comuna
+			,r.s_nombre as s_region
+		 from sstt_ubicaciones st
+		inner join sstt_comunas c on c.id_comuna = st.id_comuna
+		inner join sstt_provincias pr on pr.id_provincia = c.id_provincia
+		inner join sstt_regiones r on r.id_region = pr.id_region
+		 left outer join sstt_stecnicos_productos stp on stp.id_stecnico = st.id_ubicacion
+		 left outer join sstt_destinos d on d.i_destino = st.id_ubicacion
+		<where>
+		  st.s_tipo = 'ST' 
+		  and st.s_vigente = 'S' 
+		        <if test="idProducto!=null">
+		        	and stp.id_producto = #{idProducto}
+		        </if>
+		      	<if test="tipoOT!=null and !tipoOT.equals('')">
+	            	<if test="tipoOT.equals('GPC')">
+		      			and stp.s_garantia = 'GP'
+		      		</if>
+	            	<if test="!tipoOT.equals('GPC')">
+		      			and stp.s_garantia = #{tipoOT}
+		      		</if>
+		      	</if>
+		      	<if test="idOrigen!=null">
+		      		 and d.id_origen = #{idOrigen}
+		      	</if>
+		      	<if test="idComuna!=null">
+		      		 and st.id_comuna = #{idComuna}
+		      	</if>
+		      	
+		</where>
+		order by st.s_nombre asc
+	</select>
+	
+	<resultMap type="STecnicoEjecutiva" id="ejecutivaST">
+		<result property="id"				        column="id"/>
+		<result property="usuario.id"				column="id_usuario"/>
+		<result property="ubicacion.id"				column="id_ubicacion"/>
+		<result property="marca.codigo"				column="id_marca"/>
+		<result property="usuario.nombreCompleto"	column="usuario_nombreCompleto"/>
+		<result property="ubicacion.nombre"	        column="ubicacion_nombre"/>
+		<result property="marca.nombre"             column="marca_nombre"/>
+		<result property="ubicacion.cantidadProductos"	    column="i_cantidad_productos"/>
+		<result property="ubicacion.rut"	        column="ubicacion_rut"/>
+		<result property="ubicacion.direccion"	    column="ubicacion_direccion"/>
+		<result property="comuna.glosa"	        column="nombre_comuna"/>
+		<result property="region.glosa"	        column="nombre_region"/>
+		<result property="region.orden"	            column="i_orden"/>
+	</resultMap>
+	
+	<select id="listServicioTecnicoForEjecutiva" parameterType="FilterEjecutiva" resultMap="ejecutivaST">
+		select
+		    distinct st.id_ubicacion || '_' ||m.id_marca     as id          
+		    ,e.id_usuario                                            
+		    ,st.id_ubicacion                                           
+		    ,m.id_marca                                                
+		    ,trim(e.s_nombre) ||' '|| trim(e.s_apellido_paterno)  as usuario_nombreCompleto     
+		    ,st.s_nombre as ubicacion_nombre                                               
+		    ,m.s_nombre as marca_nombre                                             
+		    ,st.i_cantidad_productos                                   
+		    ,st.i_rut as ubicacion_rut                                  
+		    ,st.s_direccion as ubicacion_direccion                                       
+		    ,c.s_nombre as nombre_comuna                                                
+		    ,r.s_nombre as nombre_region                                          
+		    ,r.i_orden                                                 
+		from 
+		    sstt_ubicaciones st
+		    inner join sstt_comunas c on c.id_comuna = st.id_comuna
+		    inner join sstt_provincias pr on pr.id_provincia = c.id_provincia
+		    inner join sstt_regiones r on r.id_region = pr.id_region
+		    inner join sstt_stecnicos_productos stp on stp.id_stecnico = st.id_ubicacion and stp.s_vigente = 'S' and stp.s_garantia = 'GP'
+		    inner join owv_productos p on p.id_producto = stp.id_producto
+		    inner join owv_marcas m on m.id_marca = p.id_marca
+		    left join sstt_ejecutivas_sta_marcas esm on esm.id_stecnico = st.id_ubicacion and esm.id_marca = p.id_marca
+		    left join sstt_usuarios e on e.id_usuario = esm.id_ejecutiva
+		<where>
+			st.s_vigente = 'S' 
+		    and st.s_tipo =  'ST' 
+		    <if test="nombreSTecnico != null and !nombreSTecnico.equals('')">
+		    	and lower(st.s_nombre) like lower('%' || #{nombreSTecnico} || '%')
+		    </if>
+		    <if test="idEjecutiva != null and !idEjecutiva.equals('')">
+		    	and e.id_usuario = #{idEjecutiva}
+		    </if>
+		    <if test="conEjecutiva != null and conEjecutiva.equals(true)">
+		    	 and e.id_usuario is not null
+		    </if>
+		    <if test="conEjecutiva != null and conEjecutiva.equals(false)">
+		    	 and e.id_usuario is null 
+		    </if>
+		    <if test="idMarca != null and !idMarca.equals('')">
+		    	 and p.id_marca =  #{idMarca}
+		    </if>
+		    <if test="idRegion != null ">
+		    	 and r.id_region = #{idRegion}
+		    </if>
+		    <if test="idComuna != null">
+		    	 and c.id_comuna = #{idComuna}
+		    </if>
+		    <if test="idFamilia != null and !idFamilia.equals('')">
+		    	 and p.id_familia = #{idFamilia}
+		    </if>
+		    <if test="idSucursal != null">
+		    	and exists (select *
+							from sstt_destinos d
+                 			where d.id_origen =  #{idSucursal}
+                				and d.i_destino = st.id_ubicacion
+                				and d.s_vigente = 'S')
+		    </if>
+		    <if test="idBodega != null">
+		    	and exists (select *
+                			from sstt_destinos d
+                			where d.id_origen = #{idBodega}
+                					and d.i_destino = st.id_ubicacion
+                					and d.s_vigente = 'S')
+		    </if>
+		    <if test="idProveedor != null ">
+		    	and p.id_proveedor = #{idProveedor}
+		    </if>
+		    <if test="idProducto != null">
+		    	and p.id_producto = #{idProducto}
+		    </if>
+		</where>
+	    <if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if> 
+	</select>
+	
+	<select id="getServicioTecnicoForEjecutiva" parameterType="FilterEjecutiva" resultType="Integer">
+		select
+		    count(distinct st.id_ubicacion || '_' ||m.id_marca)
+		from 
+		    sstt_ubicaciones st
+		    inner join sstt_comunas c on c.id_comuna = st.id_comuna
+		    inner join sstt_provincias pr on pr.id_provincia = c.id_provincia
+		    inner join sstt_regiones r on r.id_region = pr.id_region
+		    inner join sstt_stecnicos_productos stp on stp.id_stecnico = st.id_ubicacion and stp.s_vigente = 'S' and stp.s_garantia = 'GP'
+		    inner join owv_productos p on p.id_producto = stp.id_producto
+		    inner join owv_marcas m on m.id_marca = p.id_marca
+		    left join sstt_ejecutivas_sta_marcas esm on esm.id_stecnico = st.id_ubicacion and esm.id_marca = p.id_marca
+		    left join sstt_usuarios e on e.id_usuario = esm.id_ejecutiva
+		<where>
+			st.s_vigente = 'S' 
+		    and st.s_tipo =  'ST' 
+		    <if test="nombreSTecnico != null and !nombreSTecnico.equals('')">
+		    	and lower(st.s_nombre) like lower('%' || #{nombreSTecnico} || '%')
+		    </if>
+		    <if test="idEjecutiva != null and !idEjecutiva.equals('')">
+		    	and e.id_usuario = #{idEjecutiva}
+		    </if>
+		    <if test="conEjecutiva != null and conEjecutiva.equals(true)">
+		    	 and e.id_usuario is not null
+		    </if>
+		    <if test="conEjecutiva != null and conEjecutiva.equals(false)">
+		    	 and e.id_usuario is null 
+		    </if>
+		    <if test="idMarca != null and !idMarca.equals('')">
+		    	 and p.id_marca =  #{idMarca}
+		    </if>
+		    <if test="idRegion != null ">
+		    	 and r.id_region = #{idRegion}
+		    </if>
+		    <if test="idComuna != null">
+		    	 and c.id_comuna = #{idComuna}
+		    </if>
+		    <if test="idFamilia != null and !idFamilia.equals('')">
+		    	 and p.id_familia = #{idFamilia}
+		    </if>
+		    <if test="idSucursal != null">
+		    	and exists (select *
+							from sstt_destinos d
+                 			where d.id_origen =  #{idSucursal}
+                				and d.i_destino = st.id_ubicacion
+                				and d.s_vigente = 'S')
+		    </if>
+		    <if test="idBodega != null">
+		    	and exists (select *
+                			from sstt_destinos d
+                			where d.id_origen = #{idBodega}
+                					and d.i_destino = st.id_ubicacion
+                					and d.s_vigente = 'S')
+		    </if>
+		    <if test="idProveedor != null ">
+		    	and p.id_proveedor = #{idProveedor}
+		    </if>
+		    <if test="idProducto != null">
+		    	and p.id_producto = #{idProducto}
+		    </if>
+		</where>
+	</select>
+	
+	<resultMap type="ServicioTecnico" id="sTForRutasST">
+		<result property="id"              column="id_ubicacion"/>
+		<result property="direccion"       column="s_direccion"/>
+		<result property="comuna.glosa"    column="s_nombre_comuna"/>
+		<result property="nombre"          column="s_nombre"/>
+	</resultMap>
+	
+	<select id="listServiciosTecnicosForRutasSTByFilter" parameterType="FilterServicioTecnico" resultMap="sTForRutasST">
+		select
+  			st.id_ubicacion
+  			,st.s_direccion
+  			,st.s_nombre
+  			,co.s_nombre as s_nombre_comuna
+		from sstt_ubicaciones st 
+  			left join sstt_comunas co on co.id_comuna = st.id_comuna
+  			left join sstt_provincias pr on pr.id_provincia = co.id_provincia
+  			left join sstt_regiones re on re.id_region = pr.id_region
+		<where>
+			st.s_tipo = 'ST'
+			<if test="idComuna!=null">
+				and co.id_comuna = #{idComuna}
+			</if>
+			<if test="idProvincia!=null">
+				and pr.id_provincia= #{idProvincia}
+			</if>
+			<if test="idRegion!=null">
+				and re.id_region = #{idRegion}
+			</if>
+			<if test="idStecnicos!=null and idStecnicos.size>0">
+				and st.id_ubicacion not in
+				<foreach collection="idStecnicos" item="idStecnico" open="(" separator="," close=")">
+					#{idStecnico}
+				</foreach>
+			</if>
+			<if test="nombre!=null and !nombre.equals('')">
+				and UPPER(st.s_nombre) like(UPPER(#{nombre}))
+			</if>
+		</where>
+		order by s_nombre_comuna asc
+	</select>
+	
+	<select id="listServiciosTecnicosFromRutasSTByRuta" parameterType="RutaServicioTecnico" resultMap="sTForRutasST">
+		select
+  			st.id_ubicacion
+  			,st.s_direccion
+  			,st.s_nombre
+  			,co.s_nombre as s_nombre_comuna
+		from sstt_ubicaciones st 
+  			left join sstt_comunas co on co.id_comuna = st.id_comuna
+  			left join sstt_provincias pr on pr.id_provincia = co.id_provincia
+  			left join sstt_regiones re on re.id_region = pr.id_region
+  			left join sstt_rutas_s_tecnico_detalle rstd on rstd.id_s_tecnico = st.id_ubicacion
+		<where>
+			st.s_tipo = 'ST'
+			<if test="id!=null">
+				and rstd.id_ruta_s_tecnico = #{id}
+			</if>
+			
+		</where>
+		order by s_nombre_comuna asc
+	</select>
+		
+</mapper>

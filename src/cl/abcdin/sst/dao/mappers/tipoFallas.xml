@@ -1,0 +1,404 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<mapper namespace="tipoFallas">
+	
+	<resultMap type="TipoFallas" id="tFallas">
+		<result property="id"                  column="id_tipo_falla"/>
+		<result property="producto.id"         column="id_producto"/>
+		<result property="producto.familia.id" column="id_familia"/>
+		<result property="descripcion"         column="s_descripcion"/>
+		<result property="vigente"             column="s_vigente"/>
+		<result property="tipo"                column="s_tipo"/>
+	</resultMap>
+	
+	<select id="listTipoFallasByFilter" parameterType="FilterTipoFallas" resultMap="tFallas">
+		select t.id_tipo_falla
+     	    ,t.id_producto
+            ,t.id_familia
+            ,t.s_descripcion
+            ,t.s_vigente
+            ,t.s_tipo
+            ,(select count(*)
+          	    from sstt_fallas_accesorios fa, sstt_accesorios a
+                where fa.id_tipo_falla = t.id_tipo_falla
+                    and a.id_accesorio = fa.id_accesorio
+                    and a.s_vigente = 'S') as i_cantidad_accesorios
+                from sstt_tipo_fallas t
+           <where>
+                <if test="(idFamilia == null or idFamilia.equals('')) and (idProducto != null and idProducto>0)" >
+                    and t.id_producto = #{idProducto}
+                    or t.id_familia = (select p.id_familia
+                                       from owv_productos p
+                                       where p.id_producto = #{idProducto})
+                </if>
+                <if test="(idFamilia != null and !idFamilia.equals('')) and (idProducto == null or idProducto==0)">
+                    and t.id_familia = #{idFamilia}
+                </if>
+                
+                <if test ="(idAccesorio != null and !idAccesorio.equals(''))">
+                	and a.id_accesorio = #{idAccesorio}
+                </if>
+                
+           </where>
+           order by t.s_vigente DESC, t.s_descripcion ASC
+	</select>
+	
+	<select id="get" parameterType="Integer" resultType="TipoFallas">
+		select 
+		   t.id_tipo_falla as id                                    
+		   ,t.id_producto as "producto.id"                                    
+		   ,t.id_familia  as "familia.id"                                      
+		   ,t.s_descripcion as "descripcion"                                    
+		   ,t.s_vigente  as vigente                                    
+		   ,t.s_tipo as tipo                                         
+		from 
+		    sstt_tipo_fallas t
+		where
+			t.id_tipo_falla = #{id}
+	</select>
+	
+	<select id="listTotalFallasByOT" parameterType="Long" resultType="Integer">
+		select count(*)
+		from sstt_tipo_fallas_ot t
+		where t.id_ot = #{idOT}
+	</select>
+	
+	<delete id="deleteFallasByOT" parameterType="Long">
+		delete
+		from sstt_tipo_fallas_ot t 
+		where t.id_ot = #{idOT}
+	</delete>
+	
+	<select id="listTotalFallasAccesorioByFilter" parameterType="FilterTipoFallas" resultType="Integer">
+		select count(*)
+		from sstt_fallas_accesorios fa
+		where fa.id_accesorio = #{idAccesorio}
+  			and fa.id_tipo_falla in (select tfo.id_tipo_falla 
+  									 from sstt_tipo_fallas_ot tfo 
+  									 where tfo.id_ot = #{idOT})
+	</select>
+	
+	<resultMap type="tipoFallas" id="fallasAccesorios">
+		<result property="idFallaAccesorio"			column="id_falla_accesorio"/>
+		<result property="id"						column="id_tipo_falla"/>
+		<result property="accesorio.id"				column="id_accesorio"/>
+		<result property="vigente"					column="s_vigente"/>
+	</resultMap>
+	
+	<select id="listAccesoriosByidTipoFalla" parameterType="Long" resultMap="fallasAccesorios">
+		select
+			fa.id_falla_accesorio
+			,fa.id_tipo_falla 
+			,fa.id_accesorio
+			,fa.s_vigente
+        from SSTT_FALLAS_ACCESORIOS fa
+        where fa.id_tipo_falla = #{idTipoFalla}
+        	and fa.s_vigente = 'S'
+	</select>
+	
+	<select id="listTotalFallasOTByFilter" parameterType="FilterTipoFallas" resultType="Integer">
+		select count(*)
+        from sstt_tipo_fallas_ot t
+        where t.id_ot = #{idOT}
+        	and t.id_tipo_falla = #{idTipoFalla}
+	</select>
+	
+	<resultMap type="TipoFallas" id="fallasOT">
+		<result property="idTipoFallaOT"   column="id_tipo_falla_ot"/>
+		<result property="idOT"            column="id_ot"/>
+		<result property="id"              column="id_tipo_falla"/>
+	</resultMap>
+	
+	<select id="listFallasOTById" parameterType="Long" resultMap="fallasOT">
+		select
+			id_tipo_falla_ot
+			,id_ot
+			,id_tipo_falla
+        from sstt_tipo_fallas_ot t
+        where t.id_ot = #{idOT}
+	</select>
+	
+	<resultMap type="TipoFallas" id="fallaOT">
+		<result property="idTipoFallaOT"	column="id_tipo_falla_ot"/>
+		<result property="idOT"				column="id_ot"/>
+		<result property="id"				column="id_tipo_falla"/>
+	</resultMap>
+	
+	<select id="ListTipoFallasOTByOT" parameterType="OrdenTrabajo" resultMap="fallaOT">
+		select
+			id_tipo_falla_ot
+			,id_ot
+			,id_tipo_falla
+		from sstt_tipo_fallas_ot
+		where id_ot = #{id}
+	</select>
+	
+	<insert id="saveTipoFallasOT" parameterType="FilterTipoFallas">
+		insert 
+		into sstt_tipo_fallas_ot 
+			(id_tipo_falla, id_ot) 
+		values 
+			(#{idTipoFalla}, #{idOT})
+	</insert>
+	
+	<update id="updateAccesoriosOTByFilter" parameterType="FilterTipoFallas">
+		update sstt_accesorios_ot ao
+			set ao.s_requerido = 'S'
+		where ao.id_ot = #{idOT}
+			and ao.id_accesorio = #{idAccesorio}
+	</update>
+	
+	<resultMap type="tipoFallas" id="tipoFallasOT">
+		<result property="id"				column="id_tipo_falla"/>
+		<result property="producto.id"		column="id_producto"/>
+		<result property="familia.id"		column="id_familia"/>
+		<result property="descripcion"		column="s_descripcion"/>
+		<result property="vigente"			column="s_vigente"/>
+		<result property="tipo"				column="s_tipo"/>
+		<result property="idTipoFallaOT"	column="id_tipo_falla_ot"/>
+	</resultMap>
+	
+	<select id="listTipoFallasByOT" parameterType="Long" resultMap="tipoFallasOT">
+		select
+			tf.id_tipo_falla
+			,tf.id_producto
+			,tf.id_familia
+			,trim(tf.s_descripcion) as s_descripcion
+			,tf.s_vigente
+			,tf.s_tipo	
+			,ot.id_tipo_falla_ot
+		from sstt_tipo_fallas_ot ot
+			inner join sstt_tipo_fallas tf on tf.id_tipo_falla = ot.id_tipo_falla
+		where ot.id_ot =  #{idOT}
+		order by tf.s_descripcion asc
+	</select>
+	
+	<select id="listTipoFallasByIdProducto" parameterType="Integer" resultMap="tFallas">
+		select
+		    id_tipo_falla
+		    ,id_producto
+		    ,id_familia
+		    ,s_descripcion
+		    ,s_vigente
+		    ,s_tipo
+		from sstt_tipo_fallas
+		where id_producto = #{idProducto}
+		 and s_vigente ='S'
+	</select>
+	
+	<select id="listTipoFallasByIdFamilia" parameterType="String" resultMap="tFallas">
+		select
+		    id_tipo_falla
+		    ,id_producto
+		    ,id_familia
+		    ,s_descripcion
+		    ,s_vigente
+		    ,s_tipo
+		from sstt_tipo_fallas
+		where id_familia = #{idFamilia}
+			and s_vigente ='S'
+	</select>
+	
+	<select id="listTipoFallasByFilterFallas" parameterType="FilterTipoFallas" resultType="TipoFallas">
+		select 
+            t.id_tipo_falla as id                                    
+            ,t.id_producto as "producto.id"                                    
+            ,t.id_familia  as "producto.familia.id"                                      
+            ,t.s_descripcion as "descripcion"                                    
+            ,t.s_vigente  as vigente                                    
+            ,t.s_tipo as tipo                                         
+            ,(select count(*)                                    
+               from sstt_fallas_accesorios fa, sstt_accesorios a
+               where fa.id_tipo_falla = t.id_tipo_falla 
+                     and a.id_accesorio = fa.id_accesorio           
+                       and a.s_vigente = 'S') as cantidad 
+             ,f.s_nombre as "producto.familia.nombre"
+             ,p.s_descripcion as "producto.descripcion"
+             ,m.s_nombre as "producto.marca.nombre"
+         from 
+             sstt_tipo_fallas t
+             left join owv_familias f on f.id_familia = t.id_familia
+             left join owv_productos p on p.id_producto = t.id_producto
+             left join owv_marcas m on m.id_marca = p.id_marca
+		<where>
+			<if test="idProducto != null" >
+			    and t.id_producto = #{idProducto}
+			</if>
+			<if test="idFamilia != null and !idFamilia.equals('')">
+			    and t.id_familia = #{idFamilia}
+			</if>
+			<if test="idAccesorio != null ">
+			    and exists(select 1 from sstt_fallas_accesorios fa where fa.id_tipo_falla = t.id_tipo_falla and fa.id_accesorio = #{idAccesorio} )
+			</if>
+        </where>
+		 <if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="listTipoFallasNotExistsByFilterFallas" parameterType="FilterTipoFallas" resultType="TipoFallas">
+		select 
+            t.id_tipo_falla as id                                    
+            ,t.id_producto as "producto.id"                                    
+            ,t.id_familia  as "producto.familia.id"                                      
+            ,t.s_descripcion as "descripcion"                                    
+            ,t.s_vigente  as vigente                                    
+            ,t.s_tipo as tipo                                         
+            ,(select count(*)                                    
+               from sstt_fallas_accesorios fa, sstt_accesorios a
+               where fa.id_tipo_falla = t.id_tipo_falla 
+                     and a.id_accesorio = fa.id_accesorio           
+                       and a.s_vigente = 'S') as cantidad 
+             ,f.s_nombre as "producto.familia.nombre"
+             ,p.s_descripcion as "producto.descripcion"
+             ,m.s_nombre as "producto.marca.nombre"
+         from 
+             sstt_tipo_fallas t
+             left join owv_familias f on f.id_familia = t.id_familia
+             left join owv_productos p on p.id_producto = t.id_producto
+             left join owv_marcas m on m.id_marca = p.id_marca
+		<where>
+                <if test="idProducto != null" >
+                    and t.id_producto = #{idProducto}
+                </if>
+                <if test="idFamilia != null and !idFamilia.equals('')">
+                    and t.id_familia = #{idFamilia}
+                </if>
+                <if test="idAccesorio != null ">
+                    and not exists(select 1 from sstt_fallas_accesorios fa where fa.id_tipo_falla = t.id_tipo_falla and fa.id_accesorio = #{idAccesorio} )
+                </if>
+           </where>
+		 <if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTipoFallasByFilter" parameterType="FilterTipoFallas" resultType="Integer">
+		select 
+			count(t.id_tipo_falla)
+		from 
+			sstt_tipo_fallas t
+			left join owv_familias f on f.id_familia = t.id_familia
+			left join owv_productos p on p.id_producto = t.id_producto
+	    	left join owv_marcas m on m.id_marca = p.id_marca	
+		<where>
+			<if test="idProducto != null" >
+			    and t.id_producto = #{idProducto}
+			</if>
+			<if test="idFamilia != null and !idFamilia.equals('')">
+			    and t.id_familia = #{idFamilia}
+			</if>
+			<if test="idAccesorio != null ">
+			    and exists(select 1 from sstt_fallas_accesorios fa where fa.id_tipo_falla = t.id_tipo_falla and fa.id_accesorio = #{idAccesorio} )
+                <if test="idProducto != null" >
+                    and t.id_producto = #{idProducto}
+                </if>
+                <if test="idFamilia != null and !idFamilia.equals('')">
+                    and t.id_familia = #{idFamilia}
+                </if>
+                <if test="idAccesorio != null ">
+                    and not exists(select 1 from sstt_fallas_accesorios fa where fa.id_tipo_falla = t.id_tipo_falla and fa.id_accesorio = #{idAccesorio} )
+                </if>
+             </if>
+           </where>
+		 <if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getExisteTipoFalla" parameterType="TipoFallas" resultType="Integer">
+		select 
+			count(*)
+        from 
+        	sstt_tipo_fallas t
+        <where>
+	  		t.s_descripcion = #{descripcion}
+	        <if test="(familia == null) and (producto != null and !producto.id.equal(''))" >
+	            and t.id_producto = #{producto.id}
+	        </if>
+	        <if test="(familia != null and !familia.id.equals('')) and (producto == null)">
+	            and t.id_familia = #{familia.id}
+	        </if>
+         </where>
+	</select>
+	
+	<update id="updateTipoFallaByEstado" parameterType="TipoFallas">
+		update 
+			sstt_tipo_fallas 
+		set 
+			s_vigente = #{vigente} 
+		where 
+			id_tipo_falla = #{id}
+	</update>
+	
+	<insert id="save" parameterType="TipoFallas" keyColumn="id_tipo_falla" keyProperty="id">
+		<selectKey resultType="Integer" keyProperty="id" order="BEFORE">
+			select ssts_tipo_fallas.nextval from dual
+		</selectKey>
+		insert into sstt_tipo_fallas (
+			id_tipo_falla,
+			id_familia, 
+			id_producto,
+			s_descripcion, 
+			s_vigente, 
+			s_tipo
+		) values (
+			#{id},
+			#{familia.id},
+			#{producto.id},
+			#{descripcion},
+			#{vigente},
+			#{tipo}
+		)
+	</insert>
+	
+	<update id="update" parameterType="TipoFallas">
+		update 
+			sstt_tipo_fallas 
+		set 
+			id_familia     = #{familia.id}, 
+			id_producto    = #{producto.id},
+			s_descripcion  = #{descripcion},
+			s_tipo         = #{tipo},
+			s_vigente      = #{vigente} 
+		where 
+			id_tipo_falla = #{id}
+	</update>
+	
+	<delete id="deleteFallasAccesorios" parameterType="TipoFallas">
+		delete from sstt_fallas_accesorios where id_tipo_falla = #{id}
+	</delete>
+	
+	<delete id="deleteAccesoriosFallas" parameterType="Accesorio">
+		delete from sstt_fallas_accesorios where id_accesorio = #{id}
+	</delete>
+	
+	<insert id="saveAccesoriosForTipoFallas" parameterType="Map" keyColumn="id_falla_accesorio" keyProperty="id">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_fallas_accesorios.nextval from dual
+		</selectKey>
+		insert into sstt_fallas_accesorios (
+			id_falla_accesorio,
+			id_tipo_falla, 
+			id_accesorio, 
+			s_vigente
+		) values (
+			#{id},
+			#{idTipoFalla},
+			#{idAccesorio},
+			'S'
+		)
+	</insert>
+</mapper>

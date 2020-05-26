@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ordenTrabajoRecepcion">
+	
+	<resultMap type="OrdenTrabajoRecepcion" id="ordenTrabajoRecepcion">
+		<result property="recepcionCamion.transportista.id" 	        column="id_transportista"/>
+		<result property="recepcionCamion.transportista.nombreCompleto" column="s_nombre_transportista"/>
+		<result property="recepcionOrdenTrabajo.id" 			        column="id_recepcion_camion"/>
+		<result property="recepcionOrdenTrabajo.usuario.id" 	        column="id_usuario_recepcion"/>
+		<result property="recepcionOrdenTrabajo.usuario.nombreCompleto" column="s_nombre_usu_recepcion"/>
+		<result property="recepcionCamion.nombreResponsable" 		    column="s_nombre_responsable"/>
+		<result property="recepcionOrdenTrabajo.guia.numero"			column="i_numero_guia"/>
+		<result property="recepcionOrdenTrabajo.guia.estado.id"			column="id_estado_guia"/>
+		<result property="recepcionOrdenTrabajo.guia.estado.glosa"		column="s_estado_guia"/>
+		<result property="recepcionOrdenTrabajo.guia.estadoActual.id"   column="id_estado_actual_guia"/>
+		<result property="recepcionOrdenTrabajo.guia.estadoActual.glosa" column="s_estado_actual_guia"/>
+		<result property="recepcionOrdenTrabajo.estado.id"		        column="id_estado_rec_ot"/>
+		<result property="recepcionOrdenTrabajo.estado.glosa"		    column="s_estado_ot"/>
+		<result property="ordenTrabajo.sucursal.zona.id"		        column="id_zona"/>
+		<result property="ordenTrabajo.sucursal.zona.nombre"		    column="s_nombre_zona"/>
+		<result property="ordenTrabajo.sucursal.id"				        column="id_sucursal"/>
+		<result property="ordenTrabajo.sucursal.glosa"                  column="s_nombre_sucursal"/>
+		<result property="ordenTrabajo.id"						        column="id_ot"/>
+		<result property="ordenTrabajo.codigoBarra"				        column="i_cod_barra" typeHandler="CodigoBarrasTypeHandler"/>
+		<result property="ordenTrabajo.producto.familia.linea.id"		column="id_linea"/>
+		<result property="ordenTrabajo.producto.familia.linea.glosa"	column="s_nombre_linea"/>
+		<result property="ordenTrabajo.producto.familia.id"		        column="id_familia"/>
+		<result property="ordenTrabajo.producto.familia.nombre"         column="s_nombre_familia"/>
+		<result property="ordenTrabajo.producto.id"		                column="id_producto"/>
+		<result property="ordenTrabajo.producto.descripcion"            column="s_nombre_producto"/>
+		<result property="ordenTrabajo.producto.marca.codigo"	   	    column="id_marca"/>
+		<result property="ordenTrabajo.producto.marca.nombre"	   	   	column="s_nombre_marca"/>
+		<result property="ordenTrabajo.numeroSerie" 	                column="s_nmro_serie"/>
+		<result property="recepcionOrdenTrabajo.fechaRecepcion"         column="d_fecha_recepcion"/>
+		<result property="ordenTrabajo.fechaCreacion" 	                column="d_fecha_creacion"/>
+		<result property="ordenTrabajo.idDocumento" 	                column="id_documento"/>   
+		<result property="ordenTrabajo.tipoDocumento" 	                column="s_tipo_documento"/>                          
+	</resultMap>
+
+	<select id="listOTByRecepcionesFilter" parameterType="FilterRecepcion" resultMap="ordenTrabajoRecepcion">
+		select 
+		    ot.id_ot,
+		    ot.i_cod_barra,
+		    ot.id_producto,
+		    ot.id_documento,
+		    ot.s_tipo_documento,
+		    ot.s_nmro_serie,
+		    ot.id_sucursal,
+		    u.s_nombre as s_nombre_sucursal,
+		    ot.id_estado as id_estado_ot,
+		    eot.s_descripcion as s_estado_ot,
+		    ot.d_fecha_creacion as d_fecha_creacion,
+		    r.id_estado as id_estado_rec_ot,
+		    ere.s_descripcion as s_estado_recepcion,
+		    rco.d_fecha_recepcion as d_fecha_recepcion,
+		    g.i_numero as i_numero_guia,
+		    g.id_estado as id_estado_guia,
+		    eg.s_descripcion as s_estado_guia,
+		    g.id_estado_actual as id_estado_actual_guia,
+		    eag.s_descripcion as s_estado_actual_guia,
+		    tr.id_transportista,
+		    tr.s_nombre s_nombre_transportista,
+		    rc.id_recepcion_camion,
+		    usu_rec.id_usuario as id_usuario_recepcion,
+		    (usu_rec.s_nombre || ' ' || usu_rec.s_apellido_paterno || ' ' || usu_rec.s_apellido_materno) as s_nombre_usu_recepcion,
+		    rc.s_responsable as s_nombre_responsable,
+		    rc.d_fecha_inicio,
+		    z.id_zona,
+		    z.s_nombre as s_nombre_zona,
+		    l.id_linea,
+		    l.s_nombre as s_nombre_linea,
+		    f.id_familia,
+		    f.s_nombre as s_nombre_familia,
+		    p.id_producto,
+		    p.s_descripcion as s_nombre_producto,
+		    m.id_marca,
+		    m.s_nombre as s_nombre_marca
+		from
+		    sstt_recepciones_camion rc
+		    inner join sstt_recepciones_camion_guias rcg on rcg.id_recepcion_camion = rc.id_recepcion_camion
+		    inner join sstt_recepciones_camion_ot rco on rco.id_recepcion_camion_guia = rcg.id_recepcion_camion_guia
+		    inner join sstt_guias g on g.id_guia = rcg.id_guia 
+		    inner join sstt_estados eg on eg.id_estado = rcg.id_estado_guia
+		    inner join sstt_estados eag on eag.id_estado = g.id_estado
+		    inner join sstt_ordenes_trabajo ot on ot.id_ot = rco.id_ot
+		    inner join sstt_estados eot on eot.id_estado = rco.id_estado_ot
+		    left join sstt_recepciones r on r.id_ot = ot.id_ot and r.i_nmro_guia = g.i_numero
+		    left join sstt_estados ere on ere.id_estado = r.id_estado
+		    inner join owv_transportistas tr on tr.id_transportista = rc.id_transportista
+		    inner join sstt_usuarios usu_rec on usu_rec.id_usuario = rc.id_logistico
+		    inner join sstt_ubicaciones u on u.id_ubicacion = ot.id_sucursal
+		    left join sstt_ubicaciones_zonas uz on uz.id_ubicacion = u.id_ubicacion
+		    left join sstt_zonas z on z.id_zona = uz.id_zona
+		    left join owv_productos p on p.id_producto = ot.id_producto
+		    left join owv_familias f on f.id_familia = p.id_familia
+		    left join owv_lineas l on l.id_linea = f.id_linea
+		    left join owv_marcas m on m.id_marca = p.id_marca
+		 <where>
+ 			<if test="transportista != null and !transportista.equals('')"> 
+ 				and  tr.id_transportista = #{transportista} 
+ 			</if> 
+ 			<if test="idRecepcion != null and !idRecepcion.equals('')"> 
+ 				and rc.id_recepcion_camion = #{idRecepcion} 
+ 			</if> 
+ 			<if test="usuarioRecepcion.id != null and !usuarioRecepcion.id.equals('')"> 
+ 				and usu_rec.id_usuario = #{usuarioRecepcion.id} 
+ 			</if>
+ 			<if test="responsable != null and !responsable.equals('')"> 
+ 				and rc.s_responsable = upper(#{responsable}) 
+ 			</if> 
+ 			<if test="numeroGuia != null"> 
+ 				and g.i_numero = #{numeroGuia} 
+ 			</if> 
+ 			<if test="estadoRecepcionGuia.id != null"> 
+ 				and rco.id_estado_guia = #{estadoRecepcionGuia.id} 
+ 			</if> 
+ 			<if test="estadoActualGuia.id != null"> 
+ 				and g.id_estado = #{estadoActualGuia.id}
+ 			</if> 
+ 			<if test="estadoRecepcionOT.id != null"> 
+ 				and rco.id_estado_ot = #{estadoRecepcionOT.id} 
+ 			</if> 
+ 			<if test="idZona != null"> 
+ 				and z.id_zona = #{idZona} 
+ 			</if> 
+ 			<if test="idSucursal != null"> 
+ 				and ot.id_sucursal = #{idSucursal} 
+ 			</if>
+ 			<if test="idOT != null "> 
+ 				and ot.id_ot = #{idOT} 
+ 			</if> 
+ 			<if test="idLinea != null and !idLinea.equals('')"> 
+ 				and l.id_linea = #{idLinea} 
+ 			</if> 
+ 			<if test="idFamilia != null and !idFamilia.equals('')"> 
+ 				and f.id_familia = #{idFamilia} 
+ 			</if> 
+ 			<if test="idProducto != null"> 
+ 				and p.id_producto = #{idProducto}
+ 			</if> 
+ 			<if test="idMarca != null and !idMarca.equals('')"> 
+ 				and m.id_marca = #{idMarca} 
+ 			</if> 
+ 			<if test="numeroSerie != null and !numeroSerie.equals('')">
+ 				and ot.s_nmro_serie = #{numeroSerie} 
+ 			</if> 
+ 			<if test="codigoBarras != null and !codigoBarras.equals('')">
+ 				and ot.i_cod_barra = #{codigoBarras, typeHandler=CodigoBarrasTypeHandler} 
+ 			</if> 
+ 			<if test="fechaRecepcionInicio != null "> 
+ 				and r.d_fecha_recepcion &gt;= #{fechaRecepcionInicio} 
+ 			</if> 
+ 			<if test="fechaRecepcionFin != null "> 
+ 				and r.d_fecha_recepcion &lt;= #{fechaRecepcionFin} + 1 
+ 			</if>			 
+ 			<if test="fechaCreacion != null"> 
+ 				and ot.d_fecha_creacion &gt;= #{fechaCreacion} 
+ 			</if>
+ 			<if test="fechaCreacionFin != null"> 
+ 				and ot.d_fecha_creacion &lt;= #{fechaCreacionFin} + 1 
+ 			</if> 
+		</where> 
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+		    </if>	
+		</if>
+	</select>
+	 
+	<select id="getTotalOTByRecepcionesFilter" parameterType="FilterRecepcion" resultType="Integer">
+		select
+			count(*)
+		from
+		    sstt_recepciones_camion rc
+		    inner join sstt_recepciones_camion_guias rcg on rcg.id_recepcion_camion = rc.id_recepcion_camion
+		    inner join sstt_recepciones_camion_ot rco on rco.id_recepcion_camion_guia = rcg.id_recepcion_camion_guia
+		    inner join sstt_guias g on g.id_guia = rcg.id_guia 
+		    inner join sstt_estados eg on eg.id_estado = rcg.id_estado_guia
+		    inner join sstt_estados eag on eag.id_estado = g.id_estado
+		    inner join sstt_ordenes_trabajo ot on ot.id_ot = rco.id_ot
+		    inner join sstt_estados eot on eot.id_estado = rco.id_estado_ot
+		    left join sstt_recepciones r on r.id_ot = ot.id_ot and r.i_nmro_guia = g.i_numero
+		    left join sstt_estados ere on ere.id_estado = r.id_estado
+		    inner join owv_transportistas tr on tr.id_transportista = rc.id_transportista
+		    inner join sstt_usuarios usu_rec on usu_rec.id_usuario = rc.id_logistico
+		    inner join sstt_ubicaciones u on u.id_ubicacion = ot.id_sucursal
+		    left join sstt_ubicaciones_zonas uz on uz.id_ubicacion = u.id_ubicacion
+		    left join sstt_zonas z on z.id_zona = uz.id_zona
+		    left join owv_productos p on p.id_producto = ot.id_producto
+		    left join owv_familias f on f.id_familia = p.id_familia
+		    left join owv_lineas l on l.id_linea = f.id_linea
+		    left join owv_marcas m on m.id_marca = p.id_marca
+		 <where>
+ 			<if test="transportista != null and !transportista.equals('')"> 
+ 				and  tr.id_transportista = #{transportista} 
+ 			</if> 
+ 			<if test="idRecepcion != null and !idRecepcion.equals('')"> 
+ 				and rc.id_recepcion_camion = #{idRecepcion} 
+ 			</if> 
+ 			<if test="usuarioRecepcion.id != null and !usuarioRecepcion.id.equals('')"> 
+ 				and usu_rec.id_usuario = #{usuarioRecepcion.id} 
+ 			</if>
+ 			<if test="responsable != null and !responsable.equals('')"> 
+ 				and rc.s_responsable = upper(#{responsable}) 
+ 			</if> 
+ 			<if test="numeroGuia != null"> 
+ 				and g.i_numero = #{numeroGuia} 
+ 			</if> 
+ 			<if test="estadoRecepcionGuia.id != null"> 
+ 				and rco.id_estado_guia = #{estadoRecepcionGuia.id} 
+ 			</if> 
+ 			<if test="estadoActualGuia.id != null"> 
+ 				and g.id_estado = #{estadoActualGuia.id}
+ 			</if> 
+ 			<if test="estadoRecepcionOT.id != null"> 
+ 				and rco.id_estado_ot = #{estadoRecepcionOT.id} 
+ 			</if> 
+ 			<if test="idZona != null"> 
+ 				and z.id_zona = #{idZona} 
+ 			</if> 
+ 			<if test="idSucursal != null"> 
+ 				and ot.id_sucursal = #{idSucursal} 
+ 			</if>
+ 			<if test="idOT != null "> 
+ 				and ot.id_ot = #{idOT} 
+ 			</if> 
+ 			<if test="idLinea != null and !idLinea.equals('')"> 
+ 				and l.id_linea = #{idLinea} 
+ 			</if> 
+ 			<if test="idFamilia != null and !idFamilia.equals('')"> 
+ 				and f.id_familia = #{idFamilia} 
+ 			</if> 
+ 			<if test="idProducto != null"> 
+ 				and p.id_producto = #{idProducto}
+ 			</if> 
+ 			<if test="idMarca != null and !idMarca.equals('')"> 
+ 				and m.id_marca = #{idMarca} 
+ 			</if> 
+ 			<if test="numeroSerie != null and !numeroSerie.equals('')">
+ 				and ot.s_nmro_serie = #{numeroSerie} 
+ 			</if> 
+ 			<if test="codigoBarras != null and !codigoBarras.equals('')">
+ 				and ot.i_cod_barra = #{codigoBarras, typeHandler=CodigoBarrasTypeHandler} 
+ 			</if> 
+ 			<if test="fechaRecepcionInicio != null "> 
+ 				and r.d_fecha_recepcion &gt;= #{fechaRecepcionInicio} 
+ 			</if> 
+ 			<if test="fechaRecepcionFin != null "> 
+ 				and r.d_fecha_recepcion &lt;= #{fechaRecepcionFin} + 1 
+ 			</if>			 
+ 			<if test="fechaCreacion != null"> 
+ 				and ot.d_fecha_creacion &gt;= #{fechaCreacion} 
+ 			</if>
+ 			<if test="fechaCreacionFin != null"> 
+ 				and ot.d_fecha_creacion &lt;= #{fechaCreacionFin} + 1 
+ 			</if> 
+		</where> 
+	</select>
+</mapper>

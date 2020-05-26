@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="util">
+
+	<select id="getDate" resultType="Date">
+		select sysdate from dual
+	</select>
+	
+	<select id="getDateTrunc" resultType="Date">
+		select trunc(sysdate) from dual
+	</select>
+
+	<select id="getNumeroTicketCambio" resultType="Long">
+		select ssts_ticket_cambio.nextval from dual
+	</select>
+	
+	<select id="getSeqInterfazPMM" resultType="Long">
+		select sstt_interfaz_pmm.nextval from dual
+	</select>
+	
+	<select id="getSeqRegInterfazPMM" resultType="Long">
+		select sstt_reg_interfaz_pmm.nextval from dual
+	</select>
+	
+	<select id="getSeqInterfazORR" resultType="Long">
+		select sstt_interfaz_orr.nextval from dual
+	</select>
+	
+	<select id="getSeqDetInterfazORR" resultType="Long">
+		select sstt_det_interfaz_orr.nextval from dual
+	</select>
+	
+	<!-- Error a ver que no se puede abrir en jsp -->
+	<select id="getCantidadCodBarras" parameterType="FilterOT" resultType="Integer">
+		select
+		    (select count(*) 
+		    from sstt_ordenes_trabajo ot 
+		    <where>
+				and ot.i_cod_barra = #{codigoBarra} <!-- , typeHandler=CodigoBarrasTypeHandler} -->
+				<if test="idOT != null">
+					and ot.id_ot != #{idOT}
+				</if>		    
+		    </where>
+		    ) 
+		    + 
+		    (select count(*) 
+		    from sstt_accesorios_ot aco 
+		    <where>
+		    	and aco.i_cod_barra = #{codigoBarra} <!-- , typeHandler=CodigoBarrasTypeHandler} -->
+		    	<if test="idAccesorio != null">
+					and aco.id_accesorio_ot != #{idAccesorio}
+				</if>
+		    </where>
+		    ) as i_cant_i_cod_barra
+		from dual
+	</select>
+
+	<select id="getSeqInterfazASN" resultType="Long">
+		select sstt_interfaz_asn.nextval from dual
+	</select>
+	
+	<select id="getSeqRegInterfazASN" resultType="Long">
+		select sstt_reg_interfaz_asn.nextval from dual
+	</select>
+</mapper>

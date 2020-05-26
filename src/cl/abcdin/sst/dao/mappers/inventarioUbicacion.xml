@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<mapper namespace="inventarioUbicacion">
+	<insert id="save" parameterType="InventarioUbicacion" keyColumn="id_inventario_ubicacion" keyProperty="id">
+		<selectKey resultType="Integer" keyProperty="id" order="BEFORE">
+			select ssts_inventario_ubicaciones.nextval from dual
+		</selectKey>
+		insert into sstt_inventario_ubicaciones(
+			id_inventario_ubicacion
+			,id_inventario
+			,id_ubicacion_interna
+			,d_fecha_inicio
+		) values (
+			#{id}
+			,#{inventario.id}
+			,#{ubicacionInterna.id}
+			,sysdate
+		)
+	</insert>
+	
+	<select id="haveRedundantUbicacionesByIdInventario" parameterType="Integer" resultType="Integer">
+		select count(1) 
+		from sstt_inventario_ubicaciones
+		where id_inventario = #{idInventario}
+  		and id_ubicacion_interna in (select ib.id_ubicacion_interna
+									from sstt_inventario_ubicaciones ib
+										left join sstt_ubicaciones_internas ubi on ubi.id_ubicacion_interna = ib.id_ubicacion_interna
+                               		where ib.id_inventario != #{idInventario}
+                               		and ubi.s_inventario = 'S')
+	</select>
+	<resultMap type="InventarioUbicacion" id="estadisticas">
+		<result property="id"                        column="id_inventario_ubicacion"/>
+		<result property="inventario.id"             column="id_inventario"/>
+		<result property="productosPreparados"       column="i_preparados"/>
+		<result property="productosSobrantes"        column="i_sobrantes"/>
+		<result property="productosFaltantes"        column="i_faltantes"/>
+		<result property="productosContados"         column="i_contados"/>
+		<result property="sinDiferencia"             column="i_sin_diferencia"/>
+		<result property="ubicacionInterna.id"       column="id_ubicacion_interna"/>
+		<result property="fechaTermino"              column="d_fecha_termino"/>
+	</resultMap>
+	
+	<select id="listEstadisticas" resultMap="estadisticas" parameterType="Integer">
+    	select iu.id_inventario 
+  			,iu.id_inventario_ubicacion
+  			,iu.id_ubicacion_interna
+  			,sum(case when ip.s_preparado='S' then 1 else 0 end) as i_preparados 
+  			,sum(case when ip.s_preparado='N' then 1 else 0 end) as i_sobrantes 
+  			,sum(case when ip.s_preparado='S' then 1 else 0 end) - sum(case when ip.s_preparado='S' and ip.s_inventariado='S' then 1 else 0 end) as i_faltantes
+  			,sum(case when ip.s_inventariado ='S' and ip.s_preparado='S' then 1 else 0 end) as i_sin_diferencia 
+  			,sum(case when ip.s_inventariado ='S' then 1 else 0 end) i_contados
+  			,iu.d_fecha_termino
+		from sstt_inventario_ubicaciones iu 
+  			left join sstt_inventario_productos ip on ip.id_inventario_ubicacion = iu.id_inventario_ubicacion 
+		where iu.id_inventario = #{idInventario}
+		group by 
+  			iu.id_inventario_ubicacion
+  			,id_inventario
+  			,iu.id_ubicacion_interna
+  			,iu.d_fecha_termino
+    </select>
+    
+    <select id="getEstadisticasByIdInventarioUbicacion" resultMap="estadisticas" parameterType="Integer">
+    	select iu.id_inventario 
+  			,iu.id_inventario_ubicacion 
+  			,iu.id_ubicacion_interna
+  			,sum(case when ip.s_preparado='S' then 1 else 0 end) as i_preparados 
+  			,sum(case when ip.s_preparado='N' then 1 else 0 end) as i_sobrantes 
+  			,sum(case when ip.s_preparado='S' then 1 else 0 end) - sum(case when ip.s_preparado='S' and ip.s_inventariado='S' then 1 else 0 end) as i_faltantes 
+  			,sum(case when ip.s_inventariado ='S' and ip.s_preparado='S' then 1 else 0 end) as i_sin_diferencia
+  			,sum(case when ip.s_inventariado ='S' then 1 else 0 end) i_contados 
+		from sstt_inventario_ubicaciones iu 
+  			left join sstt_inventario_productos ip on ip.id_inventario_ubicacion = iu.id_inventario_ubicacion 
+		where iu.id_inventario_ubicacion = #{idInventarioUbicacion}
+		group by 
+  			iu.id_inventario_ubicacion
+  			,id_inventario
+  			,iu.id_ubicacion_interna
+    </select>
+    
+    <update id="cerrarInventarioUbicacion" parameterType="InventarioUbicacion">
+    	update sstt_inventario_ubicaciones
+    		set i_brecha = #{brecha}
+    			,i_productos_preparados = #{productosPreparados}
+    			,i_productos_sobrantes =#{productosSobrantes}
+    			,i_productos_Faltantes = #{productosFaltantes}
+    			,i_productos_contados = #{productosContados}
+    			,i_sin_diferencia = #{sinDiferencia}
+    			,d_fecha_termino = sysdate
+    	where id_inventario_ubicacion = #{id}
+    </update>
+    
+    <resultMap type="InventarioUbicacion" id="inventarioUbicacion">
+    	<result property="id"                  column="id_inventario_ubicacion"/>
+    	<result property="inventario.id"       column="id_inventario"/>
+    	<result property="ubicacionInterna"    column="id_ubicacion_interna"/>
+    	<result property="productosPreparados" column="i_productos_preparados"/>
+    	<result property="productosSobrantes"  column="i_productos_sobrantes"/>
+    	<result property="productosFaltantes"  column="i_productos_Faltantes"/>
+    	<result property="brecha"              column="i_brecha"/>
+    	<result property="fechaInicio"         column="d_fecha_inicio"/>
+    	<result property="fechaTermino"        column="d_fecha_termino"/>
+    </resultMap>
+    
+    <select id="getInventarioUbicacionById" parameterType="Long" resultMap="inventarioUbicacion">
+    	select 
+    		id_inventario_ubicacion
+			,id_inventario
+			,id_ubicacion_interna
+			,d_fecha_inicio
+    		,d_fecha_termino
+			,i_brecha
+    		,i_productos_preparados
+    		,i_productos_sobrantes
+    		,i_productos_Faltantes
+    	from sstt_inventario_ubicaciones
+    	where id_inventario_ubicacion =#{id}
+    </select>
+    
+    <resultMap type="InventarioUbicacion" id="estadisticas2">
+    	<result property="id"                        column="id_inventario_ubicacion"/>
+    	<result property="productosPreparados"       column="i_productos_preparados"/>
+    	<result property="productosSobrantes"        column="i_productos_sobrantes"/>
+    	<result property="productosFaltantes"        column="i_productos_faltantes"/>
+    	<result property="productosContados"         column="i_productos_contados"/>
+    	<result property="sinDiferencia"             column="i_sin_diferencia"/>
+    	<result property="brecha"                    column="i_brecha"/>
+    	<result property="fechaInicio"               column="d_fecha_inicio"/>
+    	<result property="fechaTermino"              column="d_fecha_termino"/>
+    	<result property="ubicacionInterna.nombre"   column="s_nombre"/>
+    </resultMap>
+    
+    <select id="getEstadisitcasByIdInventarioUbicacion" parameterType="Long" resultMap="estadisticas2">
+        select
+        	iu.id_inventario_ubicacion
+            ,iu.i_productos_preparados
+            ,iu.i_productos_contados
+            ,iu.i_productos_sobrantes
+            ,iu.i_productos_faltantes
+            ,iu.i_sin_diferencia
+            ,iu.i_brecha
+            ,iu.d_fecha_inicio
+            ,iu.d_fecha_termino
+            ,ui.s_nombre
+        from sstt_inventario_ubicaciones iu
+           left join sstt_inventario_productos ip on ip.id_inventario_ubicacion = iu.id_inventario_ubicacion
+           left join sstt_ubicaciones_internas ui on ui.id_ubicacion_interna = iu.id_ubicacion_interna
+        where iu.id_inventario_ubicacion = #{id}
+        group by
+           iu.id_inventario_ubicacion
+           ,iu.i_productos_preparados
+           ,iu.i_productos_contados
+           ,iu.i_productos_sobrantes
+           ,iu.i_productos_faltantes
+           ,iu.i_sin_diferencia
+           ,iu.i_brecha
+           ,iu.d_fecha_inicio
+           ,iu.d_fecha_termino
+           ,ui.s_nombre
+    </select>
+    
+    <select id="listUbicacionesInternasByFilter" parameterType="FilterInventario" resultMap="estadisticas2">
+        select
+        	iu.id_inventario_ubicacion
+            ,iu.i_productos_preparados
+            ,iu.i_productos_contados
+            ,iu.i_productos_sobrantes
+            ,iu.i_productos_faltantes
+            ,iu.i_sin_diferencia
+            ,iu.i_brecha
+            ,iu.d_fecha_inicio
+            ,iu.d_fecha_termino
+            ,ui.s_nombre
+        from sstt_inventario_ubicaciones iu
+           left join sstt_inventario_productos ip on ip.id_inventario_ubicacion = iu.id_inventario_ubicacion
+           left join sstt_ubicaciones_internas ui on ui.id_ubicacion_interna = iu.id_ubicacion_interna
+        where iu.id_inventario = #{idInventario}
+        group by
+           iu.id_inventario_ubicacion
+           ,iu.i_productos_preparados
+           ,iu.i_productos_contados
+           ,iu.i_productos_sobrantes
+           ,iu.i_productos_faltantes
+           ,iu.i_sin_diferencia
+           ,iu.i_brecha
+           ,iu.d_fecha_inicio
+           ,iu.d_fecha_termino
+           ,ui.s_nombre
+        <if test="orderBy != null and !orderBy.equals('')">
+            order by ${orderBy}
+            <if test="sortOrder != null and !sortOrder.equals('')">
+                ${sortOrder}
+            </if>    
+        </if>
+    </select>
+    
+    <select id="getTotalUbicacionesInternasByFilter" parameterType="FilterInventario" resultType="Integer">
+        select
+        	count(1)
+        from sstt_inventario_ubicaciones iu
+        where iu.id_inventario = #{idInventario}
+    </select>
+    
+    <resultMap type="InventarioUbicacion" id="ubicacionesInventario">
+    	<result property="id"                       column="id_inventario_ubicacion"/>
+    	<result property="ubicacionInterna.id"      column="id_ubicacion_interna"/>
+    	<result property="ubicacionInterna.nombre"  column="s_nombre"/>
+    	<result property="terminada"                column="s_terminada"/>
+    	<result property="productosPreparados"      column="i_productos_preparados"/> 
+		<result property="productosSobrantes"       column="i_productos_sobrantes"/>
+		<result property="productosFaltantes"       column="i_productos_faltantes"/>
+		<result property="productosContados"        column="i_productos_contados"/>
+		<result property="brecha"                   column="i_brecha"/>
+		<result property="fechaInicio"              column="d_fecha_inicio"/>
+		<result property="fechaTermino"             column="d_fecha_termino"/>
+		<result property="sinDiferencia"            column="i_sin_diferencia"/>
+		<result property="inventario.id"            column="id_inventario"/>
+    </resultMap>
+    
+    <!-- list para el detalle invetario ubicacion antes de terminar el inventario -->
+    <select id="listInventarioUbicacionesByFilterInventario" parameterType="FilterInventario" resultMap="ubicacionesInventario">
+        select
+            iu.id_inventario_ubicacion
+            ,ui.id_ubicacion_interna
+            ,iu.id_inventario
+            ,ui.s_nombre
+            ,count(ip.id_inventario_producto) as i_productos_contados
+            ,case when iu.d_fecha_termino is null then 'N' else 'S' end as s_terminada
+            ,i_productos_preparados
+            ,i_productos_sobrantes
+            ,i_productos_faltantes
+            ,i_brecha
+            ,d_fecha_inicio
+            ,d_fecha_termino
+            ,i_sin_diferencia
+        from sstt_inventario_ubicaciones iu
+            left join sstt_ubicaciones_internas ui on ui.id_ubicacion_interna = iu.id_ubicacion_interna
+            left join sstt_inventario_productos ip on ip.id_inventario_ubicacion = iu.id_inventario_ubicacion
+        where iu.id_inventario = #{idInventario}
+        group by 
+            iu.id_inventario_ubicacion
+            ,ui.id_ubicacion_interna
+            ,iu.id_inventario
+            ,ui.s_nombre
+            ,i_productos_preparados
+            ,i_productos_sobrantes
+            ,i_productos_faltantes
+            ,i_brecha
+            ,d_fecha_inicio
+            ,d_fecha_termino
+            ,i_sin_diferencia
+    </select>
+    
+    <select id="getTotalInventarioUbicacionesByFilterInventario" parameterType="FilterInventario" resultType="Integer">
+        select
+            count(1)
+        from sstt_inventario_ubicaciones iu
+        where iu.id_inventario = #{idInventario}
+    </select>
+    
+    <select id="contarInventarioUbicacionOpenByIdInventario" parameterType="Integer" resultType="Integer">
+    	select 
+  			count(1)
+		from sstt_inventario_ubicaciones
+		where d_fecha_termino is null
+			and id_inventario =#{idInventario}
+    </select>
+</mapper>

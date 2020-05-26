@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="despachoMobile">
+	
+	<resultMap type="DespachoMobile" id="despacho">
+		<result property="id"       column="id_despacho_interno"/>
+		<result property="nombre"   column="s_nombre_traslado"/>
+	</resultMap>
+	
+	<!-- <select id="listDespachosFallasFabricacion" resultMap="despacho">
+        select
+            di.id_despacho_interno
+            ,trim(p.s_nombre) ||' - ' || trim(f.s_nombre) as s_nombre_traslado 
+        from sstt_despachos_internos di
+            left join owv_proveedores p on p.id_proveedor = di.id_proveedor
+            left join owv_familias f on f.id_familia = di.id_familia
+	</select> -->
+	<select id="listDespachosFallasFabricacion" resultMap="despacho">
+		select
+            di.id_despacho_interno,
+            di.id_destino,
+            u.s_nombre as nombre,
+            di.id_estado 
+        from
+            sstt_despachos_internos di
+            inner join sstt_ubicaciones u on u.id_ubicacion = di.id_destino
+        where
+                di.id_origen = 10012            
+            and di.id_destino != 10012
+            and di.id_destino_interno is null
+            and di.id_estado !=  90002000
+            and exists (select 1 
+                    from sstt_despacho_interno_detalles did1
+                    where
+                     did1.id_despacho_interno = di.id_despacho_interno
+                     and did1.id_estado != 90004000)
+        union    
+        select
+            di.id_despacho_interno,
+            di.id_destino,
+            pro.s_nombre as nombre,
+            di.id_estado 
+        from
+            sstt_despachos_internos di
+            inner join owv_proveedores pro on pro .id_proveedor = di.id_destino
+        where
+                di.id_origen = 10012            
+            and di.id_destino != 10012
+            and di.id_destino_interno is null
+            and di.id_estado !=  90002000
+            and exists (select 1 
+                        from sstt_despacho_interno_detalles did1
+                        where
+                         did1.id_despacho_interno = di.id_despacho_interno
+                         and did1.id_estado != 90004000)
+	</select>
+	
+	<select id="getDespachosbyId" resultMap="despacho" parameterType="Long">
+        select
+            di.id_despacho_interno
+            ,trim(p.s_nombre) ||' - ' || trim(f.s_nombre) as s_nombre_traslado 
+            ,di.id_destino as idDestino
+            ,u.s_nombre as nombreUbicacion
+        from sstt_despachos_internos di
+            left join owv_proveedores p on p.id_proveedor = di.id_proveedor
+            left join owv_familias f on f.id_familia = di.id_familia
+            left join sstt_ubicaciones u on u.id_ubicacion= di.id_destino
+        where di.id_despacho_interno = #{idDespacho}
+	</select>
+	
+	<update id="updateEstadoByDespachoMobile" parameterType="DespachoMobile">
+        update sstt_despachos_internos
+            set id_estado = #{estado}
+        where id_despacho_interno = #{id}
+    </update>
+	
+	<resultMap type="TrasladoMobile" id="traslado">
+		<result property="id"       column="id_despacho_interno"/>
+		<result property="nombre"   column="s_nombre_traslado"/>
+	</resultMap>
+	
+	<select id="listTrasladosASalaProveedores" resultMap="traslado">
+        select
+            di.id_despacho_interno
+            ,trim(f.s_nombre)||' '||trim(pro.s_nombre) as s_nombre_traslado
+        from sstt_despachos_internos di
+            left join owv_proveedores pro on pro.id_proveedor = di.id_proveedor
+            left join owv_familias f on f.id_familia = di.id_familia
+        where id_origen = 10012
+	        and id_destino_interno = 1001200001
+	        and id_estado !=90006002
+	</select>
+	
+	<select id="listTrasladosAFallasFabricacion" resultMap="traslado">
+        select
+            di.id_despacho_interno,
+            (usu.s_nombre || ' ' || usu.s_apellido_paterno)  as s_nombre_traslado
+        from sstt_despachos_internos di
+            inner join sstt_usuarios usu on usu.id_usuario = di.id_usuario_creacion 
+        where di.id_origen = 10015
+            and di.id_destino = 10012
+            and di.id_estado != 90002000
+	</select>
+</mapper>

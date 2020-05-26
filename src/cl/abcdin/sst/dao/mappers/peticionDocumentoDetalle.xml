@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="peticionDocumentoDetalle">
+
+	
+	<insert id="save" parameterType="PeticionDocumentoDetalle" keyColumn="id_peticion_detalle" keyProperty="id">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_peticion_detalles.nextval from dual
+		</selectKey>
+		insert into sstt_peticion_detalles(
+			id_peticion_detalle
+			,id_peticion_documento
+			,id_ot
+			,i_prc_recuperacion
+			,id_producto
+		) values (
+			#{id}
+			,#{peticionDocumento.id}
+			,#{ordenTrabajo.id}
+			,#{ordenTrabajo.recuperacion}
+			,#{ordenTrabajo.producto.id}
+		)
+	</insert>
+	
+	<select id="getForFacturacion" parameterType="Long" resultType="PeticionDocumentoDetalle">
+		select 
+	     	 i_prc_recuperacion as "ordenTrabajo.recuperacion"
+		    ,id_producto as "ordentrabajo.producto.id"
+		    ,sum(1) as cantidad
+		from 
+		    sstt_peticion_detalles p
+		where 
+		    id_peticion_documento = #{id}
+		group by id_producto,i_prc_recuperacion
+	</select>
+	
+	<resultMap type="PeticionDocumentoDetalle" id="peticionDocumentoDetalle">
+		<result property='id'                                  column='id_peticion_detalle'/>
+		<result property='peticionDocumento.id'                column='id_peticion_documento'/>
+		<result property='ordenTrabajo.id'                     column='id_ot'/>
+		<result property="ordenTrabajo.producto.id"            column="id_producto"/>
+		<result property="cantidad"			                   column="i_cantidad"/>
+		<result property="ordenTrabajo.clasificacion.codigo"   column="s_clasificacion"/>
+	</resultMap>
+	
+	<select id="ListOtsForTO" parameterType="Long" resultMap="peticionDocumentoDetalle">
+		select 
+			ot.id_producto 
+			,sum(1) as i_cantidad
+			,case when ot.s_clasificacion is null 
+				then 
+					'TR'  
+				else 
+					ot.s_clasificacion 
+			end as s_clasificacion
+		from
+		    sstt_bitacoras b
+		    inner join sstt_ordenes_trabajo ot on ot.id_ot = b.id_ot
+		where 
+		    b.id_guia = #{idGuia}
+		group by ot.id_producto, ot.s_clasificacion
+	</select>
+</mapper>

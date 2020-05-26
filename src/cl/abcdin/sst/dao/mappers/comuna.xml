@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="comuna">
+	<resultMap type="Comuna" id="comuna">
+		<result property="id"			column="id_comuna"/>
+		<result property="glosa"		column="s_nombre_comuna"/>
+		<result property="provincia.id"	column="id_Provincia"/>
+		<result property="capital"		column="s_ciudad"/>
+		<result property="provincia.region.id"	column="id_region"/>
+		<result property="provincia.codigoArea" column="s_codigo_area"/>
+		<result property="provincia.nombre"		column="s_nombre_provincia"/>
+		<result property="provincia.capital"	column="s_capital"/>
+	</resultMap>
+	
+	<select id="listComunas" resultMap="comuna">
+		select 
+    		co.id_comuna
+    		,co.s_nombre as s_nombre_comuna
+    		,pr.id_provincia
+    		,pr.s_codigo_area
+    		,pr.s_nombre as s_nombre_provincia
+    		,pr.s_capital
+    		,co.s_ciudad
+    		,re.id_region
+		from 
+			sstt_comunas co
+			inner join sstt_provincias pr on pr.id_provincia =  co.id_provincia
+    		inner join sstt_regiones re on re.id_region = pr.id_region
+		order by s_nombre_comuna asc
+	</select>
+	
+	<select id="listComunasConSucursalesByRegion" parameterType="Long" resultMap="comuna">
+		select 
+		    co.id_comuna
+		    ,co.s_nombre as s_nombre_comuna
+		    ,pr.id_provincia
+		    ,pr.s_codigo_area
+		    ,pr.s_nombre as s_nombre_provincia
+		    ,pr.s_capital
+		    ,co.s_ciudad
+		    ,re.id_region
+		from 
+		    sstt_comunas co
+		    inner join sstt_provincias pr on pr.id_provincia =  co.id_provincia
+		    inner join sstt_regiones re on re.id_region = pr.id_region
+		where 
+				re.id_region = #{idRegion}
+		    and exists (select 1 from sstt_ubicaciones u where u.s_vigente = 'S' and u.s_tipo = 'SC' and u.id_comuna = co.id_comuna)
+		order by s_nombre_comuna asc
+	</select>
+	
+	<select id="listComunasByRegion" parameterType="Long" resultMap="comuna">
+		select 
+    		co.id_comuna
+    		,co.s_nombre as s_nombre_comuna
+    		,pr.id_provincia
+    		,co.s_ciudad
+    		,re.id_region
+		from 
+			sstt_comunas co
+			inner join sstt_provincias pr on pr.id_provincia =  co.id_provincia
+    		inner join sstt_regiones re on re.id_region = pr.id_region
+        where
+            re.id_region = #{idRegion}
+		order by s_nombre_comuna asc
+	</select>
+	
+	<select id="listComunasByIdProvincia" parameterType="Long" resultMap="comuna">
+		select 
+    		co.id_comuna
+    		,co.s_nombre as s_nombre_comuna
+    		,pr.id_provincia
+    		,co.s_ciudad
+    		,re.id_region
+		from 
+			sstt_comunas co
+			inner join sstt_provincias pr on pr.id_provincia =  co.id_provincia
+    		inner join sstt_regiones re on re.id_region = pr.id_region
+        where
+            pr.id_provincia = #{idProvincia}
+		order by s_nombre_comuna asc
+	</select>
+	
+	<resultMap type="Comuna" id="comunasST">
+		<result property="id"					column="id_comuna"/>
+		<result property="glosa"				column="s_nombre"/>
+		<result property="provincia.region.id"	column="id_region"/>
+	</resultMap>
+	
+	<select id="listComunasST" resultMap="comunasST">
+		select distinct 
+			p.id_region,
+			c.id_comuna, 
+			c.s_nombre
+ 		from sstt_ubicaciones ub 
+			inner join sstt_comunas c ON c.id_comuna = ub.id_comuna
+			inner join sstt_provincias p ON p.id_provincia = c.id_provincia
+		where ub.s_tipo = 'ST'
+  			and ub.s_vigente = 'S'
+		order by p.id_region asc, c.s_nombre asc
+	</select>
+	
+	<select id="listComunasConSTByRegion" resultMap="comunasST" parameterType="Long">
+		select distinct 
+			p.id_region,
+			c.id_comuna, 
+			c.s_nombre
+ 		from sstt_ubicaciones ub 
+			inner join sstt_comunas c ON c.id_comuna = ub.id_comuna
+			inner join sstt_provincias p ON p.id_provincia = c.id_provincia
+		where ub.s_tipo = 'ST'
+  			and ub.s_vigente = 'S'
+  			and p.id_region = #{idRegion}
+		order by p.id_region asc, c.s_nombre asc
+	</select>
+	
+</mapper>

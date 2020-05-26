@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="documento">
+	
+	<resultMap type="Documento" id="documento">
+		<result property="tipo"           column="s_tipo_documento"/>
+		<result property="id"             column="id_documento"/>
+		<result property="fechaEmision"   column="d_fecha_emision"/>
+		<result property="sucursal.id"    column="id_sucursal"/>
+		<result property="sucursal.glosa" column="s_sucursal"/>
+		<result property="telefono"       column="s_telefono"/>
+		<result property="tipoOW"         column="s_documento_ow"/>
+		<result property="idCliente"      column="id_cliente"/>
+	</resultMap>
+	
+	<select id="getDocumentoByIdAndTipo" parameterType="Map" statementType="CALLABLE">
+		{call servicio_tecnico.P_GET_CABECERA_DOCUMENTO_HORA(#{id, mode=IN, jdbcType=INTEGER}, #{tipo, mode=IN, jdbcType=VARCHAR}, #{cursor, jdbcType=CURSOR, mode=OUT, resultMap=documento})}
+	</select>
+	
+<!-- 	<select id="getDocumentoByIdAndTipo" parameterType="Documento" resultMap="documento"> -->
+<!-- 		select  -->
+<!-- 		    d.s_tipo_documento -->
+<!--             ,d.id_documento -->
+<!--             ,to_date(to_char(d.d_fecha_emision+1900000),'YYYYDDD') as d_fecha_emision -->
+<!--             ,trim(d.id_sucursal) as id_sucursal -->
+<!--             ,s.s_nombre AS s_sucursal -->
+<!--             ,s.s_telefono -->
+<!--             ,d.s_documento_ow -->
+<!--             ,id_cliente -->
+<!--         from owv_documentos d -->
+<!-- 			left outer join sstt_ubicaciones s ON s.id_ubicacion = d.id_sucursal -->
+<!-- 		where  -->
+<!-- 				 d.s_tipo_documento = #{tipo} -->
+<!-- 			and d.id_documento =  #{id} -->
+<!-- 	</select> -->
+	
+</mapper>

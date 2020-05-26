@@ -1,0 +1,497 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<mapper namespace="ubicacionInterna">
+    
+    <resultMap type="UbicacionInterna" id="ubicacionInterna">
+        <result property="id"                column="id_ubicacion_interna"/>
+        <result property="tipo.glosa"        column="s_tipo_ubicacion_interna"/>
+        <result property="nombre"            column="s_nombre_ubicaciones_internas"/>
+        <result property="usuario.id"        column="id_usuario"/>
+        <result property="usuario.rut"       column="id_usuario" typeHandler="RunTypeHandler"/>
+        <result property="codigo"            column="s_codigo"/>
+        <result property="descripcion"       column="s_descripcion"/>
+        <result property="inventario"        column="s_inventario"/>
+        <result property="vigente"           column="s_vigente"/>
+    </resultMap>
+
+    <select id="getUbicacionInternaByCodigo" parameterType="String" resultMap="ubicacionInterna">
+        select 
+            ui.id_ubicacion_interna
+            ,ui.s_tipo as s_tipo_ubicacion_interna
+            ,ui.s_nombre as s_nombre_ubicaciones_internas
+            ,ui.id_usuario
+            ,ui.id_ubicacion_padre
+            ,ui.s_codigo
+            ,ui.d_fecha_creacion
+            ,ui.s_descripcion
+            ,ui.s_inventario
+            ,ui.s_vigente
+        from sstt_ubicaciones_internas ui
+        where ui.s_codigo =UPPER(#{codigo})
+    </select>
+    
+    <select id="getUbicacionInternaActualByIdOT" parameterType="Long" resultMap="ubicacionInterna">
+        select 
+            ui.id_ubicacion_interna
+            ,ui.s_tipo as s_tipo_ubicacion_interna
+            ,ui.s_nombre as s_nombre_ubicaciones_internas
+            ,ui.id_usuario
+            ,ui.id_ubicacion_padre
+            ,ui.s_codigo
+            ,ui.d_fecha_creacion
+            ,ui.s_descripcion
+            ,ui.s_inventario
+        from sstt_ubicaciones_internas ui
+        	left join sstt_bitacoras_internas bi on bi.id_ubicacion_interna = ui.id_ubicacion_interna and bi.d_fecha_termino is null
+        where bi.id_ot =#{idOT}
+    </select>
+    
+    <select id="getUbicacionInternaById" parameterType="Integer" resultMap="ubicacionInterna">
+        select 
+            ui.id_ubicacion_interna
+            ,ui.s_tipo as s_tipo_ubicacion_interna
+            ,ui.s_nombre as s_nombre_ubicaciones_internas
+            ,ui.id_usuario
+            ,ui.id_ubicacion_padre
+            ,ui.s_codigo
+            ,ui.d_fecha_creacion
+            ,ui.s_descripcion
+            ,ui.s_inventario
+        from sstt_ubicaciones_internas ui
+        where ui.id_ubicacion_interna = #{idUbicacionInterna}
+    </select>
+    
+    <select id="getUbicacionInternaByTipo" parameterType="String" resultMap="ubicacionInterna">
+        select 
+            ubi.id_ubicacion_interna,
+            ubi.s_nombre,
+            ubi.id_ubicacion_padre,
+            ubi.s_descripcion,
+            ubi.s_codigo
+        from
+            sstt_ubicaciones_internas ubi
+        where
+            s_tipo = #{tipo}
+        order by s_nombre asc
+    </select>
+    
+    <resultMap type="UbicacionInternaCD" id="ubicacionInternaCD">
+        <result property="id"                                   column="id_ubicacion_interna"/>
+        <result property="codigo"                               column="s_codigo"/>
+        <result property="tipo.glosa"                           column="s_nombre_tipo"/>
+        <result property="tipo.codigo"                          column="s_tipo"/>
+        <result property="vigente"                              column="s_vigente"/>
+        <result property="fechaInicio"                          column="d_fecha_creacion"/>
+        <result property="usuario.id"                           column="id_usuario"/>
+        <result property="usuario.nombreCompleto"               column="s_usuario_creacion"/>
+        <result property="fechaModificacion"                    column="d_fecha_modificacion"/>
+        <result property="usuarioModificacion.id"               column="id_usuario_modificacion"/>
+        <result property="usuarioModificacion.nombreCompleto"   column="s_usuario_modificacion"/>
+        <result property="nombre"                               column="s_nombre"/>
+    </resultMap>
+    
+    <select id="listUbicacionInternaCDByFilter" resultMap="ubicacionInternaCD"  parameterType="FilterUbicacionInterna">
+        select 
+            ubi.id_ubicacion_interna
+            ,ubi.s_codigo
+            ,ubi.s_tipo
+            ,pa.s_descripcion as s_nombre_tipo
+            ,ubi.s_nombre
+            ,ubi.s_vigente
+            ,ubi.d_fecha_creacion
+            ,ubi.id_usuario
+            ,trim(us.s_nombre)||' '||trim(us.s_apellido_paterno)||' '||trim(us.s_apellido_materno) as s_usuario_creacion
+            ,ubi.d_fecha_modificacion
+            ,ubi.id_usuario_modificacion
+            ,trim(us2.s_nombre)||' '||trim(us2.s_apellido_paterno)||' '||trim(us2.s_apellido_materno) as s_usuario_modificacion
+            ,count(ubid.id_sucursal) as i_sucursales
+            ,count(ubid.id_familia) as i_familias
+            ,count(ubid.id_linea) as i_lineas
+        from sstt_ubicaciones_internas ubi
+            left join sstt_parametros pa on pa.s_nombre = ubi.s_tipo
+            left join sstt_usuarios us on us.id_usuario = ubi.id_usuario
+            left join sstt_usuarios us2 on us2.id_usuario = ubi.id_usuario_modificacion
+            left join sstt_ubicacion_interna_det ubid on ubid.id_ubicacion_interna = ubi.id_ubicacion_interna
+            left join sstt_ubicacion_interna_det ubid2 on ubid2.id_ubicacion_interna = ubi.id_ubicacion_interna
+            left join sstt_ubicacion_interna_det ubid3 on ubid3.id_ubicacion_interna = ubi.id_ubicacion_interna
+            left join sstt_ubicacion_interna_det ubid4 on ubid4.id_ubicacion_interna = ubi.id_ubicacion_interna
+        <where> 
+            ubi.s_tipo in ('BG','JL','GO')
+            and ubi.id_ubicacion_padre = 10015
+            and ubi.id_ubicacion_interna not in(1001500001,1001500002,1001500003)
+            <if test="nombre!=null and !nombre.equals('')">
+                and UPPER(ubi.s_nombre) = UPPER(#{nombre})
+            </if>
+            <if test="idLinea!=null and !idLinea.equals('')">
+                and ubid.id_linea = #{idLinea}
+            </if>
+            <if test="idFamilia!=null and !idFamilia.equals('')">
+                and ubid2.id_familia =#{idFamilia}
+            </if>
+            <if test="idSucursal!=null">
+                and ubid3.id_sucursal = #{idSucursal}
+            </if>
+            <if test="idProducto!=null">
+                and ubid4.id_producto = #{idProducto}
+            </if>
+            <if test="codigo!=null and !codigo.equals('')">
+                and UPPER(ubi.s_codigo) = UPPER(#{codigo})
+            </if>
+            <if test="vigente!=null">
+            	and ubi.s_vigente = #{vigente}
+            </if>
+            <if test="notId!=null">
+            	and ubi.id_ubicacion_interna!=#{notId}
+            </if>
+        </where>
+        group by
+            ubi.id_ubicacion_interna
+            ,ubi.s_codigo
+            ,pa.s_descripcion
+            ,ubi.s_tipo
+            ,ubi.s_nombre
+            ,ubi.s_vigente
+            ,ubi.d_fecha_creacion
+            ,ubi.id_usuario
+            ,ubi.d_fecha_modificacion
+            ,ubi.id_usuario_modificacion
+            ,trim(us.s_nombre)||' '||trim(us.s_apellido_paterno)||' '||trim(us.s_apellido_materno)
+            ,trim(us2.s_nombre)||' '||trim(us2.s_apellido_paterno)||' '||trim(us2.s_apellido_materno)
+        <if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+    </select>
+    
+    <select id="getTotalUbicacionInternaCD" resultType="Integer" parameterType="FilterUbicacionInterna">
+        select 
+            count (distinct ubi.id_ubicacion_interna)
+        from sstt_ubicaciones_internas ubi
+            left join sstt_ubicacion_interna_det ubid on ubid.id_ubicacion_interna = ubi.id_ubicacion_interna
+            left join sstt_ubicacion_interna_det ubid2 on ubid2.id_ubicacion_interna = ubi.id_ubicacion_interna
+            left join sstt_ubicacion_interna_det ubid3 on ubid3.id_ubicacion_interna = ubi.id_ubicacion_interna
+            left join sstt_ubicacion_interna_det ubid4 on ubid4.id_ubicacion_interna = ubi.id_ubicacion_interna
+        <where> 
+            ubi.s_tipo in ('BG','JL','GO')
+            and ubi.id_ubicacion_padre = 10015
+            and ubi.id_ubicacion_interna not in(1001500001,1001500002,1001500003)
+            <if test="nombre!=null and !nombre.equals('')">
+                and UPPER(ubi.s_nombre) = UPPER(#{nombre})
+            </if>
+            <if test="idLinea!=null and !idLinea.equals('')">
+                and ubid.id_linea = #{idLinea}
+            </if>
+            <if test="idFamilia!=null and !idFamilia.equals('')">
+                and ubid2.id_familia =#{idFamilia}
+            </if>
+            <if test="idSucursal!=null">
+                and ubid3.id_sucursal = #{idSucursal}
+            </if>
+            <if test="idProducto!=null">
+                and ubid4.id_producto = #{idProducto}
+            </if>
+            <if test="codigo!=null and !codigo.equals('')">
+                and UPPER(ubi.s_codigo) = UPPER(#{codigo})
+            </if>
+            <if test="vigente!=null">
+            	and ubi.s_vigente = #{vigente}
+            </if>
+            <if test="notId!=null">
+            	and ubi.id_ubicacion_interna!=#{notId}
+            </if>
+        </where>
+    </select>
+    
+    
+    <select id="getUbicacionInternaCDByCodigo" resultMap="ubicacionInternaCD"  parameterType="FilterUbicacionInterna">
+        select 
+            ubi.id_ubicacion_interna
+            ,ubi.s_codigo
+            ,ubi.s_tipo
+            ,pa.s_descripcion as s_nombre_tipo
+            ,ubi.s_nombre
+            ,ubi.s_vigente
+            ,ubi.d_fecha_creacion
+            ,ubi.id_usuario
+            ,trim(us.s_nombre)||' '||trim(us.s_apellido_paterno)||' '||trim(us.s_apellido_materno) as s_usuario_creacion
+            ,ubi.d_fecha_modificacion
+            ,ubi.id_usuario_modificacion
+            ,trim(us2.s_nombre)||' '||trim(us2.s_apellido_paterno)||' '||trim(us2.s_apellido_materno) as s_usuario_modificacion
+        from sstt_ubicaciones_internas ubi
+            left join sstt_parametros pa on pa.s_nombre = ubi.s_tipo and pa.s_string1='UBIS'
+            left join sstt_usuarios us on us.id_usuario = ubi.id_usuario
+            left join sstt_usuarios us2 on us2.id_usuario = ubi.id_usuario_modificacion
+        <where>
+            ubi.s_tipo in ('BG','JL','GO')
+            and ubi.id_ubicacion_padre = 10015
+            and ubi.s_codigo = UPPER(#{codigo})
+        </where>
+    </select>
+    
+    <insert id="save" parameterType="ubicacionInterna" keyColumn="id_ubicacion_interna" keyProperty="id">
+        <selectKey resultType="Integer" keyProperty="id" order="BEFORE">
+            select ssts_ubicaciones_internas.nextval from dual
+        </selectKey>
+        insert into sstt_ubicaciones_internas(
+            id_ubicacion_interna
+            ,s_codigo
+            ,s_tipo
+            ,s_nombre
+            ,id_usuario
+            ,s_vigente
+            ,d_fecha_creacion
+            ,s_descripcion
+            ,id_ubicacion_padre
+            ,s_inventario
+        )
+        values (
+            #{id}
+            ,UPPER(#{codigo})
+            ,#{tipo.codigo}
+            ,UPPER(#{nombre})
+            ,#{usuario.id}
+            ,#{vigente}
+            ,sysdate
+            ,#{descripcion}
+            ,#{ubicacionPadre.id}
+            ,'N'
+        )
+    </insert>
+    
+    <update id="updateModificaUbicacionInternaCD" parameterType="UbicacionInternaCD">
+        update sstt_ubicaciones_internas
+        set s_tipo = #{tipo.codigo}
+            ,s_nombre = #{nombre}
+            ,s_vigente = #{vigente}
+            ,id_usuario_modificacion=#{usuarioModificacion.id}
+            ,d_fecha_modificacion = sysdate
+        where s_codigo = #{codigo}
+    </update>
+    
+    
+    
+    <select id="listUbicacionInternaCD" resultMap="ubicacionInternaCD">
+        select 
+            ubi.id_ubicacion_interna
+            ,ubi.s_codigo
+            ,ubi.s_tipo
+            ,pa.s_descripcion as s_nombre_tipo
+            ,ubi.s_nombre
+            ,ubi.s_vigente
+            ,ubi.d_fecha_creacion
+            ,ubi.id_usuario
+            ,trim(us.s_nombre)||' '||trim(us.s_apellido_paterno)||' '||trim(us.s_apellido_materno) as s_usuario_creacion
+            ,ubi.d_fecha_modificacion
+            ,ubi.id_usuario_modificacion
+            ,trim(us2.s_nombre)||' '||trim(us2.s_apellido_paterno)||' '||trim(us2.s_apellido_materno) as s_usuario_modificacion
+        from sstt_ubicaciones_internas ubi
+            left join sstt_parametros pa on pa.s_nombre = ubi.s_tipo
+            left join sstt_usuarios us on us.id_usuario = ubi.id_usuario
+            left join sstt_usuarios us2 on us2.id_usuario = ubi.id_usuario_modificacion
+        where
+            ubi.s_tipo in ('BG','JL','GO')
+            and ubi.id_ubicacion_padre = 10015
+            and ubi.id_ubicacion_interna not in(1001500001,1001500002,1001500003)
+        group by
+            ubi.id_ubicacion_interna
+            ,ubi.s_codigo
+            ,pa.s_descripcion
+            ,ubi.s_tipo
+            ,ubi.s_nombre
+            ,ubi.s_vigente
+            ,ubi.d_fecha_creacion
+            ,ubi.id_usuario
+            ,ubi.d_fecha_modificacion
+            ,ubi.id_usuario_modificacion
+            ,trim(us.s_nombre)||' '||trim(us.s_apellido_paterno)||' '||trim(us.s_apellido_materno)
+            ,trim(us2.s_nombre)||' '||trim(us2.s_apellido_paterno)||' '||trim(us2.s_apellido_materno)
+         order by s_nombre asc
+    </select>
+    
+    <select id="listTodasUbicacionesInternasCD" resultType="ubicacionInterna">
+        select 
+            ubi.id_ubicacion_interna id
+            ,ubi.s_nombre nombre
+        from sstt_ubicaciones_internas ubi
+        where 
+            ubi.s_tipo in ('BG','JL','GO')
+            and ubi.id_ubicacion_padre = 10015
+        order by ubi.s_nombre asc
+    </select>
+    
+    <select id="listUbicacionInternasCDByIdOT" resultMap="ubicacionInternaCD"  parameterType="Long">
+        select
+           ubi.id_ubicacion_interna
+            ,ubi.s_codigo
+            ,ubi.s_tipo
+            ,pa.s_descripcion as s_nombre_tipo
+            ,ubi.s_nombre
+            ,ubi.s_vigente
+            ,ubi.d_fecha_creacion
+            ,ubi.id_usuario
+            ,trim(us.s_nombre)||' '||trim(us.s_apellido_paterno)||' '||trim(us.s_apellido_materno) as s_usuario_creacion
+            ,ubi.d_fecha_modificacion
+            ,ubi.id_usuario_modificacion
+            ,trim(us2.s_nombre)||' '||trim(us2.s_apellido_paterno)||' '||trim(us2.s_apellido_materno) as s_usuario_modificacion
+        from sstt_ubicaciones_internas ubi
+            inner join sstt_ubicacion_interna_det ubid on ubid.id_ubicacion_interna = ubi.id_ubicacion_interna
+            inner join sstt_ordenes_trabajo ot on ot.id_sucursal = ubid.id_sucursal
+            left join sstt_parametros pa on pa.s_nombre = ubi.s_tipo and pa.s_string1='UBIS'
+            left join sstt_usuarios us on us.id_usuario = ubi.id_usuario
+            left join sstt_usuarios us2 on us2.id_usuario = ubi.id_usuario_modificacion
+        where
+        	ubi.s_tipo in ('BG','JL','GO')
+            and ubi.id_ubicacion_padre = 10015
+            and ot.id_ot = #{idOT}
+            and ubi.s_vigente = 'S'
+    </select>
+    
+    <select id="listUbicacionInternasCDOnlySucursalByIdOT" resultMap="ubicacionInternaCD" parameterType="Long">
+    	select
+            ubi.id_ubicacion_interna
+            ,ubi.s_codigo
+            ,ubi.s_tipo
+            ,pa.s_descripcion as s_nombre_tipo
+            ,ubi.s_nombre
+            ,ubi.s_vigente
+            ,ubi.d_fecha_creacion
+            ,ubi.id_usuario
+            ,ubi.d_fecha_modificacion
+            ,ubi.id_usuario_modificacion
+        from sstt_ubicaciones_internas ubi
+            inner join sstt_ubicacion_interna_det ubid on ubid.id_ubicacion_interna = ubi.id_ubicacion_interna 
+            inner join sstt_ordenes_trabajo ot on ot.id_sucursal = ubid.id_sucursal
+            left join sstt_parametros pa on pa.s_nombre = ubi.s_tipo and pa.s_string1='UBIS'
+            left join sstt_usuarios us on us.id_usuario = ubi.id_usuario
+            left join sstt_usuarios us2 on us2.id_usuario = ubi.id_usuario_modificacion
+        where
+        	ubi.s_tipo in ('BG','JL','GO')
+            and ubi.id_ubicacion_padre = 10015
+            and ubi.s_vigente = 'S'
+            and ubid.id_sucursal = ot.id_sucursal
+            and ot.id_ot = #{idOT}
+            and not exists (select 1 
+              				from sstt_ubicacion_interna_det ubid 
+							where (ubid.id_familia is not null
+                					or ubid.id_linea is not null
+                					or ubid.id_producto is not null)
+                				and ubid.id_ubicacion_interna = ubi.id_ubicacion_interna)
+  			and exists (select 1
+            			from sstt_ubicacion_interna_det ubid
+            			where ubid.id_sucursal = ot.id_sucursal)
+        	group by
+            	ubi.id_ubicacion_interna
+            ,ubi.s_codigo
+            ,ubi.s_tipo
+            ,pa.s_descripcion 
+            ,ubi.s_nombre
+            ,ubi.s_vigente
+            ,ubi.d_fecha_creacion
+            ,ubi.id_usuario
+            ,ubi.d_fecha_modificacion
+            ,ubi.id_usuario_modificacion
+    </select>
+    
+    <resultMap type="UbicacionInterna" id="ubicacionInternaToInventario">
+    	<result property="id"             column="id_ubicacion_interna"/>
+    	<result property="nombre"         column="s_nombre"/>
+    	<result property="totalProductos" column="i_total_productos"/>
+    </resultMap>
+    
+    <select id="listToInventario" resultMap="ubicacionInternaToInventario" parameterType="FilterUbicacionInterna">
+    	select
+    		ubi.id_ubicacion_interna
+  			,ubi.s_nombre
+  			,count(bi.id_ubicacion_interna) as i_total_productos
+		from sstt_ubicaciones_internas ubi
+  			left join sstt_bitacoras_internas bi on bi.id_ubicacion_interna = ubi.id_ubicacion_interna and bi.d_fecha_termino is null
+		where ubi.id_ubicacion_padre = 10015
+  			and ubi.s_inventario = 'N'
+		group by 
+			ubi.id_ubicacion_interna
+  			,ubi.s_nombre
+  			,bi.id_ubicacion_interna
+  		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+    </select>
+    
+    <select id="getTotalToInventario" resultType="Integer">
+    	select
+    		count(1)
+		from sstt_ubicaciones_internas ubi
+		where ubi.id_ubicacion_padre = 10015
+  			and ubi.s_inventario = 'N'
+    </select>
+    
+    <select id="listAllToInventario" resultType="CheckForFlexigrid">
+    	select
+    		ubi.id_ubicacion_interna as "id"
+    		,'N' as "check"
+		from sstt_ubicaciones_internas ubi
+		where ubi.id_ubicacion_padre = 10015
+  			and ubi.s_inventario = 'N'
+    </select>
+    
+<!--     <select id="listFromInventario" resultMap="ubicacionInternaToInventario" parameterType="Integer"> -->
+<!--     	select -->
+<!--     		ubi.id_ubicacion_interna -->
+<!--   			,ubi.s_nombre -->
+<!--   			,count(bi.id_ubicacion_interna) as i_total_productos -->
+<!-- 		from sstt_ubicaciones_internas ubi -->
+<!--   			left join sstt_bitacoras_internas bi on bi.id_ubicacion_interna = ubi.id_ubicacion_interna and bi.d_fecha_termino is null -->
+<!--   			left join sstt_inventario_ubicaciones ib on ib.id_ubicacion_interna = ubi.id_ubicacion_interna -->
+<!-- 		where ubi.id_ubicacion_padre = 10015 -->
+<!--   			and ib.id_inventario = #{idInventario} -->
+<!-- 		group by  -->
+<!-- 			ubi.id_ubicacion_interna -->
+<!--   			,ubi.s_nombre -->
+<!--   			,bi.id_ubicacion_interna -->
+<!--   		order by ubi.s_nombre -->
+<!--     </select> -->
+    
+<!--     <select id="getTotalFromInventario" resultType="Integer" parameterType="Integer"> -->
+<!--     	select -->
+<!--     		count(1) -->
+<!-- 		from sstt_ubicaciones_internas ubi -->
+<!-- 		left join sstt_inventario_ubicaciones ib on ib.id_ubicacion_interna = ubi.id_ubicacion_interna -->
+<!-- 		where ubi.id_ubicacion_padre = 10015 -->
+<!--   			and ib.id_inventario = #{idInventario} -->
+<!--     </select> -->
+    
+    <update id="upateInventario" parameterType="UbicacionInterna">
+    	update sstt_ubicaciones_internas
+    		set s_inventario = #{inventario}
+    	where id_ubicacion_interna = #{id}
+    </update>
+    
+    <update id="updateInventarioByInventario" parameterType="Inventario">
+    	update sstt_ubicaciones_internas
+    		set s_inventario = #{vigente}
+    	where id_ubicacion_interna in (select id_ubicacion_interna 
+    								   from sstt_inventario_ubicaciones
+    								   where id_inventario = #{id})
+    </update>
+    
+    <update id="updateInventarioById" parameterType="UbicacionInterna">
+    	update sstt_ubicaciones_internas
+    		set s_inventario = #{inventario}
+    	where id_ubicacion_interna = #{id}
+    </update>
+    
+     <select id="getTotalOTOnUbicacionInterna" parameterType="Long" resultType="Integer">
+		select count(1)
+		from sstt_bitacoras_internas
+		where d_fecha_termino is null
+			and id_ubicacion_interna = #{idUbicacionInterna}
+	</select>
+</mapper>
+    

@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="indicadorGestion">
+
+	<resultMap type="Indicador" id="indicador">
+		<result column="tiempoInicio" property="tiempoInicio"/>
+		<result column="tiempoTermino" property="tiempoTermino"/>
+	</resultMap>
+
+	<select id="getTotalOTEnSucursalInicio" parameterType="FilterIndicador" resultType="Double">
+		select 
+		    count(distinct ot.id_ot)
+		from 
+		    sstt_ordenes_trabajo ot
+		    inner join sstt_bitacoras bitacoras on ot.id_ot = bitacoras.id_ot
+		where 
+		        ot.s_vigente = 'S'
+		    and ot.s_tipo in ('GP','GPC')
+		    and ot.s_cambio_autorizado = 'N'
+		    and ot.s_cerrada_cliente = 'N'
+		    and ot.s_cerrada = 'N'
+		    and bitacoras.d_fecha_entrada is not null
+		    and bitacoras.d_fecha_salida is null
+		    and bitacoras.id_ubicacion = ot.id_sucursal
+		    and ot.id_estado = 10003000 
+		    <if test="idSemaforo == 0">
+		    	and ot.i_semaforo_sucursal_inicio &gt;= #{idSemaforo}
+	    	</if>
+		    <if test="idSemaforo != 0">
+		    	and ot.i_semaforo_sucursal_inicio = #{idSemaforo}
+		    </if>
+    </select>
+	
+	<select id="listOTEnSucursalInicio"  parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="ordenTrabajo.listOT"/>
+		    inner join sstt_bitacoras bitacoras on ot.id_ot = bitacoras.id_ot
+		where 
+		        ot.s_vigente = 'S'
+		    and ot.s_tipo in ('GP','GPC')
+		    and ot.s_cambio_autorizado = 'N'
+		    and ot.s_cerrada_cliente = 'N'
+		    and ot.s_cerrada = 'N'
+		    and bitacoras.d_fecha_entrada is not null
+		    and bitacoras.d_fecha_salida is null
+		    and bitacoras.id_ubicacion = ot.id_sucursal
+		    and ot.id_estado = 10003000 
+		    <if test="idSemaforo == 0">
+		    	and ot.i_semaforo_sucursal_inicio &gt;= #{idSemaforo}
+	    	</if>
+		    <if test="idSemaforo != 0">
+		    	and ot.i_semaforo_sucursal_inicio = #{idSemaforo}
+		    </if>
+    </select>
+	
+	<select id="getTotalOTEnSucursalTermino" parameterType="FilterIndicador" resultType="Double">
+		select 
+		    count(distinct ot.id_ot)
+		from 
+		    sstt_ordenes_trabajo ot
+		    inner join sstt_bitacoras bitacoras on ot.id_ot = bitacoras.id_ot
+		where 
+		        ot.s_vigente = 'S'
+		    and ot.s_tipo in ('GP','GPC')
+		    and ot.s_cambio_autorizado = 'N'
+		    and ot.s_cerrada_cliente = 'N'
+		    and ot.s_cerrada = 'N'
+		    and ot.s_contrato is not null
+		    and bitacoras.d_fecha_entrada is not null
+		    and bitacoras.d_fecha_salida is null
+		    and bitacoras.id_ubicacion = ot.id_sucursal
+		    and ot.id_estado in (10011000, 10013000)
+		    <if test="idSemaforo == 0">
+		    	and ot.i_semaforo_sucursal_fin &gt;= #{idSemaforo}
+	    	</if>
+		    <if test="idSemaforo != 0">
+		    	and ot.i_semaforo_sucursal_fin = #{idSemaforo}
+		    </if>
+    </select>
+    
+    <select id="listOTEnSucursalTermino"  parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="ordenTrabajo.listOT"/>
+		    inner join sstt_bitacoras bitacoras on ot.id_ot = bitacoras.id_ot
+		where 
+		        ot.s_vigente = 'S'
+		    and ot.s_tipo in ('GP','GPC')
+		    and ot.s_cambio_autorizado = 'N'
+		    and ot.s_cerrada_cliente = 'N'
+		    and ot.s_cerrada = 'N'
+		    and ot.s_contrato is not null
+		    and bitacoras.d_fecha_entrada is not null
+		    and bitacoras.d_fecha_salida is null
+		    and bitacoras.id_ubicacion = ot.id_sucursal
+		    and ot.id_estado in (10011000, 10013000)
+		    <if test="idSemaforo == 0">
+		    	and ot.i_semaforo_sucursal_fin &gt;= #{idSemaforo}
+	    	</if>
+		    <if test="idSemaforo != 0">
+		    	and ot.i_semaforo_sucursal_fin = #{idSemaforo}
+		    </if>
+    </select>
+	
+	<select id="getTiempoPromedioSucursalInicio" parameterType="FilterIndicador" resultType="Double">
+		select 
+		    avg(bitacoras.d_fecha_salida - bitacoras.d_fecha_entrada)
+		from 
+		    sstt_ordenes_trabajo ot
+		    inner join sstt_bitacoras bitacoras on ot.id_ot = bitacoras.id_ot
+		where 
+		        ot.s_vigente = 'S'
+		    and ot.s_tipo in ('GP','GPC')
+		    and bitacoras.d_fecha_entrada is not null
+		    and bitacoras.d_fecha_salida is not null
+		    and bitacoras.d_fecha_salida &gt; bitacoras.d_fecha_entrada
+		    and bitacoras.id_ubicacion = ot.id_sucursal
+            and trunc(bitacoras.d_fecha_entrada) = trunc(ot.d_fecha_creacion)
+		    and bitacoras.id_estado in (20002000, 20008000, 20016000)
+		    and bitacoras.d_fecha_salida &gt;= #{fechaInicio}
+		    and bitacoras.d_fecha_salida &lt;= #{fechaTermino}
+    </select>
+	
+	<select id="listOTTiempoPromedioSucursalInicio" parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="ordenTrabajo.listOT"/>
+		    inner join sstt_bitacoras bitacoras on ot.id_ot = bitacoras.id_ot
+		where 
+		        ot.s_vigente = 'S'
+		    and ot.s_tipo in ('GP','GPC')
+		    and bitacoras.d_fecha_entrada is not null
+		    and bitacoras.d_fecha_salida is not null
+		    and bitacoras.d_fecha_salida &gt; bitacoras.d_fecha_entrada
+		    and bitacoras.id_ubicacion = ot.id_sucursal
+            and trunc(bitacoras.d_fecha_entrada) = trunc(ot.d_fecha_creacion)
+		    and bitacoras.id_estado in (20002000, 20008000, 20016000)
+		    and bitacoras.d_fecha_salida &gt;= #{fechaInicio}
+		    and bitacoras.d_fecha_salida &lt;= #{fechaTermino}
+    </select>
+	
+	<select id="getTiempoPromedioSucursalTermino" parameterType="FilterIndicador" resultType="Double">
+		select 
+		    avg(    case when ot.s_cambio_autorizado = 'S' and ot.d_fecha_cierre_cliente - ot.d_fecha_cambio_autorizado >= 0 then
+		                ot.d_fecha_cierre_cliente - ot.d_fecha_cambio_autorizado
+		            when ot.s_cambio_autorizado = 'N' and ot.d_fecha_cierre_cliente - recepcion.d_fecha_recepcion >= 0 then
+		                ot.d_fecha_cierre_cliente - recepcion.d_fecha_recepcion
+		            end) as i_diferencia
+		from 
+		    sstt_ordenes_trabajo ot
+		    left outer join sstt_recepciones recepcion on recepcion.id_ot = ot.id_ot 
+		                                              and recepcion.id_ubicacion = ot.id_sucursal
+		where 
+		        ot.s_vigente = 'S'
+		    and ot.s_cerrada_cliente = 'S'
+		    and ot.s_tipo in ('GP','GPC')
+		    and ot.s_contrato is not null
+		    and ot.d_fecha_cierre_cliente is not null
+		    and ot.d_fecha_cierre_cliente &gt;= #{fechaInicio}
+		    and ot.d_fecha_cierre_cliente &lt;= #{fechaTermino}
+    </select>
+    
+   	<select id="listOTTiempoPromedioSucursalTermino" parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="ordenTrabajo.listOT"/>
+		    left outer join sstt_recepciones recepcion on recepcion.id_ot = ot.id_ot 
+		                                              and recepcion.id_ubicacion = ot.id_sucursal
+		where 
+		        ot.s_vigente = 'S'
+		    and ot.s_cerrada_cliente = 'S'
+		    and ot.s_tipo in ('GP','GPC')
+		    and ot.s_contrato is not null
+		    and ot.d_fecha_cierre_cliente is not null
+		    and ot.d_fecha_cierre_cliente &gt;= #{fechaInicio}
+		    and ot.d_fecha_cierre_cliente &lt;= #{fechaTermino}
+    </select>
+
+</mapper>

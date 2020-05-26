@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="logistico">
+	
+	<resultMap type="Logistico" id="logistico">
+		<result property="id" 				column="id_usuario" />
+		<result property="rut" 				column="id_usuario" typeHandler="RunTypeHandler"/>
+		<result property="nombre"			column="s_nombre"/>
+		<result property="apPaterno"		column="s_apellido_paterno"/>
+		<result property="apMaterno"		column="s_apellido_materno"/>
+		<result property="nombreCompleto"	column="s_nombre_completo"/>
+		<result property="celular"			column="s_celular"/>
+		<result property="anexo"			column="s_anexo"/>
+		<result property="email"			column="s_email"/>
+		<result property="vigente"			column="s_vigente"/>
+	</resultMap>
+	
+	<select id="listLogisticosRecepcionesCamion" resultMap="logistico">
+		select distinct
+		    u.id_usuario,
+		    u.s_nombre,
+		    u.s_apellido_paterno,
+		    u.s_apellido_materno,
+			u.s_nombre || ' ' || s_apellido_paterno || ' ' || s_apellido_materno as s_nombre_completo,
+		    u.s_celular,
+			u.s_interno as s_anexo,
+		    u.s_email,
+		    u.s_vigente
+		from 
+		    sstt_recepciones_camion rc
+		    inner join sstt_usuarios u on u.id_usuario = rc.id_logistico  
+	    order by u.s_nombre asc 
+	</select>
+	
+	<select id="getLogisticoById" parameterType="Long" resultMap="logistico">
+		select
+			us.id_usuario
+			,us.s_nombre
+			,us.s_apellido_paterno
+			,us.s_apellido_materno
+			,us.s_nombre || ' ' || s_apellido_paterno || ' ' || s_apellido_materno as s_nombre_completo
+			,us.s_celular
+			,us.s_interno as s_anexo
+			,us.s_email
+			,us.s_vigente
+		from sstt_usuarios us
+			left join sstt_usuarios_roles ur on ur.id_usuario = us.id_usuario
+		where us.id_usuario = #{id}
+			and ur.id_rol = 2
+	</select>
+</mapper>

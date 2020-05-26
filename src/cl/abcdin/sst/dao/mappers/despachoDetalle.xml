@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="despachoDetalle">
+	<insert id="saveDespachoDetalle" parameterType="DespachoDetalle" keyColumn="id_despacho_interno_detalle" keyProperty="id">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_despacho_detalles.nextval from dual
+		</selectKey>
+		insert into sstt_despacho_interno_detalles(
+			id_despacho_interno_detalle,
+			id_ot,
+			id_despacho_interno,
+			id_estado,
+			d_fecha_estado,
+			id_usuario
+			)
+		values(
+			#{id},
+			#{ordenTrabajo.id},
+			#{despachoInterno.id},
+			#{estado.id},
+			#{fechaEstado},
+			#{usuario.id}
+		)
+	</insert>
+	
+	<resultMap type="DespachoDetalle" id="despachoDetalle">
+		<result property="id"                                column="id_despacho_interno_detalle"/>
+		<result property="estado.id"                         column="id_estado"/>
+		<result property="ordenTrabajo.id"                   column="id_ot"/>
+		<result property="ordenTrabajo.producto.id"          column="id_producto"/>
+		<result property="ordenTrabajo.producto.descripcion" column="s_descripcion_producto"/>
+		<result property="factura"                           column="i_factura"/>
+		<result property="notaCredito"                       column="i_notaCredito"/>
+		<result property="bodega"                            column="i_bodega"/>
+		<result property="aptoVenta"                         column="i_aptoVenta"/>
+		<result property="dañado"                            column="i_dañado"/>
+		<result property="cerradas"                          column="i_cerradas"/>
+		<result property="vigentes"                          column="i_vigentes"/>
+	</resultMap>
+	
+	<select id="listDespachoDetalleByIdDespacho" parameterType="Long" resultMap="despachoDetalle">
+		select
+			did.id_despacho_interno_detalle
+			,did.id_estado
+			,ot.id_ot
+			,ot.i_cod_barra
+			,pr.id_producto
+			,pr.s_descripcion as s_descripcion_producto
+		from sstt_despacho_interno_detalles did
+			left join sstt_ordenes_trabajo ot on ot.id_ot = did.id_ot
+			left join owv_productos pr on pr.id_producto = ot.id_producto
+		where did.id_despacho_interno = #{idDespachoDetalle}
+			and did.id_estado != 90004000
+	</select>
+	
+	<update id="updateEstadoDespachoDetalleByIdAndOT" parameterType="DespachoDetalle">
+		update sstt_despacho_interno_detalles
+			set id_estado = #{estado.id}
+		where id_despacho_interno = #{despachoInterno.id}
+			and id_ot = #{ordenTrabajo.id}
+	</update>
+	
+	<select id="getIndicadoresbyidDespacho" parameterType="Long"  resultMap="despachoDetalle">
+		select 
+<!-- 		    sum(case when ot.id_estado = 100010500 then 1 else 0 end) i_bodega -->
+<!-- 		    ,sum(case when ot.id_estado = 100008000 then 1 else 0 end) i_factura   -->
+<!-- 		    ,sum(case when ot.id_estado = 100008100 then 1 else 0 end) i_notaCredito -->
+		    sum(case when ot.id_estado = 100010700 then 1 else 0 end) i_aptoVenta
+		    ,sum(case when ot.id_estado = 100010600 then 1 else 0 end) i_dañado
+		    ,sum(case when ot.id_estado = 100008200 then 1 else 0 end) i_cerradas
+		    ,sum(case when ot.id_estado not in (100010500,100008000,100008100,100008200,100010700,100010600) then 1 else 0 end) I_vigentes 
+		from 
+		     sstt_despacho_interno_detalles di 
+		     inner join sstt_ordenes_trabajo ot on ot.id_ot = di.id_ot
+		where 
+		    id_despacho_interno = #{despachoInterno.id}
+		    and ot.id_ot in (select did1.ID_OT 
+                        from sstt_despacho_interno_detalles did1
+                        where
+                         did1.id_despacho_interno = #{despachoInterno.id}
+                        and did1.id_estado != 90004000)
+	</select>
+	
+	<select id="listDespachoDetalleByIdDespachoInterno" parameterType="FilterDespachoInterno" resultMap="despachoDetalle">
+		select
+			did.id_despacho_interno_detalle
+		   ,did.id_ot
+		   ,did.id_estado
+		from sstt_despacho_interno_detalles did
+			left join sstt_ordenes_trabajo ot on ot.id_ot = did.id_ot
+			left join owv_productos pr on pr.id_producto = ot.id_producto
+		where 
+			did.id_despacho_interno = #{idDespacho}
+			and did.id_ot in
+		<foreach collection="idOts" item="ordenTrabajo" open="(" separator="," close=")">
+			#{ordenTrabajo.id}
+		</foreach>
+	</select>
+	
+	<select id="listDespachoDetalleByIdOT" parameterType="FilterDespachoInterno" resultMap="despachoDetalle">
+		select
+			did.id_despacho_interno_detalle
+		   ,did.id_ot
+		   ,did.id_estado
+		from sstt_despacho_interno_detalles did
+			left join sstt_ordenes_trabajo ot on ot.id_ot = did.id_ot
+			left join owv_productos pr on pr.id_producto = ot.id_producto
+		where 
+			did.id_despacho_interno = #{idDespacho}
+			and did.id_ot = #{idOT}
+	</select>
+	
+</mapper>

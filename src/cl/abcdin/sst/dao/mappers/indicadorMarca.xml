@@ -1,0 +1,876 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="indicadorMarca">
+
+	<select id="getTotalOTAsignadaEjecutivaMarcaIndicador" parameterType="FilterIndicador" resultType="Double">
+		select
+		    count(ot.id_ot)
+		from 
+		    sstt_ordenes_trabajo ot
+		where 
+		        ot.s_vigente = 'S'
+		    and ot.s_tipo in ('GP','GPC')
+		    and ot.s_cerrada_cliente = 'N'
+		    and ot.s_cerrada = 'N'
+		    <if test="idEjecutiva != null">
+			    <if test="idEjecutiva == -1">
+			    	and ot.id_ejecutiva is null
+			    </if>
+			    <if test="idEjecutiva != -1">
+			    	and ot.id_ejecutiva = #{idEjecutiva}
+			    </if>
+		    </if>
+	</select>
+	
+	<select id="listOTAsignadaEjecutivaMarcaIndicador" parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="ordenTrabajo.listOT"/>
+		where 
+		        ot.s_vigente = 'S'
+		    and ot.s_tipo in ('GP','GPC')
+		    and ot.s_cerrada_cliente = 'N'
+		    and ot.s_cerrada = 'N'
+		    <if test="idEjecutiva != null">
+			    <if test="idEjecutiva == -1">
+			    	and ot.id_ejecutiva is null
+			    </if>
+			    <if test="idEjecutiva != -1">
+			    	and ot.id_ejecutiva = #{idEjecutiva}
+			    </if>
+		    </if>
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>	
+	</select>
+	
+	<select id="getTotalOTServicioTecnicoIndicador" parameterType="FilterIndicador" resultType="Double">
+		select 
+		    count(ot.id_ot)
+		from 
+		    sstt_ordenes_trabajo ot
+		where 
+		        ot.s_vigente = 'S'
+		    and ot.s_cerrada_cliente = 'N'
+		    and ot.s_cerrada = 'N'
+		    and ot.s_tipo in ('GP','GPC')
+		    and ot.s_cambio_autorizado = 'N'
+		    and ot.id_estado in (10005000, 10006000, 10007000)
+		    <if test="idSemaforo == 0">
+			    and ot.i_semaforo_stecnico &gt; 0
+		    </if>
+		    <if test="idSemaforo != 0">
+		    	and ot.i_semaforo_stecnico = #{idSemaforo}
+		    </if>
+		    <if test="idEjecutiva != null">
+			    <if test="idEjecutiva == -1">
+			    	and ot.id_ejecutiva is null
+			    </if>
+			    <if test="idEjecutiva != -1">
+			    	and ot.id_ejecutiva = #{idEjecutiva}
+			    </if>
+		    </if>
+	</select>
+	
+	<select id="listOTServicioTecnicoIndicador"  parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="ordenTrabajo.listOT"/>
+		where 
+		        ot.s_vigente = 'S'
+		    and ot.s_cerrada_cliente = 'N'
+		    and ot.s_cerrada = 'N'
+		    and ot.s_tipo in ('GP','GPC')
+		    and ot.s_cambio_autorizado = 'N'
+		    and ot.id_estado in (10005000, 10006000, 10007000)
+		    <if test="idSemaforo == 0">
+			    and ot.i_semaforo_stecnico &gt; 0
+		    </if>
+		    <if test="idSemaforo != 0">
+		    and ot.i_semaforo_stecnico = #{idSemaforo}
+		    </if>
+		    <if test="idEjecutiva != null">
+			    <if test="idEjecutiva == -1">
+			    	and ot.id_ejecutiva is null
+			    </if>
+			    <if test="idEjecutiva != -1">
+			    	and ot.id_ejecutiva = #{idEjecutiva}
+			    </if>
+		    </if>
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTotalOTAsignadasSolucionadasCDIndicador" parameterType="FilterIndicador" resultType="Double">
+		select
+		    count(ot.id_ot)
+		from 
+		    sstt_ordenes_trabajo ot
+		where
+		        ot.s_vigente = 'S'
+		    and ot.s_tipo in ('GP','GPC')
+		    <if test="idEjecutiva != null">
+			    <if test="idEjecutiva == -1">
+			    	and ot.id_ejecutiva is null
+			    </if>
+			    <if test="idEjecutiva != -1">
+			    	and ot.id_ejecutiva = #{idEjecutiva}
+			    </if>
+		    </if>
+		    and ((   ot.s_cambio_autorizado = 'N'
+		            and exists (select 1 from 
+		                        sstt_recepciones r
+		                        inner join sstt_ubicaciones u on r.id_ubicacion = u.id_ubicacion
+		                        where u.s_tipo in ('BR','CD')
+		                        and r.id_origen = ot.id_stecnico
+		                        and r.id_ot = ot.id_ot
+		                        and r.id_estado = 60001000
+		                        and r.d_fecha_recepcion &gt;= #{fechaInicio}
+		                        and r.d_fecha_recepcion &lt;= #{fechaTermino}
+		    )) or ( ot.s_cambio_autorizado = 'S'
+		            and ot.d_fecha_cambio_autorizado &gt;= #{fechaInicio}
+		            and ot.d_fecha_cambio_autorizado &lt;= #{fechaTermino}
+		            and exists (select 1 from 
+		                        sstt_bitacoras b
+		                        inner join sstt_ubicaciones cd on cd.id_ubicacion = b.id_ubicacion
+		                        where b.id_ot = ot.id_ot
+		                        and cd.s_tipo in ('CD', 'BR'))
+					and exists (select 1
+								from sstt_bitacoras b2
+								where b2.id_ot = ot.id_ot
+								and b2.id_ubicacion = ot.id_stecnico)
+		    ))	
+	</select>
+	
+	<select id="listOTAsignadasSolucionadasCDIndicador" parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="ordenTrabajo.listOT"/>
+		where
+		        ot.s_vigente = 'S'
+		    and ot.s_tipo in ('GP','GPC')
+		    <if test="idEjecutiva != null">
+			    <if test="idEjecutiva == -1">
+			    	and ot.id_ejecutiva is null
+			    </if>
+			    <if test="idEjecutiva != -1">
+			    	and ot.id_ejecutiva = #{idEjecutiva}
+			    </if>
+		    </if>
+		    and ((   ot.s_cambio_autorizado = 'N'
+		            and exists (select 1 from 
+		                        sstt_recepciones r
+		                        inner join sstt_ubicaciones u on r.id_ubicacion = u.id_ubicacion
+		                        where u.s_tipo in ('BR','CD')
+		                        and r.id_origen = ot.id_stecnico
+		                        and r.id_ot = ot.id_ot
+		                        and r.id_estado = 60001000
+		                        and r.d_fecha_recepcion &gt;= #{fechaInicio}
+		                        and r.d_fecha_recepcion &lt;= #{fechaTermino}
+		    )) or ( ot.s_cambio_autorizado = 'S'
+		            and ot.d_fecha_cambio_autorizado &gt;= #{fechaInicio}
+		            and ot.d_fecha_cambio_autorizado &lt;= #{fechaTermino}
+		            and exists (select 1 from 
+		                        sstt_bitacoras b
+		                        inner join sstt_ubicaciones cd on cd.id_ubicacion = b.id_ubicacion
+		                        where b.id_ot = ot.id_ot
+		                        and cd.s_tipo in ('CD', 'BR'))
+					and exists (select 1
+								from sstt_bitacoras b2
+								where b2.id_ot = ot.id_ot
+								and b2.id_ubicacion = ot.id_stecnico)
+		    ))	
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTotalOTSolucionadaClienteIndicador" parameterType="FilterIndicador" resultType="Double">
+		select 
+		    count(ot.id_ot)
+		from 
+		    sstt_ordenes_trabajo ot
+		where 
+		        ot.s_cerrada_cliente = 'S'
+		    and ot.s_tipo in ('GP','GPC')
+		    and ot.s_vigente = 'S'
+		    <if test="idEjecutiva != null">
+			    <if test="idEjecutiva == -1">
+			    	and ot.id_ejecutiva is null
+			    </if>
+			    <if test="idEjecutiva != -1">
+			    	and ot.id_ejecutiva = #{idEjecutiva}
+			    </if>
+		    </if>
+		    and ot.d_fecha_cierre_cliente &gt;= #{fechaInicio}
+		    and ot.d_fecha_cierre_cliente &lt;= #{fechaTermino}
+	</select>
+	
+	<select id="listOTSolucionadaClienteIndicador" parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="ordenTrabajo.listOT"/>
+		where 
+		        ot.s_cerrada_cliente = 'S'
+		    and ot.s_tipo in ('GP','GPC')
+		    and ot.s_vigente = 'S'
+		    <if test="idEjecutiva != null">
+			    <if test="idEjecutiva == -1">
+			    	and ot.id_ejecutiva is null
+			    </if>
+			    <if test="idEjecutiva != -1">
+			    	and ot.id_ejecutiva = #{idEjecutiva}
+			    </if>
+		    </if>
+		    and ot.d_fecha_cierre_cliente &gt;= #{fechaInicio}
+		    and ot.d_fecha_cierre_cliente &lt;= #{fechaTermino}
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getNivelServicioOTPorCDIndicador" parameterType="FilterIndicador" resultType="Double">
+		select
+		    (select 
+		        count(ot.id_ot) as i_cont
+		    from 
+		        sstt_ordenes_trabajo ot
+		    where 
+		            ot.s_vigente = 'S'
+		        and ot.s_tipo in ('GP','GPC')
+		        and ((  ot.s_cambio_autorizado = 'N'
+					    <if test="idEjecutiva != null">
+						    <if test="idEjecutiva == -1">
+						    	and ot.id_ejecutiva is null
+						    </if>
+						    <if test="idEjecutiva != -1">
+						    	and ot.id_ejecutiva = #{idEjecutiva}
+						    </if>
+					    </if>
+		                and exists (select 1 from sstt_bitacoras b
+		                            where b.id_ot = ot.id_ot
+		                            and b.id_ubicacion = ot.id_stecnico
+		                            and b.d_fecha_salida is not null
+		                            and b.d_fecha_salida - b.d_fecha_entrada &lt;= #{diasExigencia}
+		                            and b.d_fecha_salida &gt;= #{fechaInicio}
+		                            and b.d_fecha_salida &lt;= #{fechaTermino})
+		                and exists (select 1 from sstt_bitacoras b1
+		                            inner join sstt_ubicaciones cd on cd.id_ubicacion = b1.id_ubicacion
+		                            where b1.id_ot = ot.id_ot
+		                            and cd.s_tipo = 'CD')
+		                and exists (select 1 from sstt_recepciones r
+		                            where r.id_ot = ot.id_ot
+		                            and r.id_usuario is not null
+		                            and r.d_fecha_recepcion is not null
+		                            and r.d_fecha_registro is not null
+		                            and r.d_fecha_recepcion &gt;= #{fechaInicio}
+		                            and r.d_fecha_recepcion &lt;= #{fechaTermino}
+		                            and r.i_nmro_guia &gt; 0
+		                            and r.id_origen = ot.id_stecnico
+		                            and r.id_estado = 60001000)
+		        ) or (  ot.s_cambio_autorizado = 'S'
+		                and ot.d_fecha_cambio_autorizado is not null
+		                and ot.d_fecha_cambio_autorizado &gt;= #{fechaInicio}
+		                and ot.d_fecha_cambio_autorizado &lt;= #{fechaTermino}
+		                and exists (select 1 from sstt_bitacoras b 
+		                            where b.id_ot = ot.id_ot
+		                            and b.id_ubicacion = ot.id_stecnico
+		                            and ot.d_fecha_cambio_autorizado - b.d_fecha_entrada &lt;= #{diasExigencia})
+		                and exists (select 1 from sstt_bitacoras b1
+		                            inner join sstt_ubicaciones cd on cd.id_ubicacion = b1.id_ubicacion
+		                            where b1.id_ot = ot.id_ot
+		                            and cd.s_tipo = 'CD'))))
+		    /                        
+		    (select 
+		        decode(count(ot.id_ot),0,-1,count(ot.id_ot)) as i_cont
+		    from 
+		        sstt_ordenes_trabajo ot
+		    where 
+		            ot.s_vigente = 'S'
+		        and ot.s_tipo in ('GP','GPC')
+		        and ((  ot.s_cambio_autorizado = 'N'
+					    <if test="idEjecutiva != null">
+						    <if test="idEjecutiva == -1">
+						    	and ot.id_ejecutiva is null
+						    </if>
+						    <if test="idEjecutiva != -1">
+						    	and ot.id_ejecutiva = #{idEjecutiva}
+						    </if>
+					    </if>
+		                and exists (select 1 from sstt_bitacoras b
+		                            where b.id_ot = ot.id_ot
+		                            and b.id_ubicacion = ot.id_stecnico
+		                            and b.d_fecha_salida is not null
+		                            and b.d_fecha_salida &gt;= #{fechaInicio}
+		                            and b.d_fecha_salida &lt;= #{fechaTermino})
+		                and exists (select 1 from sstt_bitacoras b1
+		                            inner join sstt_ubicaciones cd on cd.id_ubicacion = b1.id_ubicacion
+		                            where b1.id_ot = ot.id_ot
+		                            and cd.s_tipo = 'CD')
+		                and exists (select 1 from sstt_recepciones r
+		                            where r.id_ot = ot.id_ot
+		                            and r.id_usuario is not null
+		                            and r.d_fecha_recepcion is not null
+		                            and r.d_fecha_registro is not null
+		                            and r.d_fecha_recepcion &gt;= #{fechaInicio}
+		                            and r.d_fecha_recepcion &lt;= #{fechaTermino}
+		                            and r.i_nmro_guia &gt; 0
+		                            and r.id_origen = ot.id_stecnico
+		                            and r.id_estado = 60001000)
+		        ) or (  ot.s_cambio_autorizado = 'S'
+		                and ot.d_fecha_cambio_autorizado is not null
+		                and ot.d_fecha_cambio_autorizado &gt;= #{fechaInicio}
+		                and ot.d_fecha_cambio_autorizado &lt;= #{fechaTermino}
+		                and exists (select 1 from sstt_bitacoras b 
+		                            where b.id_ot = ot.id_ot
+		                            and b.id_ubicacion = ot.id_stecnico)
+		                and exists (select 1 from sstt_bitacoras b1
+		                            inner join sstt_ubicaciones cd on cd.id_ubicacion = b1.id_ubicacion
+		                            where b1.id_ot = ot.id_ot
+		                            and cd.s_tipo = 'CD')))) as valor
+		from dual
+	</select>
+	
+	<select id="listNivelServicioOTPorCDIndicador" parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="ordenTrabajo.listOT"/>
+	    where 
+	            ot.s_vigente = 'S'
+	        and ot.s_tipo in ('GP','GPC')
+	        and ((  ot.s_cambio_autorizado = 'N'
+				    <if test="idEjecutiva != null">
+					    <if test="idEjecutiva == -1">
+					    	and ot.id_ejecutiva is null
+					    </if>
+					    <if test="idEjecutiva != -1">
+					    	and ot.id_ejecutiva = #{idEjecutiva}
+					    </if>
+				    </if>
+	                and exists (select 1 from sstt_bitacoras b
+	                            where b.id_ot = ot.id_ot
+	                            and b.id_ubicacion = ot.id_stecnico
+	                            and b.d_fecha_salida is not null
+	                            and b.d_fecha_salida - b.d_fecha_entrada &lt;= #{diasExigencia}
+	                            and b.d_fecha_salida &gt;= #{fechaInicio}
+	                            and b.d_fecha_salida &lt;= #{fechaTermino})
+	                and exists (select 1 from sstt_bitacoras b1
+	                            inner join sstt_ubicaciones cd on cd.id_ubicacion = b1.id_ubicacion
+	                            where b1.id_ot = ot.id_ot
+	                            and cd.s_tipo = 'CD')
+	                and exists (select 1 from sstt_recepciones r
+	                            where r.id_ot = ot.id_ot
+	                            and r.id_usuario is not null
+	                            and r.d_fecha_recepcion is not null
+	                            and r.d_fecha_registro is not null
+	                            and r.d_fecha_recepcion &gt;= #{fechaInicio}
+	                            and r.d_fecha_recepcion &lt;= #{fechaTermino}
+	                            and r.i_nmro_guia &gt; 0
+	                            and r.id_origen = ot.id_stecnico
+	                            and r.id_estado = 60001000)
+	        ) or (  ot.s_cambio_autorizado = 'S'
+	                and ot.d_fecha_cambio_autorizado is not null
+	                and ot.d_fecha_cambio_autorizado &gt;= #{fechaInicio}
+	                and ot.d_fecha_cambio_autorizado &lt;= #{fechaTermino}
+	                and exists (select 1 from sstt_bitacoras b 
+	                            where b.id_ot = ot.id_ot
+	                            and b.id_ubicacion = ot.id_stecnico
+	                            and ot.d_fecha_cambio_autorizado - b.d_fecha_entrada &lt;= #{diasExigencia})
+	                and exists (select 1 from sstt_bitacoras b1
+	                            inner join sstt_ubicaciones cd on cd.id_ubicacion = b1.id_ubicacion
+	                            where b1.id_ot = ot.id_ot
+	                            and cd.s_tipo = 'CD')))
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getNivelServicioOTNOPorCDIndicador" parameterType="FilterIndicador" resultType="Double">
+		select
+		    (select 
+		        count(ot.id_ot) as i_cont
+		    from 
+		        sstt_ordenes_trabajo ot
+		    where 
+		            ot.s_vigente = 'S'
+		        and ot.s_tipo in ('GP','GPC')
+		        and ((  ot.s_cambio_autorizado = 'N'
+					    <if test="idEjecutiva != null">
+						    <if test="idEjecutiva == -1">
+						    	and ot.id_ejecutiva is null
+						    </if>
+						    <if test="idEjecutiva != -1">
+						    	and ot.id_ejecutiva = #{idEjecutiva}
+						    </if>
+					    </if>
+		                and exists (select 1 from sstt_bitacoras b
+		                            where b.id_ot = ot.id_ot
+		                            and b.id_ubicacion = ot.id_stecnico
+		                            and b.d_fecha_salida is not null
+		                            and b.d_fecha_salida - b.d_fecha_entrada &lt;= #{diasExigencia}
+		                            and b.d_fecha_salida &gt;= #{fechaInicio}
+		                            and b.d_fecha_salida &lt;= #{fechaTermino})
+		                and not exists (select 1 from sstt_bitacoras b1
+		                            inner join sstt_ubicaciones cd on cd.id_ubicacion = b1.id_ubicacion
+		                            where b1.id_ot = ot.id_ot
+		                            and cd.s_tipo = 'CD')
+		                and exists (select 1 from sstt_recepciones r
+		                            where r.id_ot = ot.id_ot
+		                            and r.id_usuario is not null
+		                            and r.d_fecha_recepcion is not null
+		                            and r.d_fecha_registro is not null
+		                            and r.d_fecha_recepcion &gt;= #{fechaInicio}
+		                            and r.d_fecha_recepcion &lt;= #{fechaTermino}
+		                            and r.i_nmro_guia &gt; 0
+		                            and r.id_origen = ot.id_stecnico
+		                            and r.id_estado = 60001000)
+		        ) or (  ot.s_cambio_autorizado = 'S'
+		                and ot.d_fecha_cambio_autorizado is not null
+		                and ot.d_fecha_cambio_autorizado &gt;= #{fechaInicio}
+		                and ot.d_fecha_cambio_autorizado &lt;= #{fechaTermino}
+		                and exists (select 1 from sstt_bitacoras b 
+		                            where b.id_ot = ot.id_ot
+		                            and b.id_ubicacion = ot.id_stecnico
+		                            and ot.d_fecha_cambio_autorizado - b.d_fecha_entrada &lt;= #{diasExigencia})
+		                and not exists (select 1 from sstt_bitacoras b1
+		                            inner join sstt_ubicaciones cd on cd.id_ubicacion = b1.id_ubicacion
+		                            where b1.id_ot = ot.id_ot
+		                            and cd.s_tipo = 'CD'))))
+		    /                        
+		    (select 
+		        decode(count(ot.id_ot),0,-1,count(ot.id_ot)) as i_cont
+		    from 
+		        sstt_ordenes_trabajo ot
+		    where 
+		            ot.s_vigente = 'S'
+		        and ot.s_tipo in ('GP','GPC')
+		        and ((  ot.s_cambio_autorizado = 'N'
+					    <if test="idEjecutiva != null">
+						    <if test="idEjecutiva == -1">
+						    	and ot.id_ejecutiva is null
+						    </if>
+						    <if test="idEjecutiva != -1">
+						    	and ot.id_ejecutiva = #{idEjecutiva}
+						    </if>
+					    </if>
+		                and exists (select 1 from sstt_bitacoras b
+		                            where b.id_ot = ot.id_ot
+		                            and b.id_ubicacion = ot.id_stecnico
+		                            and b.d_fecha_salida is not null
+		                            and b.d_fecha_salida &gt;= #{fechaInicio}
+		                            and b.d_fecha_salida &lt;= #{fechaTermino})
+		                and not exists (select 1 from sstt_bitacoras b1
+		                            inner join sstt_ubicaciones cd on cd.id_ubicacion = b1.id_ubicacion
+		                            where b1.id_ot = ot.id_ot
+		                            and cd.s_tipo = 'CD')
+		                and exists (select 1 from sstt_recepciones r
+		                            where r.id_ot = ot.id_ot
+		                            and r.id_usuario is not null
+		                            and r.d_fecha_recepcion is not null
+		                            and r.d_fecha_registro is not null
+		                            and r.d_fecha_recepcion &gt;= #{fechaInicio}
+		                            and r.d_fecha_recepcion &lt;= #{fechaTermino}
+		                            and r.i_nmro_guia &gt; 0
+		                            and r.id_origen = ot.id_stecnico
+		                            and r.id_estado = 60001000)
+		        ) or (  ot.s_cambio_autorizado = 'S'
+		                and ot.d_fecha_cambio_autorizado is not null
+		                and ot.d_fecha_cambio_autorizado &gt;= #{fechaInicio}
+		                and ot.d_fecha_cambio_autorizado &lt;= #{fechaTermino}
+		                and exists (select 1 from sstt_bitacoras b 
+		                            where b.id_ot = ot.id_ot
+		                            and b.id_ubicacion = ot.id_stecnico)
+		                and not exists (select 1 from sstt_bitacoras b1
+		                            inner join sstt_ubicaciones cd on cd.id_ubicacion = b1.id_ubicacion
+		                            where b1.id_ot = ot.id_ot
+		                            and cd.s_tipo = 'CD')))) as valor
+		from dual
+	</select>
+	
+	<select id="listNivelServicioOTNOPorCDIndicador" parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="ordenTrabajo.listOT"/>
+	    where 
+	            ot.s_vigente = 'S'
+	        and ot.s_tipo in ('GP','GPC')
+	        and ((  ot.s_cambio_autorizado = 'N'
+				    <if test="idEjecutiva != null">
+					    <if test="idEjecutiva == -1">
+					    	and ot.id_ejecutiva is null
+					    </if>
+					    <if test="idEjecutiva != -1">
+					    	and ot.id_ejecutiva = #{idEjecutiva}
+					    </if>
+				    </if>
+	                and exists (select 1 from sstt_bitacoras b
+	                            where b.id_ot = ot.id_ot
+	                            and b.id_ubicacion = ot.id_stecnico
+	                            and b.d_fecha_salida is not null
+	                            and b.d_fecha_salida - b.d_fecha_entrada &lt;= #{diasExigencia}
+	                            and b.d_fecha_salida &gt;= #{fechaInicio}
+	                            and b.d_fecha_salida &lt;= #{fechaTermino})
+	                and not exists (select 1 from sstt_bitacoras b1
+	                            inner join sstt_ubicaciones cd on cd.id_ubicacion = b1.id_ubicacion
+	                            where b1.id_ot = ot.id_ot
+	                            and cd.s_tipo = 'CD')
+	                and exists (select 1 from sstt_recepciones r
+	                            where r.id_ot = ot.id_ot
+	                            and r.id_usuario is not null
+	                            and r.d_fecha_recepcion is not null
+	                            and r.d_fecha_registro is not null
+	                            and r.d_fecha_recepcion &gt;= #{fechaInicio}
+	                            and r.d_fecha_recepcion &lt;= #{fechaTermino}
+	                            and r.i_nmro_guia &gt; 0
+	                            and r.id_origen = ot.id_stecnico
+	                            and r.id_estado = 60001000)
+	        ) or (  ot.s_cambio_autorizado = 'S'
+	                and ot.d_fecha_cambio_autorizado is not null
+	                and ot.d_fecha_cambio_autorizado &gt;= #{fechaInicio}
+	                and ot.d_fecha_cambio_autorizado &lt;= #{fechaTermino}
+	                and exists (select 1 from sstt_bitacoras b 
+	                            where b.id_ot = ot.id_ot
+	                            and b.id_ubicacion = ot.id_stecnico
+	                            and ot.d_fecha_cambio_autorizado - b.d_fecha_entrada &lt;= #{diasExigencia})
+	                and not exists (select 1 from sstt_bitacoras b1
+	                            inner join sstt_ubicaciones cd on cd.id_ubicacion = b1.id_ubicacion
+	                            where b1.id_ot = ot.id_ot
+	                            and cd.s_tipo = 'CD')))
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getNivelServicioOTAcidoIndicador" parameterType="FilterIndicador" resultType="Double">
+		select
+		    (select 
+		        count(ot.id_ot) as i_cont
+		    from 
+		        sstt_ordenes_trabajo ot
+		    where 
+		            ot.s_vigente = 'S'
+		        and ot.s_tipo in ('GP','GPC')
+		        and ot.id_stecnico &gt; 0
+			    <if test="idEjecutiva != null">
+				    <if test="idEjecutiva == -1">
+				    	and ot.id_ejecutiva is null
+				    </if>
+				    <if test="idEjecutiva != -1">
+				    	and ot.id_ejecutiva = #{idEjecutiva}
+				    </if>
+			    </if>
+		        and exists (select 1 from sstt_bitacoras b
+		                    inner join sstt_guias g on b.id_guia = g.id_guia
+		                    inner join sstt_ubicaciones sc on sc.id_ubicacion = g.id_destino
+		                    inner join sstt_ubicaciones cd on cd.id_ubicacion = g.id_origen
+		                    where b.id_ot = ot.id_ot
+		                    and g.s_vigente = 'S'
+		                    and g.s_entrega_cliente = 'N'
+		                    and g.id_estado in (50002000, 50003000, 50005000)
+		                    and sc.s_tipo = 'SC'
+		                    and cd.s_tipo in ('CD', 'BR')
+		                    and g.d_fecha_emision &gt;= #{fechaInicio}
+		                    and g.d_fecha_emision &lt;= #{fechaTermino}
+		                    and g.d_fecha_emision - ot.d_fecha_creacion &lt;= #{diasExigencia}))
+		    /
+		    (select 
+		        decode(count(ot.id_ot),0,-1,count(ot.id_ot)) as i_cont
+		    from 
+		        sstt_ordenes_trabajo ot
+		    where 
+		            ot.s_vigente = 'S'
+		        and ot.s_tipo in ('GP','GPC')
+		        and ot.id_stecnico &gt; 0
+			    <if test="idEjecutiva != null">
+				    <if test="idEjecutiva == -1">
+				    	and ot.id_ejecutiva is null
+				    </if>
+				    <if test="idEjecutiva != -1">
+				    	and ot.id_ejecutiva = #{idEjecutiva}
+				    </if>
+			    </if>
+		        and exists (select 1 from sstt_bitacoras b
+		                    inner join sstt_guias g on b.id_guia = g.id_guia
+		                    inner join sstt_ubicaciones sc on sc.id_ubicacion = g.id_destino
+		                    inner join sstt_ubicaciones cd on cd.id_ubicacion = g.id_origen
+		                    where b.id_ot = ot.id_ot
+		                    and g.s_vigente = 'S'
+		                    and g.s_entrega_cliente = 'N'
+		                    and g.id_estado in (50002000, 50003000, 50005000)
+		                    and sc.s_tipo = 'SC'
+		                    and cd.s_tipo in ('CD', 'BR')
+		                    and g.d_fecha_emision &gt;= #{fechaInicio}
+		                    and g.d_fecha_emision &lt;= #{fechaTermino})
+		    ) as valor
+		from dual
+	</select>
+	
+	<select id="listNivelServicioOTAcidoIndicador" parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="ordenTrabajo.listOT"/>
+	    where 
+	            ot.s_vigente = 'S'
+	        and ot.s_tipo in ('GP','GPC')
+	        and ot.id_stecnico &gt; 0
+		    <if test="idEjecutiva != null">
+			    <if test="idEjecutiva == -1">
+			    	and ot.id_ejecutiva is null
+			    </if>
+			    <if test="idEjecutiva != -1">
+			    	and ot.id_ejecutiva = #{idEjecutiva}
+			    </if>
+		    </if>
+	        and exists (select 1 from sstt_bitacoras b
+	                    inner join sstt_guias g on b.id_guia = g.id_guia
+	                    inner join sstt_ubicaciones sc on sc.id_ubicacion = g.id_destino
+	                    inner join sstt_ubicaciones cd on cd.id_ubicacion = g.id_origen
+	                    where b.id_ot = ot.id_ot
+	                    and g.s_vigente = 'S'
+	                    and g.s_entrega_cliente = 'N'
+	                    and g.id_estado in (50002000, 50003000, 50005000)
+	                    and sc.s_tipo = 'SC'
+	                    and cd.s_tipo in ('CD', 'BR')
+	                    and g.d_fecha_emision &gt;= #{fechaInicio}
+	                    and g.d_fecha_emision &lt;= #{fechaTermino}
+	                    and g.d_fecha_emision - ot.d_fecha_creacion &lt;= #{diasExigencia})
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTiempoPromedioSTLIndicador" parameterType="FilterIndicador" resultType="Double">
+		select 
+            nvl(avg(bitacoras.d_fecha_salida - bitacoras.d_fecha_entrada), 0)
+		from 
+		    sstt_ordenes_trabajo ot
+            inner join sstt_bitacoras bitacoras on bitacoras.id_ot = ot.id_ot
+		where 
+		        ot.s_vigente = 'S'
+		    <if test="idEjecutiva != null">
+			    <if test="idEjecutiva == -1">
+			    	and ot.id_ejecutiva is null
+			    </if>
+			    <if test="idEjecutiva != -1">
+			    	and ot.id_ejecutiva = #{idEjecutiva}
+			    </if>
+		    </if>
+		    and ot.s_tipo in ('GP','GPC')
+		    and bitacoras.id_ubicacion = ot.id_stecnico
+		    and bitacoras.d_fecha_salida is not null
+		    and bitacoras.d_fecha_salida &gt;= #{fechaInicio}
+		    and bitacoras.d_fecha_salida &lt;= #{fechaTermino}
+		    and not exists (select 1 from sstt_bitacoras b1
+		                    inner join sstt_ubicaciones cd on cd.id_ubicacion = b1.id_ubicacion
+		                    where b1.id_ot = ot.id_ot
+		                    and cd.s_tipo in ('CD', 'BR'))
+	</select>
+	
+	<select id="listTiempoPromedioSTLIndicador" parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="ordenTrabajo.listOT"/>
+		inner join sstt_bitacoras bitacoras on bitacoras.id_ot = ot.id_ot
+		where 
+		        ot.s_vigente = 'S'
+		    <if test="idEjecutiva != null">
+			    <if test="idEjecutiva == -1">
+			    	and ot.id_ejecutiva is null
+			    </if>
+			    <if test="idEjecutiva != -1">
+			    	and ot.id_ejecutiva = #{idEjecutiva}
+			    </if>
+		    </if>
+		    and ot.s_tipo in ('GP','GPC')
+		    and bitacoras.id_ubicacion = ot.id_stecnico
+		    and bitacoras.d_fecha_salida is not null
+		    and bitacoras.d_fecha_salida &gt;= #{fechaInicio}
+		    and bitacoras.d_fecha_salida &lt;= #{fechaTermino}
+		    and not exists (select 1 from sstt_bitacoras b1
+		                    inner join sstt_ubicaciones cd on cd.id_ubicacion = b1.id_ubicacion
+		                    where b1.id_ot = ot.id_ot
+		                    and cd.s_tipo in ('CD', 'BR'))
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTiempoPromedioOTSolucionadaIndicador" parameterType="FilterIndicador" resultType="Double">
+		select 
+		    round(nvl(avg(c),0),1) 
+		from
+		    (
+		        select 
+		            g.d_fecha_emision - ot.d_fecha_creacion as c
+		        from 
+		            sstt_guias g
+		            inner join sstt_ordenes_trabajo ot on ot.id_ot = g.id_ot
+		            inner join sstt_ubicaciones sc on sc.id_ubicacion = g.id_destino
+		        where 
+		                ot.s_vigente = 'S'
+		            and ot.s_cambio_autorizado = 'N'
+				    <if test="idEjecutiva != null">
+					    <if test="idEjecutiva == -1">
+					    	and ot.id_ejecutiva is null
+					    </if>
+					    <if test="idEjecutiva != -1">
+					    	and ot.id_ejecutiva = #{idEjecutiva}
+					    </if>
+				    </if>
+		            and ot.s_tipo in ('GP','GPC')
+		            and g.id_estado in (50002000, 50003000, 50005000)
+		            and g.i_numero &gt; 0
+		            and g.s_entrega_cliente = 'N'
+		            and g.s_vigente = 'S'
+                    and g.d_fecha_emision &gt;= #{fechaInicio}
+                    and g.d_fecha_emision &lt;= #{fechaTermino}
+		            and sc.s_tipo = 'SC'
+		            and g.d_fecha_emision is not null
+		        union    
+		        select 
+		            ot.d_fecha_cambio_autorizado - ot.d_fecha_creacion
+		        from 
+		            sstt_ordenes_trabajo ot
+		        where 
+		                ot.s_vigente = 'S'
+		            and ot.s_tipo in ('GP','GPC')
+				    <if test="idEjecutiva != null">
+					    <if test="idEjecutiva == -1">
+					    	and ot.id_ejecutiva is null
+					    </if>
+					    <if test="idEjecutiva != -1">
+					    	and ot.id_ejecutiva = #{idEjecutiva}
+					    </if>
+				    </if>
+		            and ot.s_cambio_autorizado = 'S'
+		            and ot.d_fecha_cambio_autorizado is not null
+		            and ot.d_fecha_cambio_autorizado &gt;= #{fechaInicio}
+		            and ot.d_fecha_cambio_autorizado &lt;= #{fechaTermino}
+		            and exists (select 1 from sstt_bitacoras b
+		                        inner join sstt_ubicaciones cd on cd.id_ubicacion = b.id_ubicacion
+		                        where cd.s_tipo in ('CD', 'BR')
+		                        and b.id_ot = ot.id_ot)
+		    ) t
+    </select>
+	
+	<select id="listTiempoPromedioOTSolucionadaIndicador" parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="ordenTrabajo.listOT"/>
+		where ot.id_ot in 
+				(
+		        select 
+		            ot.id_ot
+		        from 
+		            sstt_guias g
+		            inner join sstt_ordenes_trabajo ot on ot.id_ot = g.id_ot
+		            inner join sstt_ubicaciones sc on sc.id_ubicacion = g.id_destino
+		        where 
+		                ot.s_vigente = 'S'
+		            and ot.s_cambio_autorizado = 'N'
+				    <if test="idEjecutiva != null">
+					    <if test="idEjecutiva == -1">
+					    	and ot.id_ejecutiva is null
+					    </if>
+					    <if test="idEjecutiva != -1">
+					    	and ot.id_ejecutiva = #{idEjecutiva}
+					    </if>
+				    </if>
+		            and ot.s_tipo in ('GP','GPC')
+		            and g.id_estado in (50002000, 50003000, 50005000)
+		            and g.i_numero &gt; 0
+		            and g.s_entrega_cliente = 'N'
+		            and g.s_vigente = 'S'
+                    and g.d_fecha_emision &gt;= #{fechaInicio}
+                    and g.d_fecha_emision &lt;= #{fechaTermino}
+		            and sc.s_tipo = 'SC'
+		            and g.d_fecha_emision is not null
+		        union    
+		        select 
+		            ot.id_ot
+		        from 
+		            sstt_ordenes_trabajo ot
+		        where 
+		                ot.s_vigente = 'S'
+		            and ot.s_tipo in ('GP','GPC')
+				    <if test="idEjecutiva != null">
+					    <if test="idEjecutiva == -1">
+					    	and ot.id_ejecutiva is null
+					    </if>
+					    <if test="idEjecutiva != -1">
+					    	and ot.id_ejecutiva = #{idEjecutiva}
+					    </if>
+				    </if>
+		            and ot.s_cambio_autorizado = 'S'
+		            and ot.d_fecha_cambio_autorizado is not null
+		            and ot.d_fecha_cambio_autorizado &gt;= #{fechaInicio}
+		            and ot.d_fecha_cambio_autorizado &lt;= #{fechaTermino}
+		            and exists (select 1 from sstt_bitacoras b
+		                        inner join sstt_ubicaciones cd on cd.id_ubicacion = b.id_ubicacion
+		                        where cd.s_tipo in ('CD', 'BR')
+		                        and b.id_ot = ot.id_ot)
+				)
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTiempoPromedioEntregaClienteIndicador" parameterType="FilterIndicador" resultType="Double">
+		select 
+		    nvl(round(avg(ot.d_fecha_cierre_cliente - ot.d_fecha_creacion),1), 0)
+		from 
+		    sstt_ordenes_trabajo ot
+		where 
+		        ot.s_vigente = 'S'
+		    <if test="idEjecutiva != null">
+			    <if test="idEjecutiva == -1">
+			    	and ot.id_ejecutiva is null
+			    </if>
+			    <if test="idEjecutiva != -1">
+			    	and ot.id_ejecutiva = #{idEjecutiva}
+			    </if>
+		    </if>
+		    and ot.s_cerrada_cliente = 'S'
+		    and ot.s_tipo in ('GP','GPC')
+		   	and ot.d_fecha_cierre_cliente &gt;= #{fechaInicio}
+		    and ot.d_fecha_cierre_cliente &lt;= #{fechaTermino}
+	</select>
+	
+	<select id="listTiempoPromedioEntregaClienteIndicador" parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="ordenTrabajo.listOT"/>
+		where 
+		        ot.s_vigente = 'S'
+		    <if test="idEjecutiva != null">
+			    <if test="idEjecutiva == -1">
+			    	and ot.id_ejecutiva is null
+			    </if>
+			    <if test="idEjecutiva != -1">
+			    	and ot.id_ejecutiva = #{idEjecutiva}
+			    </if>
+		    </if>
+		    and ot.s_cerrada_cliente = 'S'
+		    and ot.s_tipo in ('GP','GPC')
+		   	and ot.d_fecha_cierre_cliente &gt;= #{fechaInicio}
+		    and ot.d_fecha_cierre_cliente &lt;= #{fechaTermino}
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+</mapper>

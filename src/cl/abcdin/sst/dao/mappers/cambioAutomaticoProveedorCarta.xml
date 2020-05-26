@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cambioAutomaticoProveedorCarta">
+
+	<resultMap type="CambioAutomaticoProveedorCarta" id="cambioAutomaticoProveedorCarta">
+		<result column="d_fecha_creacion"               property="fechaCreacion"/>
+	    <result column="i_numero_certificado"           property="numeroCertificado"/>
+	    <result column="id_cambios_aut_por_proveedor"   property="id"/>
+	    <result column="id_producto"                    property="producto.id"/>
+	    <result column="id_usuario"                     property="usuario.id"/>
+	    <result column="s_entregado"                    property="entregaCliente"/>
+	    <result column="s_estado"                       property="vigente"/>
+	    <result column="s_nmro_serie"                   property="numeroSerie"/>
+	    <result column="s_ot_en_proceso"                property="enProceso"/>
+	</resultMap>
+	
+	<select id="getVigenteByNumeroSerie" parameterType="CambioAutomaticoProveedorCarta" resultMap="cambioAutomaticoProveedorCarta">
+		select 
+		    cpp.d_fecha_creacion, 
+		    cpp.i_numero_certificado, 
+		    cpp.id_cambios_aut_por_proveedor, 
+		    cpp.id_producto, 
+		    cpp.id_usuario, 
+		    cpp.s_entregado, 
+		    cpp.s_estado, 
+		    cpp.s_nmro_serie, 
+		    cpp.s_ot_en_proceso 
+		from 
+		    sstt_cambios_aut_por_proveedor cpp 
+		where 
+		    	cpp.s_nmro_serie = #{numeroSerie}
+		   	and cpp.id_producto = #{producto.id}
+		    and cpp.s_estado = 'S'
+	</select>
+	
+	<select id="getVigenteByNumeroSerieAndProducto" parameterType="CambioAutomaticoProveedorCarta" resultMap="cambioAutomaticoProveedorCarta">
+		select 
+		    cpp.d_fecha_creacion, 
+		    cpp.i_numero_certificado, 
+		    cpp.id_cambios_aut_por_proveedor, 
+		    cpp.id_producto, 
+		    cpp.id_usuario, 
+		    cpp.s_entregado, 
+		    cpp.s_estado, 
+		    cpp.s_nmro_serie, 
+		    cpp.s_ot_en_proceso 
+		from 
+		    sstt_cambios_aut_por_proveedor cpp 
+		where 
+			<if test="numeroSerie == null">
+		   		cpp.s_nmro_serie is null
+		   	</if>
+		   	<if test="numeroSerie != null">
+		   		cpp.s_nmro_serie = #{numeroSerie}
+		   	</if>
+		   	and cpp.id_producto = #{producto.id}
+		    and cpp.s_estado = 'S'
+	</select>
+	
+	<select id="getVigenteByNumeroSerieAndProductoAndCertificado" parameterType="CambioAutomaticoProveedorCarta" resultMap="cambioAutomaticoProveedorCarta">
+		select 
+		    cpp.d_fecha_creacion, 
+		    cpp.i_numero_certificado, 
+		    cpp.id_cambios_aut_por_proveedor, 
+		    cpp.id_producto, 
+		    cpp.id_usuario, 
+		    cpp.s_entregado, 
+		    cpp.s_estado, 
+		    cpp.s_nmro_serie, 
+		    cpp.s_ot_en_proceso 
+		from 
+		    sstt_cambios_aut_por_proveedor cpp 
+		where 
+				cpp.i_numero_certificado = #{numeroCertificado}
+		   	and cpp.id_producto = #{producto.id}
+		   	<if test="numeroSerie == null">
+		   		and cpp.s_nmro_serie is null
+		   	</if>
+		   	<if test="numeroSerie != null">
+		   		and cpp.s_nmro_serie = #{numeroSerie}
+		   	</if>
+		    and cpp.s_estado = 'S'
+	</select>
+
+	<insert id="saveCambioAutProveedorCarta" parameterType="CambioAutomaticoProveedorCarta" keyColumn="id_cambios_aut_por_proveedor" keyProperty="id">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select SSTS_CAMBIOS_AUT_POR_PROVEEDOR.nextval from dual
+		</selectKey>
+		insert into sstt_cambios_aut_por_proveedor(
+			id_cambios_aut_por_proveedor,
+			i_numero_certificado, 
+			s_nmro_serie,
+			id_producto, 
+			s_estado, 
+			s_entregado,
+			d_fecha_Creacion, 
+			id_usuario,
+			s_ot_en_proceso
+		) values (                         
+			 #{id}
+			,#{numeroCertificado}
+			,#{numeroSerie}
+			,#{producto.id}
+			,#{vigente}
+			,#{entregaCliente}
+			,sysdate
+			,#{usuario.id}
+			,#{enProceso}
+		)
+	</insert>
+	
+	<select id="getNumeroCertificadoByIdProducto" parameterType="Producto"  resultMap="cambioAutomaticoProveedorCarta">
+		select 
+		    cpp.i_numero_certificado
+		from 
+		    sstt_cambios_aut_por_proveedor cpp
+		where
+		    cpp.id_producto = #{id}
+	</select>
+</mapper>

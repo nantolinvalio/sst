@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cliente">
+
+	<resultMap type="Cliente" id="cliente">
+		<result property="id"								column="id_cliente"/>
+		<result property="rut"								column="id_cliente" typeHandler="RunTypeHandler"/>
+		<result property="nombreCompleto"					column="s_nombre"/>
+		<result property="comuna.id"						column="id_comuna"/>
+		<result property="comuna.glosa"						column="s_nombre_comuna"/>
+		<result property="comuna.provincia.region.id"		column="id_region"/>
+		<result property="comuna.provincia.region.glosa"	column="s_nombre_region"/>
+		<result property="comuna.ciudad"                    column="s_nombre_ciudad"/>
+		<result property="poblacion"						column="s_poblacion"/>
+		<result property="celular"							column="s_celular"/>
+		<result property="telefono"							column="s_telefono"/>
+		<result property="email"							column="s_email"/>
+		<result property="calle"							column="s_calle"/>
+		<result property="numeroCasa"						column="s_numero"/>
+		<result property="documento.tipo"					column="s_tipo_documento"/>
+		<result property="documento.id"						column="id_documento"/>
+	</resultMap>
+	
+	<select id="getClienteByOT" parameterType="Long" resultMap="cliente">
+		select 
+            c.id_cliente
+    		,c.s_nombre
+    		,c.s_celular
+    		,c.s_telefono
+    		,c.s_email
+    		,c.s_poblacion
+    		,c.s_calle
+    		,c.s_numero
+    		,c.id_comuna
+    		,cm.s_nombre as s_nombre_comuna
+            ,cm.s_ciudad as s_nombre_ciudad
+			,r.id_region
+			,r.s_nombre as s_nombre_region
+		from sstt_ordenes_trabajo ot
+     		inner join sstt_clientes c on c.id_cliente = ot.id_cliente
+		    left join sstt_comunas cm on cm.id_comuna = c.id_comuna
+		    left join sstt_provincias p on p.id_provincia = cm.id_provincia
+		    left join sstt_regiones r on r.id_region = p.id_region
+		where
+     		ot.id_ot= #{idOT}
+	</select>
+	
+	<select id="getClienteByFilter" parameterType="Documento" resultMap="cliente">
+		select
+    		c.id_cliente
+    		,c.s_nombre
+    		,c.s_celular
+    		,c.s_telefono
+    		,c.s_email
+    		,c.s_poblacion
+    		,c.s_calle
+    		,c.s_numero
+    		,c.id_comuna
+    		,cm.s_nombre as s_nombre_comuna
+    		,c.s_tipo_documento
+    		,c.id_documento 
+			,r.id_region
+			,r.s_nombre as s_nombre_region
+		from sstv_clientes c 
+		    left join sstt_comunas cm on cm.id_comuna = c.id_comuna
+		    left join sstt_provincias p on p.id_provincia = cm.id_provincia
+		    left join sstt_regiones r on r.id_region = p.id_region
+		where c.s_tipo_documento = #{tipo} 
+			and c.id_documento =  #{id}
+			and rownum = 1
+	</select>
+	
+	<select id="getClienteByRut" parameterType="Cliente" resultMap="cliente">
+		select 
+            c.id_cliente
+    		,c.s_nombre
+    		,c.s_celular
+    		,c.s_telefono
+    		,c.s_email
+    		,c.s_poblacion
+    		,c.s_calle
+    		,c.s_numero
+    		,c.id_comuna
+    		,cm.s_nombre as s_nombre_comuna
+			,r.id_region
+			,r.s_nombre as s_nombre_region
+		from sstv_cliente c 
+		    left join sstt_comunas cm on cm.id_comuna = c.id_comuna
+		    left join sstt_provincias p on p.id_provincia = cm.id_provincia
+		    left join sstt_regiones r on r.id_region = p.id_region
+		where c.id_cliente = #{rut, typeHandler=RunTypeHandler}
+			and rownum = 1
+	</select>
+	
+	<select id="getClienteByRutFromSST" parameterType="Cliente" resultMap="cliente">
+		select 
+            c.id_cliente
+    		,c.s_nombre
+    		,c.s_celular
+    		,c.s_telefono
+    		,c.s_email
+    		,c.s_poblacion
+    		,c.s_calle
+    		,c.s_numero
+    		,c.id_comuna
+    		,cm.s_nombre as s_nombre_comuna
+			,r.id_region
+			,r.s_nombre as s_nombre_region
+		from sstt_clientes c
+		    left join sstt_comunas cm on cm.id_comuna = c.id_comuna
+		    left join sstt_provincias p on p.id_provincia = cm.id_provincia
+		    left join sstt_regiones r on r.id_region = p.id_region
+		where c.id_cliente = #{rut, typeHandler=RunTypeHandler}
+	</select>
+	
+	<insert id="saveCliente" parameterType="Cliente" >
+		insert into sstt_clientes (
+			id_cliente
+			,s_nombre
+			,s_celular
+			,s_telefono
+			,s_email
+			,s_poblacion
+			,s_calle
+			,s_numero
+			,id_comuna
+		) values (
+			#{rut, typeHandler=RunTypeHandler}
+			,#{nombreCompleto}
+			,#{celular}
+			,#{telefono}
+			,#{email}
+			,#{poblacion}
+			,#{calle}
+			,#{numeroCasa}
+			,#{comuna.id}
+		)
+	</insert>
+	
+	<insert id="updateCliente" parameterType="Cliente" >
+		update sstt_clientes set
+			s_nombre        = #{nombreCompleto}
+			,s_celular      = #{celular}       
+			,s_telefono     = #{telefono}      
+			,s_email        = #{email}         
+			,s_poblacion    = #{poblacion}     
+			,s_calle        = #{calle}         
+			,s_numero       = #{numeroCasa}    
+			,id_comuna      = #{comuna.id} 
+		where
+			id_cliente = #{rut, typeHandler=RunTypeHandler} 
+	</insert>
+</mapper>

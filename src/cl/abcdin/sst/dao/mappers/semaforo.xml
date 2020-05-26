@@ -1,0 +1,852 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="semaforo">
+
+	<select id="listSemaforo" parameterType="SemaforoFilter" resultType="OrdenTrabajo">
+		select ot.id_ot as id
+		<if test="tipoSemaforo.equals('suc_inicio')"> 
+			,ot.i_semaforo_sucursal_inicio as semaforoSucursalInicio
+		</if>
+		<if test="tipoSemaforo.equals('suc_fin')"> 
+			,ot.i_semaforo_sucursal_fin semaforoSucursalFin 
+		</if>
+		<if test="tipoSemaforo.equals('s_tecnico')"> 
+			,ot.i_semaforo_stecnico as semaforoServicioTecnico
+		</if>        
+        from 
+        	sstt_bitacoras b
+        	inner join sstt_ordenes_trabajo ot on ot.id_ot = b.id_ot
+        where 
+        	ot.s_vigente = 'S'
+        and ot.s_cerrada = 'N'
+        and b.d_fecha_entrada is not null
+        and b.d_fecha_salida is null
+        <if test="tipoSemaforo.equals('suc_inicio')">        	
+			and b.id_ubicacion = ot.id_sucursal
+			and b.id_estado IN (20002000, 20008000, 20016000)
+		</if>
+        <if test="tipoSemaforo.equals('suc_fin')">
+        	and b.id_ubicacion = ot.id_sucursal
+			and b.id_estado = 20006000
+		</if>
+		<if test="tipoSemaforo.equals('s_tecnico')">
+			and b.id_ubicacion = ot.id_stecnico
+			and b.id_estado IN (20012000, 20020000, 20035000, 20039000, 20004000)
+		</if>
+		and ot.id_ot in
+		<foreach collection="ordenTrabajos" open="(" close=")" separator="," item="ordenTrabajo" >
+			#{ordenTrabajo.id}
+		</foreach>
+	</select>	
+	
+	<update id="updateSemaforoPrioridadSucIni" parameterType="OrdenTrabajo">
+		 update sstt_ordenes_trabajo ot 
+		 set ot.i_semaforo_sucursal_inicio = #{semaforoSucursalInicio}
+		 where ot.id_ot = #{id}	
+	</update>  
+	
+	<update id="updateSemaforoPrioridadSucFin" parameterType="OrdenTrabajo">
+		 update sstt_ordenes_trabajo ot 
+		 set ot.i_semaforo_sucursal_fin = #{semaforoSucursalfin}
+		 where ot.id_ot = #{id}	
+	</update>  
+	
+	<update id="updateSemaforoPrioridadST" parameterType="OrdenTrabajo">
+		 update sstt_ordenes_trabajo ot 
+		 set ot.i_semaforo_stecnico = #{semaforoServicioTecnico}
+		 where ot.id_ot = #{id}	
+	</update> 
+	
+	<resultMap type="Semaforo" id="semaforo">
+			<result property="verdeClaro"          column="verde_claro"/>
+			<result property="verdeOscuro"         column="verde_oscuro"/>
+			<result property="amarillo"            column="amarillo"/>
+			<result property="rojo"                column="rojo"/>
+			<result property="total"               column="i_total"/>
+			<result property="id"                  column="id"/>
+	</resultMap>
+	
+	
+	<select id="getOtNotDespachadasFromSucursal" parameterType="Indicador" resultType="Long" >
+        select
+            <if test="rangoMinimo != null or rangoMaximo != null">
+				nvl(sum(case when
+				<if test="rangoMinimo != null">
+					(trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &gt; #{rangoMinimo}
+				</if>
+				<if test="rangoMinimo != null and rangoMaximo != null">
+				and
+				</if>
+				<if test="rangoMaximo != null">
+				(trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &lt;= #{rangoMaximo}
+				</if>
+				then
+				1
+				else 0 end),0)
+			</if>
+			<if test="rangoMinimo == null and rangoMaximo == null">
+				nvl(sum(case when (trunc(sysdate,'dd')) - trunc(ot.d_fecha_cambio_autorizado,'dd') is not null then 1 else 0 end),0)
+			</if>
+        from 
+        	sstt_ordenes_trabajo ot
+        where
+                ot.s_vigente = 'S'
+            and ot.s_cerrada_cliente = 'S'
+            and ot.s_cerrada = 'N'
+            and ot.s_tipo_cambio in ('FF','CP')
+            and exists (select 1 from 
+                            sstt_bitacoras b 
+                            inner join sstt_ubicaciones u on u.id_ubicacion = b.id_ubicacion 
+                        where
+                                b.d_fecha_salida is null
+                            and b.id_ot = ot.id_ot
+                            and u.s_tipo = 'SC' )
+	</select> 
+	
+	<select id="getOtNotRecibidasInBodega" parameterType="Indicador" resultType="Long">
+		 select
+             <if test="rangoMinimo != null or rangoMaximo != null">
+				nvl(sum(case when
+				<if test="rangoMinimo != null">
+					(trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &gt; #{rangoMinimo}
+				</if>
+				<if test="rangoMinimo != null and rangoMaximo != null">
+				and
+				</if>
+				<if test="rangoMaximo != null">
+				(trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &lt;= #{rangoMaximo}
+				</if>
+				then
+				1
+				else 0 end),0)
+			</if>
+			<if test="rangoMinimo == null and rangoMaximo == null">
+				nvl(sum(case when (trunc(sysdate,'dd')) - trunc(ot.d_fecha_cambio_autorizado,'dd') is not null then 1 else 0 end),0)
+			</if>
+		from		   
+			sstt_ordenes_trabajo ot
+		where
+		        ot.s_vigente = 'S'
+		    and ot.s_cerrada_cliente = 'S'
+		    and ot.s_cerrada = 'N'
+		    and ot.s_tipo_cambio in ('FF','CP')
+		    and exists (select 1 from
+		                    sstt_bitacoras b
+		                    inner join sstt_guias g on g.id_guia = b.id_guia
+		                    inner join sstt_ubicaciones u on u.id_ubicacion = g.id_origen
+		                where
+		                        b.id_ot = ot.id_ot 
+		                    and g.id_estado = 50002000
+		                    and g.s_vigente = 'S' 
+		                    and u.s_tipo = 'SC' )
+		    and exists (select 1 from 
+		                    sstt_bitacoras b 
+		                where 
+		                        b.id_ot = ot.id_ot 
+		                    and b.d_fecha_salida is null
+		                    and b.id_ubicacion is null )
+	</select>
+	
+	<select id="getGuiasEmitidasToTransportistas" parameterType="Indicador" resultType="Long">
+		select
+			 <if test="rangoMinimo != null or rangoMaximo != null">
+				sum(case when
+				<if test="rangoMinimo != null">
+				(trunc(sysdate,'dd') - trunc(g.d_fecha_emision,'dd')) &gt; #{rangoMinimo}
+				</if>
+				<if test="rangoMinimo != null and rangoMaximo != null">
+				and
+				</if>
+				<if test="rangoMaximo != null">
+				(trunc(sysdate,'dd') - trunc(g.d_fecha_emision,'dd')) &lt;= #{rangoMaximo}
+				</if>
+				then
+				1
+				else 0 end)
+			</if>
+			<if test="rangoMinimo == null and rangoMaximo == null">
+				nvl(sum(case when (trunc(sysdate,'dd')) - trunc(g.d_fecha_emision,'dd') is not null then 1 else 0 end),0)
+			</if>
+		from
+		    sstt_guias g
+		where 
+		        g.s_vigente = 'S'
+		    and g.id_origen = 10012
+		    and g.id_destino = 11
+		    and g.id_estado = 50002000
+	</select>
+	
+	<select id="getOtPendientesWithRecepcionFaltante" parameterType="Indicador" resultType="Long">
+		select 
+			   <if test="rangoMinimo != null or rangoMaximo != null">
+				nvl(sum(case when
+				<if test="rangoMinimo != null">
+					(trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &gt; #{rangoMinimo}
+				</if>
+				<if test="rangoMinimo != null and rangoMaximo != null">
+				and
+				</if>
+				<if test="rangoMaximo != null">
+				(trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &lt;= #{rangoMaximo}
+				</if>
+				then
+				1
+				else 0 end),0)
+			</if>
+			<if test="rangoMinimo == null and rangoMaximo == null">
+				nvl(sum(case when (trunc(sysdate,'dd')) - trunc(ot.d_fecha_cambio_autorizado,'dd') is not null then 1 else 0 end),0)
+			</if>
+		from 
+		    sstt_ordenes_trabajo ot
+		    inner join sstt_bitacoras b on b.id_ot = ot.id_ot and b.d_fecha_salida is null
+		where
+		        ot.s_vigente = 'S'
+		    and ot.s_cerrada_cliente = 'S'
+		    and ot.s_cerrada = 'N'
+		    and ot.s_tipo != 'GM' 
+		    and exists (select 1 from 
+		                    sstt_bitacoras b 
+		                    inner join sstt_guias g on b.id_guia = g.id_guia
+		                where
+                            b.id_ot = ot.id_ot
+		                    and g.id_estado = 50008000
+                            and g.id_destino = 10012)
+	</select>
+	
+	<select id="getOtPendientesWithRecepcionIncompleta"  parameterType="Indicador" resultType="Long">
+		select
+			   <if test="rangoMinimo != null or rangoMaximo != null">
+				nvl(sum(case when
+				<if test="rangoMinimo != null">
+					(trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &gt; #{rangoMinimo}
+				</if>
+				<if test="rangoMinimo != null and rangoMaximo != null">
+				and
+				</if>
+				<if test="rangoMaximo != null">
+				(trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &lt;= #{rangoMaximo}
+				</if>
+				then
+				1
+				else 0 end),0)
+			</if>
+			<if test="rangoMinimo == null and rangoMaximo == null">
+				nvl(sum(case when (trunc(sysdate,'dd')) - trunc(ot.d_fecha_cambio_autorizado,'dd') is not null then 1 else 0 end),0)
+			</if>
+		from 
+		    sstt_ordenes_trabajo ot
+		where
+		        ot.s_vigente = 'S'
+		    and ot.s_cerrada_cliente = 'S'
+		    and ot.s_cerrada = 'N'
+		     and ot.s_tipo != 'GM' 
+		    and ot.id_estado = 10034000
+	</select>
+	
+	
+	
+	<select id="getOtRecibidasFFAndNotRevisadasInSP" parameterType="Indicador" resultType="Long">
+		select
+			  <if test="rangoMinimo != null or rangoMaximo != null">
+				nvl(sum(case when
+				<if test="rangoMinimo != null">
+					(trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &gt; #{rangoMinimo}
+				</if>
+				<if test="rangoMinimo != null and rangoMaximo != null">
+				and
+				</if>
+				<if test="rangoMaximo != null">
+				(trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &lt;= #{rangoMaximo}
+				</if>
+				then
+				1
+				else 0 end),0)
+			</if>
+			<if test="rangoMinimo == null and rangoMaximo == null">
+				nvl(sum(case when (trunc(sysdate,'dd')) - trunc(ot.d_fecha_cambio_autorizado,'dd') is not null then 1 else 0 end),0)
+			</if>
+		from 
+		    sstt_ordenes_trabajo ot
+		where
+			 ot.s_vigente = 'S'
+		    and ot.s_cerrada_cliente = 'S'
+		    and ot.s_cerrada = 'N'
+	     	and ot.s_tipo != 'GM' 
+		    and ot.id_estado = 10032000
+		    and exists (select 1 
+		            from sstt_bitacoras b 
+		            where b.id_ot = ot.id_ot 
+		                and b.d_fecha_salida is null
+		                and b.id_ubicacion = 10012) 
+		    and exists  (select 1
+		                from sstt_bitacoras_internas bi
+		                where bi.d_fecha_termino is null
+		                    and bi.id_ubicacion_interna != 1001200001)
+	</select>
+	
+	<select id="getOtNotRecibidasInSP" parameterType="Indicador" resultType="Long">
+		select
+			   <if test="rangoMinimo != null or rangoMaximo != null">
+				nvl(sum(case when
+				<if test="rangoMinimo != null">
+					(trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &gt; #{rangoMinimo}
+				</if>
+				<if test="rangoMinimo != null and rangoMaximo != null">
+				and
+				</if>
+				<if test="rangoMaximo != null">
+				(trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &lt;= #{rangoMaximo}
+				</if>
+				then
+				1
+				else 0 end),0)
+			</if>
+			<if test="rangoMinimo == null and rangoMaximo == null">
+				nvl(sum(case when (trunc(sysdate,'dd')) - trunc(ot.d_fecha_cambio_autorizado,'dd') is not null then 1 else 0 end),0)
+			</if>
+		from 
+		    sstt_ordenes_trabajo ot
+		where
+		    ot.s_vigente = 'S'
+		    and ot.s_cerrada_cliente = 'S'
+		    and ot.s_cerrada = 'N'
+		     and ot.s_tipo != 'GM' 
+		    and ot.id_estado = 10032000
+		    and exists (select 1 
+				        from sstt_bitacoras b 
+				        where b.id_ot = ot.id_ot 
+				              and b.d_fecha_salida is null
+				              and b.id_ubicacion = 10012)
+		    and exists  (select 1
+				         from sstt_bitacoras_internas bi
+				         where bi.id_ot = ot.id_ot
+		                       and bi.id_ubicacion_interna = 12 
+		                       and bi.d_fecha_termino is null 
+		                       and bi.s_clasificacion is null)
+	</select>
+	
+	<select id="getOtWithClasificasionCPAndNotDesapachaFromSP" parameterType="Indicador" resultType="Long">
+		select
+			   <if test="rangoMinimo != null or rangoMaximo != null">
+				nvl(sum(case when
+				<if test="rangoMinimo != null">
+					(trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &gt; #{rangoMinimo}
+				</if>
+				<if test="rangoMinimo != null and rangoMaximo != null">
+				and
+				</if>
+				<if test="rangoMaximo != null">
+				(trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &lt;= #{rangoMaximo}
+				</if>
+				then
+				1
+				else 0 end),0)
+			</if>
+			<if test="rangoMinimo == null and rangoMaximo == null">
+				nvl(sum(case when (trunc(sysdate,'dd')) - trunc(ot.d_fecha_cambio_autorizado,'dd') is not null then 1 else 0 end),0)
+			</if>
+		from
+		     sstt_ordenes_trabajo ot
+            inner join sstt_bitacoras bi on bi.id_ot = ot.id_ot and bi.d_fecha_salida is null
+            left join sstt_bitacoras_internas bii on bii.id_ot = ot.id_ot and bii.d_fecha_termino is null
+		where
+		  	ot.s_vigente = 'S'
+		    and ot.s_cerrada_cliente = 'S'
+		    and ot.s_cerrada = 'N'
+		     and ot.s_tipo != 'GM' 
+		    and exists (select 1 from 
+		                    sstt_bitacoras_internas b 
+		                where
+		                        b.d_fecha_termino is null
+		                    and b.id_ot = ot.id_ot
+		                    and b.s_clasificacion = 'CP')
+	</select>
+	
+	<select id="getOtWithClasificasionRPAndNotDesapachaFromSP" parameterType="Indicador" resultType="Long">
+		select
+			    <if test="rangoMinimo != null or rangoMaximo != null">
+				nvl(sum(case when
+				<if test="rangoMinimo != null">
+					(trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &gt; #{rangoMinimo}
+				</if>
+				<if test="rangoMinimo != null and rangoMaximo != null">
+				and
+				</if>
+				<if test="rangoMaximo != null">
+				(trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &lt;= #{rangoMaximo}
+				</if>
+				then
+				1
+				else 0 end),0)
+			</if>
+			<if test="rangoMinimo == null and rangoMaximo == null">
+				nvl(sum(case when (trunc(sysdate,'dd')) - trunc(ot.d_fecha_cambio_autorizado,'dd') is not null then 1 else 0 end),0)
+			</if>
+		from
+		    sstt_ordenes_trabajo ot
+		    inner join sstt_bitacoras bi on bi.id_ot = ot.id_ot and bi.d_fecha_salida is null
+            left join sstt_bitacoras_internas bii on bii.id_ot = ot.id_ot and bii.d_fecha_termino is null
+		where
+		        ot.s_vigente = 'S'
+		    and ot.s_cerrada_cliente = 'S'
+		    and ot.s_cerrada = 'N'
+		     and ot.s_tipo != 'GM' 
+		    and exists (select 1 from 
+		                    sstt_bitacoras_internas b 
+		                where
+		                        b.d_fecha_termino is null
+		                    and b.id_ot = ot.id_ot
+		                    and b.s_clasificacion = 'RP')
+	</select>
+	
+	<select id="getOtWithClasificasionDAAndNotDesapachaFromSP" parameterType="Indicador" resultType="Long">
+		select
+			   <if test="rangoMinimo != null or rangoMaximo != null">
+				nvl(sum(case when
+				<if test="rangoMinimo != null">
+					(trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &gt; #{rangoMinimo}
+				</if>
+				<if test="rangoMinimo != null and rangoMaximo != null">
+				and
+				</if>
+				<if test="rangoMaximo != null">
+				(trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &lt;= #{rangoMaximo}
+				</if>
+				then
+				1
+				else 0 end),0)
+			</if>
+			<if test="rangoMinimo == null and rangoMaximo == null">
+				nvl(sum(case when (trunc(sysdate,'dd')) - trunc(ot.d_fecha_cambio_autorizado,'dd') is not null then 1 else 0 end),0)
+			</if>
+		from
+		    sstt_ordenes_trabajo ot
+		    inner join sstt_bitacoras bi on bi.id_ot = ot.id_ot and bi.d_fecha_salida is null
+            left join sstt_bitacoras_internas bii on bii.id_ot = ot.id_ot and bii.d_fecha_termino is null
+		where
+		        ot.s_vigente = 'S'
+		    and ot.s_cerrada_cliente = 'S'
+		    and ot.s_cerrada = 'N'
+		     and ot.s_tipo != 'GM' 
+		    and exists (select 1 from 
+		                    sstt_bitacoras_internas b 
+		                where
+		                        b.d_fecha_termino is null
+		                    and b.id_ot = ot.id_ot
+		                    and b.s_clasificacion = 'DA')
+	</select>
+	
+	<select id="getOtWithClasificasionAVAndNotDesapachaFromSP" parameterType="Indicador" resultType="Long">
+		select
+			  <if test="rangoMinimo != null or rangoMaximo != null">
+				nvl(sum(case when
+				<if test="rangoMinimo != null">
+					(trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &gt; #{rangoMinimo}
+				</if>
+				<if test="rangoMinimo != null and rangoMaximo != null">
+				and
+				</if>
+				<if test="rangoMaximo != null">
+				(trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &lt;= #{rangoMaximo}
+				</if>
+				then
+				1
+				else 0 end),0)
+			</if>
+			<if test="rangoMinimo == null and rangoMaximo == null">
+				nvl(sum(case when (trunc(sysdate,'dd')) - trunc(ot.d_fecha_cambio_autorizado,'dd') is not null then 1 else 0 end),0)
+			</if>
+		from
+		    sstt_ordenes_trabajo ot
+		    inner join sstt_bitacoras bi on bi.id_ot = ot.id_ot and bi.d_fecha_salida is null
+            left join sstt_bitacoras_internas bii on bii.id_ot = ot.id_ot and bii.d_fecha_termino is null
+		where
+		        ot.s_vigente = 'S'
+		    and ot.s_cerrada_cliente = 'S'
+		    and ot.s_cerrada = 'N'
+		     and ot.s_tipo != 'GM' 
+		    and exists (select 1 from 
+		                    sstt_bitacoras_internas b 
+		                where
+		                        b.d_fecha_termino is null
+		                    and b.id_ot = ot.id_ot
+		                    and b.s_clasificacion = 'AV')
+	</select>
+	
+	<select id="listOtOtNotDespachadasFromSucursal" parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		 <include refid="listOTForSemaforo"/>
+        where
+                ot.s_vigente = 'S'
+            and ot.s_cerrada_cliente = 'S'
+            and ot.s_cerrada = 'N'
+            and ot.s_tipo_cambio in ('FF','CP')
+            and exists (select 1 from 
+                            sstt_bitacoras b 
+                            inner join sstt_ubicaciones u on u.id_ubicacion = b.id_ubicacion 
+                        where
+                                b.d_fecha_salida is null
+                            and b.id_ot = ot.id_ot
+                            and u.s_tipo = 'SC' )
+			<if test="indicador.rangoMinimo != null">
+				and (trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &gt;= #{indicador.rangoMinimo}
+			</if>
+			<if test="indicador.rangoMaximo != null">
+				and (trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &lt;= #{indicador.rangoMaximo}
+			</if>
+			<if test="orderBy != null and !orderBy.equals('')">
+				order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+			</if>
+	</select>
+	
+	<select id="listOtNotRecibidasInBodega" parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="listOTForSemaforo"/>
+       where
+		        ot.s_vigente = 'S'
+		    and ot.s_cerrada_cliente = 'S'
+		    and ot.s_cerrada = 'N'
+		    and ot.s_tipo_cambio in ('FF','CP')
+		    and exists (select 1 from
+		                    sstt_bitacoras b
+		                    inner join sstt_guias g on g.id_guia = b.id_guia
+		                    inner join sstt_ubicaciones u on u.id_ubicacion = g.id_origen
+		                where
+		                        b.id_ot = ot.id_ot 
+		                    and g.id_estado = 50002000
+		                    and g.s_vigente = 'S' 
+		                    and u.s_tipo = 'SC' )
+		    and exists (select 1 from 
+		                    sstt_bitacoras b 
+		                where 
+		                        b.id_ot = ot.id_ot 
+		                    and b.d_fecha_salida is null
+		                    and b.id_ubicacion is null )
+           <if test="indicador.rangoMinimo != null">
+				and (trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &gt;= #{indicador.rangoMinimo}
+			</if>
+			<if test="indicador.rangoMaximo != null">
+				and (trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &lt;= #{indicador.rangoMaximo}
+			</if> 
+	</select>
+	
+	
+	<select id="listGuiasEmitidasToTransportistas" parameterType="FilterIndicador" resultMap="guia.guia">
+		select 
+            g.id_estado,
+            g.id_guia,
+            e.s_nombre s_nombre_estado,
+            g.id_origen,
+            u.s_nombre s_nombre,
+            g.id_destino,
+            uu.s_nombre s_nombre_destino,
+            g.id_usuario,
+            usu.s_nombre|| ' ' ||usu.s_apellido_paterno s_nombre_usuario_completo,
+            g.id_transportista,
+            tr.s_nombre s_nombre_transportista,
+            g.i_numero,
+            g.d_fecha_registro,
+            g.d_fecha_emision,
+            g.s_patente,
+            g.s_tipo_guia
+        from 
+            sstt_guias g
+            inner join sstt_estados e on e.id_estado = g.id_estado
+            inner join sstt_ubicaciones u on u.id_ubicacion = g.id_origen
+            inner join sstt_ubicaciones uu on uu.id_ubicacion = g.id_destino
+            inner join sstt_usuarios usu on usu.id_usuario = g.id_usuario
+            inner join owv_transportistas tr on tr.id_transportista = g.id_transportista
+        where
+                g.s_vigente = 'S'
+            and g.id_origen = 10012
+            and g.id_destino = 11
+            and g.id_estado = 50002000
+  			<if test="indicador.rangoMinimo != null">
+  				and (trunc(sysdate,'dd') - trunc(g.d_fecha_emision,'dd')) &gt; #{indicador.rangoMinimo}
+			</if>
+			<if test="indicador.rangoMaximo != null">
+				and (trunc(sysdate,'dd') - trunc(g.d_fecha_emision,'dd')) &lt;= #{indicador.rangoMaximo}
+			</if>
+	</select>
+	
+	<select id="listOtPendientesWithRecepcionFaltante" parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="listOTForSemaforo"/>
+    	where
+		        ot.s_vigente = 'S'
+		    and ot.s_cerrada_cliente = 'S'
+		    and ot.s_cerrada = 'N'
+		    and ot.s_tipo != 'GM' 
+		   and exists (select 1 from 
+		                    sstt_bitacoras b 
+		                    inner join sstt_guias g on b.id_guia = g.id_guia
+		                where
+                            b.id_ot = ot.id_ot
+		                    and g.id_estado = 50008000
+                            and g.id_destino = 10012)
+		<if test="indicador.rangoMinimo != null">
+  				and (trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &gt; #{indicador.rangoMinimo}
+		</if>
+		<if test="indicador.rangoMaximo != null">
+			and (trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &lt;= #{indicador.rangoMaximo}
+		</if>
+	</select>
+	
+	<select id="listOtPendientesWithRecepcionIncompleta" parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="listOTForSemaforo"/>
+    	where
+		         ot.s_vigente = 'S'
+		    and ot.s_cerrada_cliente = 'S'
+		    and ot.s_cerrada = 'N'
+		    and ot.s_tipo != 'GM' 
+		    and ot.id_estado = 10034000
+	    <if test="indicador.rangoMinimo != null">
+			and (trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &gt; #{indicador.rangoMinimo}
+		</if>
+		<if test="indicador.rangoMaximo != null">
+			and (trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &lt;= #{indicador.rangoMaximo}
+		</if>
+	</select>
+	
+	<select id="ListOtRecibidasFFAndNotRevisadasInSP" parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="listOTForSemaforo"/>
+    	where
+		      	 ot.s_vigente = 'S'
+		    and ot.s_cerrada_cliente = 'S'
+		    and ot.s_cerrada = 'N'
+		     and ot.s_tipo != 'GM' 
+		    and ot.id_estado = 10032000
+		    and exists (select 1 
+		            from sstt_bitacoras b 
+		            where b.id_ot = ot.id_ot 
+		                and b.d_fecha_salida is null
+		                and b.id_ubicacion = 10012) 
+		    and exists  (select 1
+		                from sstt_bitacoras_internas bi
+		                where bi.d_fecha_termino is null
+		                    and bi.id_ubicacion_interna != 1001200001)
+		<if test="indicador.rangoMinimo != null">
+			and (trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &gt; #{indicador.rangoMinimo}
+		</if>
+		<if test="indicador.rangoMaximo != null">
+			and (trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &lt;= #{indicador.rangoMaximo}
+		</if>
+	</select>
+	
+	<select id="listOtNotRecibidasInSP" parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="listOTForSemaforo"/>
+    	where
+		    ot.s_vigente = 'S'
+		    and ot.s_cerrada_cliente = 'S'
+		    and ot.s_cerrada = 'N'
+		     and ot.s_tipo != 'GM' 
+		    and ot.id_estado = 10032000
+		    and exists (select 1 
+				        from sstt_bitacoras b 
+				        where b.id_ot = ot.id_ot 
+				              and b.d_fecha_salida is null
+				              and b.id_ubicacion = 10012)
+		    and exists  (select 1
+				         from sstt_bitacoras_internas bi
+				         where bi.id_ot = ot.id_ot
+		                       and bi.id_ubicacion_interna = 12 
+		                       and bi.d_fecha_termino is null 
+		                       and bi.s_clasificacion is null)
+		<if test="indicador.rangoMinimo != null">
+			and (trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &gt; #{indicador.rangoMinimo}
+		</if>
+		<if test="indicador.rangoMaximo != null">
+			and (trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &lt;= #{indicador.rangoMaximo}
+		</if>		                       
+	</select>
+	
+	
+	<select id="listOtWithClasificasionCPAndNotDesapachaFromSP" parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="listOTForSemaforo"/>
+    	where
+		  	ot.s_vigente = 'S'
+		    and ot.s_cerrada_cliente = 'S'
+		    and ot.s_cerrada = 'N'
+		     and ot.s_tipo != 'GM' 
+		    and exists (select 1 from 
+		                    sstt_bitacoras_internas b 
+		                where
+		                        b.d_fecha_termino is null
+		                    and b.id_ot = ot.id_ot
+		                    and b.s_clasificacion = 'CP')
+		<if test="indicador.rangoMinimo != null">
+			and (trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &gt; #{indicador.rangoMinimo}
+		</if>
+		<if test="indicador.rangoMaximo != null">
+			and (trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &lt;= #{indicador.rangoMaximo}
+		</if>		                    
+	</select>
+	
+	<select id="listOtWithClasificasionRPAndNotDesapachaFromSP" parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="listOTForSemaforo"/>
+    	where
+		     ot.s_vigente = 'S'
+		    and ot.s_cerrada_cliente = 'S'
+		    and ot.s_cerrada = 'N'
+		     and ot.s_tipo != 'GM' 
+		    and exists (select 1 from 
+		                    sstt_bitacoras_internas b 
+		                where
+		                        b.d_fecha_termino is null
+		                    and b.id_ot = ot.id_ot
+		                    and b.s_clasificacion = 'RP')
+		<if test="indicador.rangoMinimo != null">
+			and (trunc(sysdate,'dd') - trunc(ot.d_fecha_creacion,'dd')) &gt; #{indicador.rangoMinimo}
+		</if>
+		<if test="indicador.rangoMaximo != null">
+			and (trunc(sysdate,'dd') - trunc(ot.d_fecha_creacion,'dd')) &lt;= #{indicador.rangoMaximo}
+		</if>		                    
+	</select>
+	
+	<select id="listOtWithClasificasionDAAndNotDesapachaFromSP" parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="listOTForSemaforo"/>
+    	where
+		     ot.s_vigente = 'S'
+		    and ot.s_cerrada_cliente = 'S'
+		    and ot.s_cerrada = 'N'
+		     and ot.s_tipo != 'GM' 
+		    and exists (select 1 from 
+		                    sstt_bitacoras_internas b 
+		                where
+		                        b.d_fecha_termino is null
+		                    and b.id_ot = ot.id_ot
+		                    and b.s_clasificacion = 'DA')
+		<if test="indicador.rangoMinimo != null">
+			and (trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &gt; #{indicador.rangoMinimo}
+		</if>
+		<if test="indicador.rangoMaximo != null">
+			and (trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &lt;= #{indicador.rangoMaximo}
+		</if>                  
+	</select>
+	
+	
+	<select id="listOtWithClasificasionAVAndNotDesapachaFromSP" parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="listOTForSemaforo"/>
+    	where
+		     ot.s_vigente = 'S'
+		    and ot.s_cerrada_cliente = 'S'
+		    and ot.s_cerrada = 'N'
+		     and ot.s_tipo != 'GM' 
+		    and exists (select 1 from 
+		                    sstt_bitacoras_internas b 
+		                where
+		                        b.d_fecha_termino is null
+		                    and b.id_ot = ot.id_ot
+		                    and b.s_clasificacion = 'AV')
+		<if test="indicador.rangoMinimo != null">
+			and (trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &gt; #{indicador.rangoMinimo}
+		</if>
+		<if test="indicador.rangoMaximo != null">
+			and (trunc(sysdate,'dd') - trunc(ot.d_fecha_cambio_autorizado,'dd')) &lt;= #{indicador.rangoMaximo}
+		</if>		                    
+	</select>
+	
+	<sql id="listOTForSemaforo">
+		select 
+		    distinct (ot.id_ot)
+		    ,ot.d_fecha_vencimiento
+		    ,ot.i_nmro_cambio
+		    ,usu.s_nombre || ' ' ||usu.s_apellido_paterno ||' '|| usu.s_apellido_materno as s_logistico_nombre
+			,cl.id_cliente
+		    ,cl.s_telefono
+		    ,cl.s_celular
+		    ,co.s_nombre as s_comuna
+		    ,r.s_nombre as s_region 
+		    ,ot.s_tipo
+		    ,ot.s_motivo_cierre
+            ,ot.id_documento
+            ,ot.s_tipo_documento
+            ,ot.s_imei
+            ,ot.s_califica_fr
+            ,ot.id_destino_cambio
+		    ,ot.id_ot
+		    ,par.s_descripcion            as s_tipo_ot
+		    ,ot.id_estado
+		    ,es.s_nombre                  as s_estadonombre
+		    ,es.s_descripcion
+		    ,ot.id_producto               as id_codigo_corto
+		    ,prod.s_descripcion           as s_descripcion_producto
+		    ,ubi.s_nombre                 as s_stecnico_nombre
+		    ,ot.i_dias_servicio_tecnico
+		    ,ot.i_dias_sucursal_inicio       
+		    ,ot.i_dias_sucursal_termino
+		    ,ot.id_sucursal
+		    ,ub.s_nombre                  as s_ubicacionNombre
+		    ,ot.d_fecha_creacion
+		    ,ot.i_semaforo_stecnico
+		    ,ot.i_semaforo_sucursal_inicio
+		    ,ot.i_semaforo_sucursal_fin
+		    ,(us.s_nombre || ' ' || us.s_apellido_paterno) as s_nombre_completo_ejecutiva
+		    ,es3.s_descripcion as s_accion
+		    ,ot.i_iva
+		    ,ot.d_fecha_cambio_autorizado
+		    ,ot.id_facturar
+		    ,decode(ot.s_facturar_tipo,'Tienda',u.s_nombre,'ot.s_facturar_tipo','NO SE HA ELEGIDO A QUIEN FACTURAR') as s_empresa_factura
+		    ,ot.i_costo     
+		    ,ot.s_nmro_serie
+		    ,ot.s_contrato
+		    ,prod.id_familia
+		    ,fam.id_linea
+		    ,fam.s_nombre as s_familia 
+		    ,ma.s_nombre as s_nombre_marca
+		    ,ot.i_nmro_cargo
+		    ,cl.s_nombre                 as s_nombre_cliente
+		    ,ot.d_fecha_cierre_cliente
+		    ,ot.s_vigente
+		    ,ot.id_guia_a_sucursal
+		    ,ot.i_guia_a_bodega               
+		    ,ot.d_fecha_guia_a_sucursal  
+		    ,ot.d_fecha_guia_a_bodega   
+		    ,ot.i_guia_desde_stecnico 
+		    ,ot.i_guia_desde_sucursal            
+		    ,ot.i_nmro_guia_desde_bodega    
+		    ,ot.d_fecha_guia_desde_stecnico
+		    ,ot.d_fecha_guia_desde_sucursal 
+		    ,ot.d_fecha_guia_desde_bodega
+		    ,ot.i_guia_stecnico 
+		    ,ot.d_fecha_guia_stecnico  
+		    ,ot.d_fecha_guia_suc_envia  
+		    ,ot.i_guia_suc_envia   
+		    ,ot.d_fecha_guia_recibe_sucursal
+		    ,ot.i_guia_recibe_sucursal
+		    ,ot.i_nmro_envios_stecnico
+		    ,ot.i_nmro_folio    
+		    ,ot.i_nmro_atencion 
+		    ,ot.s_cerrada_cliente
+		    ,ot.s_cerrada
+		    ,ot.s_tarea_urgente
+		    ,ot.s_tarea_urgente_ff
+		    ,ot.s_cambio_autorizado
+		    ,ot.s_excluye_ccalidad
+		    ,0 as checkMarca     
+		    ,ot.s_ccalidad_aprueba 
+		from 
+		    sstt_ordenes_trabajo ot
+		    left join sstt_clientes cl on ot.id_cliente = cl.id_cliente
+		    left join sstt_ubicaciones u on u.id_ubicacion = ot.id_facturar
+		    left join sstt_ubicaciones ub on ub.id_ubicacion = ot.id_sucursal
+			left join sstt_comunas co on co.id_comuna = ub.id_comuna
+			left join sstt_provincias pr on pr.id_provincia = co.id_provincia
+			left join sstt_regiones r on r.id_region = pr.id_region
+		    left join sstt_estados es on es.id_estado = ot.id_estado
+		    left join sstt_ubicaciones ubi on ot.id_stecnico = ubi.id_ubicacion
+		    left join sstt_usuarios us on ot.id_ejecutiva = us.id_usuario
+			left join sstt_usuarios usu on usu.id_usuario = ot.id_logistico
+		    left join owv_productos prod on prod.id_producto = ot.id_producto
+		    left join owv_familias fam on fam.id_familia = prod.id_familia
+		    left join owv_marcas ma on ma.id_marca = prod.id_marca
+		    inner join sstt_bitacoras bi on bi.id_ot = ot.id_ot and bi.d_fecha_salida is null
+		    left join sstt_estados es3 on bi.id_estado = es3.id_estado
+		    left join sstt_estados es2 on es2.id_estado = es3.id_estado_siguiente
+		    left join sstt_parametros par on par.s_string1 = 'TIOT' and par.s_nombre = ot.s_tipo
+		    left join sstt_bitacoras_internas bii on bii.id_ot = ot.id_ot and bii.d_fecha_termino is null
+	</sql>
+</mapper>

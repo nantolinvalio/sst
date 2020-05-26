@@ -1,0 +1,35 @@
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<mapper namespace="tipoCambio">
+	<resultMap type="TipoCambio" id="tCambio">
+		<result property="id" column="id_parametro"/>
+		<result property="descripcion" column="s_descripcion"/>
+		<result property="codigo" column="s_nombre"/>
+		<result property="vigente" column="s_vigente"/>  
+	</resultMap>
+	
+	<select id="listAllTipoCambio" resultMap="tCambio"> 
+		select
+			id_parametro,
+			s_descripcion,
+			s_nombre,
+			s_vigente
+		from sstt_parametros
+		where
+			s_string1='TICA'
+	</select>
+	
+	<select id="getTipoCambioByCodigo" resultMap="tCambio" parameterType="String"> 
+		select
+			id_parametro,
+			s_descripcion,
+			s_nombre,
+			s_vigente
+		from sstt_parametros
+		where
+			s_string1='TICA'
+			and s_nombre = #{codigo}
+	</select>
+</mapper>

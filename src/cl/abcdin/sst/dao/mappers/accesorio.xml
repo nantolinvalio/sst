@@ -1,0 +1,490 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="accesorio">
+	<resultMap type="Accesorio" id="accesoriosByOT">
+		<result property="id"					column="id_accesorio_ot"/>
+		<result property="descripcion"			column="s_accesorio"/>
+		<result property="ubicacion.nombre"		column="s_ubicacion"/>
+		<result property="ubicacion.id"			column="id_ubicacion"/>
+		<result property="recibidoCd"			column="s_recibido_cd"/>
+		<result property="requerido"			column="s_requerido"/>
+		<result property="recibidoCCalidad"		column="s_recibido_ccalidad"/>
+		<result property="recibidoDestino"		column="s_recibido_destino"/>
+		<result property="ubicacion.tipo"		column="s_tipo"/>
+		<result property="codigoBarra"			column="i_cod_barra"  typeHandler="CodigoBarrasTypeHandler"/>
+		<result property="ultimaUbicacion.id"	column="id_ubicacion_ultima"/>
+		<result property="ultimaUbicacion.tipo"	column="s_tipo_ult_ubic"/>
+		<result property="ultimaUbicacion.tipo"	column="s_nombre_ult_ubic"/>
+	</resultMap>
+	
+	<resultMap type="Accesorio" id="accesorio">
+		<result property="id"                   column="id_accesorio"/>
+		<result property="descripcion"			column="s_descripcion"/>
+		<result property="producto.id"          column="id_producto" />
+		<result property="producto.familia.id"  column="id_familia" />
+		<result property="vigente"              column="s_vigente" />
+		<result property="numeroFallas"         column="i_nmro_fallas" />
+		<result property="tipo"                 column="s_tipo" />
+	</resultMap>
+	
+	<select id="get" parameterType="Long" resultMap="accesorio">
+		select 
+		    t.id_accesorio,      
+		    t.s_descripcion,     
+		    t.id_producto,       
+		    t.id_familia,           
+		    t.s_vigente,       
+		    t.s_tipo ,
+		    (select count(*) from sstt_fallas_accesorios fa , sstt_tipo_fallas f where fa.id_accesorio = t.id_accesorio and f.id_tipo_falla = fa.id_tipo_falla and f.s_vigente = 'S') as i_nmro_fallas
+		from 
+			sstt_accesorios t  
+		where
+        	t.id_accesorio = #{id}	
+	</select>
+	
+	<select id="listAccesoriosByFilter" parameterType="FilterAccesorio" resultMap="accesorio">
+		select 
+		    t.id_accesorio,      
+		    t.s_descripcion,     
+		    t.id_producto,       
+		    t.id_familia,           
+		    t.s_vigente,       
+		    t.s_tipo ,
+		    (select count(*) from sstt_fallas_accesorios fa , sstt_tipo_fallas f where fa.id_accesorio = t.id_accesorio and f.id_tipo_falla = fa.id_tipo_falla and f.s_vigente = 'S') as i_nmro_fallas
+		from sstt_accesorios t
+		<where>
+			<if test="idProducto != null" >
+			    and t.id_producto = #{idProducto}
+			</if>
+			<if test="idFamilia != null and !idFamilia.equals('')">
+			    and t.id_familia = #{idFamilia}
+			</if>
+             <if test="idTipoFalla != null">
+				and exists (select 1 from sstt_fallas_accesorios fa where fa.id_accesorio = t.id_accesorio and fa.id_tipo_falla = #{idTipoFalla})
+             </if>
+             <if test="vigente!=null and !vigente.equals('')">
+             	and t.s_vigente = #{vigente}
+             </if>
+        </where>
+        <if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTotalAccesoriosByFilter" parameterType="FilterAccesorio" resultType="Integer">
+		select 
+		    count(1) 
+		from 
+			sstt_accesorios t  
+		<where>
+			<if test="idProducto != null" >
+			    and t.id_producto = #{idProducto}
+			</if>
+			<if test="idFamilia != null and !idFamilia.equals('')">
+			    and t.id_familia = #{idFamilia}
+			</if>
+             <if test="idTipoFalla != null">
+				and exists (select 1 from sstt_fallas_accesorios fa where fa.id_accesorio = t.id_accesorio and fa.id_tipo_falla = #{idTipoFalla})
+             </if>
+             <if test="vigente!=null and !vigente.equals('')">
+             	and t.s_vigente = #{vigente}
+             </if>
+        </where>
+	</select>
+	
+	<select id="listAccesoriosNotExistsByFilter" parameterType="FilterAccesorio" resultMap="accesorio">
+		select 
+		    t.id_accesorio,      
+		    t.s_descripcion,     
+		    t.id_producto,       
+		    t.id_familia,           
+		    t.s_vigente,       
+		    t.s_tipo  
+		from 
+			sstt_accesorios t  
+		<where>
+             <if test="idProducto != null" >
+				and t.id_producto = #{idProducto}
+             </if>
+             <if test="idFamilia != null and !idFamilia.equals('')">
+				and t.id_familia = #{idFamilia}
+             </if>
+             <if test="idTipoFalla != null">
+				and not exists (select 1 from sstt_fallas_accesorios fa where fa.id_accesorio = t.id_accesorio and fa.id_tipo_falla = #{idTipoFalla})
+             </if>
+             <if test="vigente!=null and !vigente.equals('')">
+             	and t.s_vigente = #{vigente}
+             </if>
+        </where>
+        <if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>		
+	</select>
+	
+	<select id="listAccesoriosByOT" parameterType="Long" resultMap="accesoriosByOT">
+		select
+			aot.id_accesorio_ot
+			,a.s_descripcion AS s_accesorio
+			,u.s_nombre as s_ubicacion
+			,aot.s_requerido
+			,aot.s_recibido_ccalidad
+			,aot.s_recibido_cd
+			,aot.s_recibido_destino
+			,u.s_tipo
+			,aot.id_ubicacion
+			,aot.i_cod_barra
+            ,aot.id_ubicacion_ultima
+			,uu.s_tipo as s_tipo_ult_ubic
+			,uu.s_nombre as s_nombre_ult_ubic
+		from sstt_accesorios_ot aot
+			inner join sstt_accesorios a ON a.id_accesorio = aot.id_accesorio
+			left join sstt_ubicaciones u ON u.id_ubicacion = aot.id_ubicacion
+			left join sstt_ubicaciones uu ON uu.id_ubicacion = aot.id_ubicacion_ultima
+		where aot.id_ot =  #{idOT}
+		order by aot.s_requerido desc
+	</select>
+	
+	<select id="updateAccesoriosOTRequeridoN" parameterType="Long">
+		update sstt_accesorios_ot ao 
+		set ao.s_requerido = 'N' 
+		where ao.id_ot = #{idOT}
+	</select>
+	
+	<select id="updateAccesoriosOTRequridoByFilter" parameterType="FilterAccesorio">
+		update sstt_accesorios_ot ao 
+		set ao.s_requerido = 'N' 
+		where ao.id_ot = #{idOT}
+			and ao.id_accesorio = #{idAccesorio}
+	</select>
+	
+	<resultMap type="Accesorio" id="accesorioOTByOT">
+		<result property="id"				column="id_accesorio"/>
+		<result property="requerido"		column="s_requerido"/>
+		<result property="recibidoCCalidad"	column="s_recibido_ccalidad"/>
+		<result property="recibidoCd"		column="s_recibido_cd"/>
+		<result property="recibidoDestino"	column="s_recibido_destino"/>
+		<result property="ubicacion.id"		column="id_ubicacion"/>
+		<result property="codigoBarra"		column="i_cod_barra" typeHandler="CodigoBarrasTypeHandler"/>
+		<result property="ultimaUbicacion"	column="id_ubicacion_ultima"/>
+		<result property="descripcion"		column="s_descripcion"/>
+		<result property="tipo"				column="s_tipo"/>
+	</resultMap>
+	
+	<select id="listAccesoriosOTbyFilter" parameterType="FilterAccesorio" resultMap="accesorioOTByOT">
+		select 
+			ao.id_accesorio,
+			ao.s_requerido,
+			ao.s_recibido_ccalidad,
+			ao.s_recibido_cd,
+			ao.s_recibido_destino,
+			ao.id_ubicacion,
+			ao.i_cod_barra,
+			ao.id_ubicacion_ultima,
+			a.s_descripcion,
+			a.s_tipo
+		from sstt_accesorios_ot ao
+			left join sstt_accesorios a on a.id_accesorio = ao.id_accesorio
+		<where>
+			<if test="idOT!=null">
+				and ao.id_ot = #{idOT}
+			</if>
+			<if test="idUbicacion!=null">
+				and ao.id_ubicacion = #{idUbicacion}
+			</if>
+		</where>
+	</select>
+	
+	<update id="updateUbicacionAccesorio" parameterType="Accesorio">
+		update sstt_accesorios_ot aot
+		set aot.id_ubicacion = #{ubicacion.id},
+			aot.id_ubicacion_ultima = aot.id_ubicacion, 
+			aot.i_cod_barra = #{codigoBarra, typeHandler=CodigoBarrasTypeHandler}
+			<if test="requerido != null">
+				,s_requerido = #{requerido}
+			</if>
+			<if test="recibidoCCalidad != null">
+				,s_recibido_ccalidad = #{recibidoCCalidad}
+			</if>
+			<if test="recibidoCd != null">
+				,s_recibido_cd = #{recibidoCd}
+			</if>
+			
+			<if test="recibidoDestino != null">
+				,s_recibido_destino = #{recibidoDestino}
+			</if>
+		where 
+			id_accesorio_ot = #{id}
+	</update>
+	
+	<update id="updateUbicacionListAccesorio" parameterType="Accesorio">
+		update sstt_accesorios_ot aot
+		set aot.id_ubicacion = #{ubicacion.id},
+			aot.id_ubicacion_ultima = aot.id_ubicacion,
+			aot.s_recibido_cd = #{recibidoCd}
+		where id_accesorio = #{id}
+			and id_guia = #{guia.id}
+	</update>
+	
+	<update id="updateEstadoAccesorioById" parameterType="Accesorio">
+		 update sstt_accesorios_ot t
+	     set 
+	       	<if test="recibidoCd != null">	
+	       		t.s_recibido_cd      = #{recibidoCd}
+	       	</if>
+	       	<if test="recibidoDestino != null">
+	         	,t.s_recibido_destino = #{recibidoDestino}
+	        </if>
+         	<if test="ubicacion != null">
+	         	,t.id_ubicacion = #{ubicacion.id}
+         	</if>
+            where t.id_accesorio_ot = #{id}
+	</update>
+	
+	<update id="updateIdGuiaFromAccesorio">
+		update sstt_accesorios_ot 
+	    set id_guia = #{guia.id}
+	    where id_accesorio_ot = #{id}
+	</update>
+	
+	<update id="updateDesvincularGuiaFromAccesorio">
+		update sstt_accesorios_ot
+		set id_guia = null
+		where id_guia = #{id}
+		
+	</update>
+	
+	<resultMap type="Accesorio" id="accesorioOT">
+		<result property="ubicacion.id"	column="id_ubicacion"/>
+		<result property="idOT"	column="id_ot"/>
+		<result property="id"	column="id_accesorio"/>
+		<result property="ultimaUbicacion.id"	column="id_ubicacion_ultima"/>
+		<result property="guia.id"	column="id_guia"/>
+		<result property="codigoBarra"	column="i_cod_barra" typeHandler="CodigoBarrasTypeHandler"/>
+	</resultMap>
+	
+	<select id="getAccesorioForIdAndIdOT"	parameterType="Accesorio" resultMap="accesorioOT">
+		select
+			aot.id_ubicacion
+		    ,aot.id_ot
+		    ,aot.id_ubicacion_ultima
+		    ,aot.id_guia
+		    ,aot.i_cod_barra
+		    ,aot.id_accesorio_ot
+		from sstt_accesorios_ot aot
+		where id_accesorio = #{id}
+			and id_ot = #{idOT}
+	</select>
+	
+	<resultMap type="Accesorio" id="accesoriosGuiaTipo">
+		<result property="id"	column="id_accesorio_ot"/>
+		<result property="descripcion"	    column="s_accesorio"/>
+		<result property="idOT"				column="id_ot"/>
+		<result property="requerido"		column="s_requerido"/>
+		<result property="recibidoCCalidad"	column="s_recibido_ccalidad"/>
+		<result property="recibidoCd"		column="s_recibido_cd"/>
+		<result property="recibidoDestino"	column="s_recibido_destino"/>
+		<result property="ubicacion.id"		column="id_ubicacion"/>
+		<result property="ubicacion.nombre" column="s_ubicacion"/>
+		<result property="ubicacion.tipo" column="s_tipo"/>
+		<result property="codigoBarra"		column="i_cod_barra" typeHandler="CodigoBarrasTypeHandler"/>
+		<result property="ultimaUbicacion"	column="id_ultima_ubicacion"/>
+		<result property="ultimaUbicacion.tipo"	column="s_tipo_ult_ubic"/>
+		<result property="ultimaUbicacion.nombre"	column="s_nombre_ult_ubic"/>
+	</resultMap>
+	
+	<select id="listAccesoriosFromIdGuia" parameterType="FilterGuia" resultMap="accesoriosGuiaTipo">
+		    select
+            aot.id_accesorio_ot
+            ,a.id_accesorio
+            ,a.s_descripcion AS s_accesorio
+            ,u.s_nombre as s_ubicacion
+            ,aot.s_requerido
+            ,aot.s_recibido_ccalidad
+            ,aot.s_recibido_cd
+            ,aot.s_recibido_destino
+            ,u.s_tipo
+            ,aot.id_ubicacion
+            ,aot.i_cod_barra
+            ,aot.id_ubicacion_ultima
+            ,uu.s_tipo as s_tipo_ult_ubic
+            ,uu.s_nombre as s_nombre_ult_ubic
+        from sstt_accesorios_ot aot
+            inner join sstt_guias g on g.id_guia = aot.id_guia
+            inner join sstt_accesorios a ON a.id_accesorio = aot.id_accesorio
+            left join sstt_ubicaciones u ON u.id_ubicacion = aot.id_ubicacion
+            left join sstt_ubicaciones uu ON uu.id_ubicacion = aot.id_ubicacion_ultima
+        where 
+			g.id_guia = #{idGuia}
+			<if test="idOT != null">
+				and aot.id_ot = #{idOT}
+			</if>
+	</select>
+	
+	
+	<insert id="saveAcceoriosOT" parameterType="Accesorio">
+		insert into sstt_accesorios_ot (
+			id_ot
+			,id_accesorio
+			,s_requerido
+			,s_recibido_ccalidad
+			,s_recibido_cd
+			,s_recibido_destino
+			,id_ubicacion)
+		values(
+			#{idOT}
+			,#{id}
+			,#{requerido}
+			,#{recibidoCCalidad}
+			,#{recibidoCd}
+			,#{recibidoDestino}
+			,#{ubicacion.id})
+	</insert>
+	
+	<select id="existeAccesorioOTById" parameterType="Integer" resultMap="accesorioOT">
+		select count(1) 
+		from sstt_accesorios_ot t 
+		where t.id_accesorio_ot = #{id}
+	</select>
+	
+	<select id="getUbicacion" parameterType="Accesorio" resultType="Long">
+		select 
+			t.id_ubicacion
+		from sstt_accesorios_ot t 
+		where t.id_accesorio = #{id}
+			and id_guia = #{guia.id}
+	</select>
+	
+	<select id="listAllAccesoriosFromTipoGuia" parameterType="Guia" resultMap="accesoriosGuiaTipo">
+	    select
+            aot.id_accesorio_ot
+            ,a.id_accesorio
+            ,a.s_descripcion AS s_accesorio
+            ,u.s_nombre as s_ubicacion
+            ,aot.s_requerido
+            ,aot.s_recibido_ccalidad
+            ,aot.s_recibido_cd
+            ,aot.s_recibido_destino
+            ,u.s_tipo
+            ,aot.id_ubicacion
+            ,aot.i_cod_barra
+            ,aot.id_ubicacion_ultima
+            ,uu.s_tipo as s_tipo_ult_ubic
+            ,uu.s_nombre as s_nombre_ult_ubic
+        from sstt_accesorios_ot aot
+            left join sstt_guias g on g.id_guia = aot.id_guia
+            inner join sstt_accesorios a ON a.id_accesorio = aot.id_accesorio
+            left join sstt_ubicaciones u ON u.id_ubicacion = aot.id_ubicacion
+            left join sstt_ubicaciones uu ON uu.id_ubicacion = aot.id_ubicacion_ultima
+        where 
+                aot.id_ot = #{ordenTrabajo.id}
+            and g.s_tipo_guia = #{tipoGuia}
+	</select>
+	
+	<select id="ListAccesoriosFromGuiaAnterior" parameterType="Long" resultMap="accesoriosGuiaTipo">
+		select
+            aot.id_accesorio_ot
+            ,a.id_accesorio
+            ,a.s_descripcion AS s_accesorio
+            ,u.s_nombre as s_ubicacion
+            ,aot.s_requerido
+            ,aot.s_recibido_ccalidad
+            ,aot.s_recibido_cd
+            ,aot.s_recibido_destino
+            ,u.s_tipo
+            ,aot.id_ubicacion
+            ,aot.i_cod_barra
+            ,aot.id_ubicacion_ultima
+            ,uu.s_tipo as s_tipo_ult_ubic
+            ,uu.s_nombre as s_nombre_ult_ubic
+        from
+            sstt_bitacoras b
+            inner join sstt_guias g on g.id_guia = b.id_guia
+            inner join sstt_accesorios_ot aot on aot.id_guia = g.id_guia
+            inner join sstt_accesorios a ON a.id_accesorio = aot.id_accesorio
+            left join sstt_ubicaciones u ON u.id_ubicacion = aot.id_ubicacion
+            left join sstt_ubicaciones uu ON uu.id_ubicacion = aot.id_ubicacion_ultima
+        where
+            b.id_ot = #{ordenTrabajo.id}
+            and b.id_bitacora = (select max(bi.id_bitacora) from sstt_bitacoras bi 
+                                              where bi.id_ot = #{ordenTrabajo.id}
+                                              and bi.id_ubicacion &gt; 0
+                                              and bi.id_guia is not null)
+	</select>
+	
+	<select id="ListAccesoriosFromClienteByIdOT" parameterType="Long" resultMap="accesoriosGuiaTipo">
+		select 
+            aot.id_accesorio_ot
+            ,a.id_accesorio
+            ,a.s_descripcion AS s_accesorio
+            ,u.s_nombre as s_ubicacion
+            ,aot.s_requerido
+            ,aot.s_recibido_ccalidad
+            ,aot.s_recibido_cd
+            ,aot.s_recibido_destino
+            ,u.s_tipo
+            ,aot.id_ubicacion
+            ,aot.i_cod_barra
+            ,aot.id_ubicacion_ultima
+            ,uu.s_tipo as s_tipo_ult_ubic
+            ,uu.s_nombre as s_nombre_ult_ubic
+        from 
+            sstt_accesorios_ot aot
+             inner join sstt_accesorios a ON a.id_accesorio = aot.id_accesorio
+            left join sstt_ubicaciones u ON u.id_ubicacion = aot.id_ubicacion
+            left join sstt_ubicaciones uu ON uu.id_ubicacion = aot.id_ubicacion_ultima
+		where
+		    aot.id_ubicacion = 10
+		    and aot.id_ot = #{idOT}
+	</select>
+	
+	<update id="updateAccesoriosByEstado" parameterType="Accesorio">
+		update 
+			sstt_accesorios 
+		set 
+			s_vigente = #{vigente} 
+		where 
+			id_accesorio = #{id}
+	</update>
+	
+	<insert id="save" parameterType="Accesorio" keyColumn="id_accesorio" keyProperty="id">
+		<selectKey resultType="Integer" keyProperty="id" order="BEFORE">
+			select ssts_accesorios.nextval from dual
+		</selectKey>
+		insert into sstt_accesorios (
+			id_accesorio,
+			id_familia, 
+			id_producto,
+			s_descripcion, 
+			s_vigente, 
+			s_tipo
+		) values (
+			#{id},
+			#{familia.id},
+			#{producto.id},
+			#{descripcion},
+			#{vigente},
+			#{tipo}
+		)
+	</insert>
+	
+	<update id="update" parameterType="Accesorio">
+		update 
+			sstt_accesorios 
+		set 
+			id_familia     = #{familia.id}, 
+			id_producto    = #{producto.id},
+			s_descripcion  = #{descripcion},
+			s_tipo         = #{tipo},
+			s_vigente      = #{vigente} 
+		where 
+			id_accesorio = #{id}
+	</update>
+</mapper>

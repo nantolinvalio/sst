@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="destino">
+
+	<resultMap type="Destino" id="destino">
+		<result column="id_destino"  property="id" />
+		<result column="id_origen"   property="origen.id" />
+		<result column="i_destino"   property="destino.id" />
+		<result column="s_vigente"   property="vigente" />
+	</resultMap>
+	
+		<resultMap type="Ubicacion" id="ubicacion">
+		<result column="id_destino"          property="id" />
+		<result property="comuna.id"         column="id_comuna"/>
+		<result property="nombre"            column="s_nombre"/>
+		<result property="direccion"         column="s_direccion"/>
+		<result property="rut"               column="i_rut" typeHandler="RunTypeHandler"/>
+		<result property="giro"              column="s_giro"/>
+		<result property="telefono"          column="s_telefono"/>
+		<result property="tipo"              column="s_tipo"/>
+		<result property="vigente"           column="s_vigente"/>
+		<result property="region.id"         column="id_region"/>
+		<result property="comuna.glosa"      column="s_nombre_comuna"/>
+		<result property="comuna.ciudad"     column="s_nombre_ciudad"/>
+		<result property="region.glosa"      column="s_nombre_region"/>
+		<result property="glosa"             column="s_tipo_glosa"/>
+		<result property="cantidadDestinos"  column="i_cantidad_destinos"/>
+	    <result property="cantidadProductos"  column="i_cantidad_productos"/>		
+	</resultMap>
+
+   	  <select id="listDestinosUbicacion"  parameterType="FilterUbicacion" resultMap="ubicacion" >
+		select * from (
+		            select d.id_destino
+		                  ,d.i_destino
+		                  ,u.s_nombre
+		                  ,u.s_direccion
+		                  ,c.s_nombre AS s_nombre_comuna
+		                  ,r.s_nombre AS s_nombre_region
+		                  ,count(distinct stp.id_producto) AS i_cantidad_productos
+		                  ,u.s_vigente 
+		                  ,u.s_telefono
+		            from sstt_destinos d
+		                  left join sstt_stecnicos_productos stp on stp.id_stecnico = d.i_destino and stp.s_vigente = 'S'
+		                  inner join sstt_ubicaciones u on u.id_ubicacion = d.i_destino
+		                  inner join sstt_comunas c on c.id_comuna = u.id_comuna
+		                  inner join sstt_provincias p on p.id_provincia = c.id_provincia
+		                  inner join sstt_regiones r on r.id_region = p.id_region
+		            where u.s_tipo = 'ST'
+		                  AND d.s_vigente = 'S'
+		                  AND d.id_origen = #{idUbicacion}
+		            group by d.id_destino
+		                  ,d.i_destino
+		                  ,u.s_nombre
+		                  ,u.s_direccion
+		                  ,c.s_nombre
+		                  ,r.s_nombre
+		                  ,u.s_vigente
+		                  ,u.s_telefono
+		            union   
+		            select d.id_destino
+		                  ,d.i_destino
+		                  ,p.S_NOMBRE
+		                  ,p.S_DIRECCION
+		                  ,p.S_COMUNA
+		                  ,''
+		                  ,0
+		                  ,'S' 
+		                  ,nvl(p.s_codigo_area,'') || nvl(p.s_telefono,'')
+		            from
+		                sstt_destinos d
+		                inner join owv_proveedores p on p.ID_PROVEEDOR = d.i_destino
+		            where d.s_vigente = 'S'
+		                  AND d.id_origen = #{idUbicacion})
+			<if test="orderBy == null or orderBy.equals('')">
+				order by s_vigente desc, s_nombre asc
+			</if>
+			<if test="orderBy != null and !orderBy.equals('')">
+				order by ${orderBy}
+				<if test="sortOrder != null and !sortOrder.equals('')">
+					${sortOrder}
+				</if>	
+			</if>
+	</select>
+	
+	<select id="listAllDestinosUbicacionCheck"  parameterType="FilterUbicacion" resultType="CheckForFlexigrid" >
+		    select d.id_destino as "id",
+			     'N' as "check"  
+			from sstt_destinos d
+			      inner join sstt_ubicaciones u on u.id_ubicacion = d.i_destino
+			      inner join sstt_comunas c on c.id_comuna = u.id_comuna
+			      inner join sstt_provincias p on p.id_provincia = c.id_provincia
+			      inner join sstt_regiones r on r.id_region = p.id_region
+			where u.s_tipo = 'ST'
+			      AND d.s_vigente = 'S'
+			      AND d.id_origen = #{idUbicacion}
+			union   
+			select d.id_destino as "id",
+			     'N' as "check"  
+			from
+			    sstt_destinos d
+			    inner join owv_proveedores p on p.ID_PROVEEDOR = d.i_destino
+			where d.s_vigente = 'S'
+			      AND d.id_origen = #{idUbicacion}
+	</select>
+	
+	 <select id="getTotalDestinosUbicacion" parameterType="FilterUbicacion" resultType="Integer">   
+		select       
+		        (select count(1)
+		        from sstt_destinos d
+		             inner join sstt_ubicaciones u on u.id_ubicacion = d.i_destino
+		             inner join sstt_comunas c on c.id_comuna = u.id_comuna
+		             inner join sstt_provincias p on p.id_provincia = c.id_provincia
+		             inner join sstt_regiones r on r.id_region = p.id_region
+		        where u.s_tipo = 'ST'
+		            AND d.s_vigente = 'S'
+		            AND d.id_origen = #{idUbicacion})
+		        +
+		        (select count(1)
+		        from
+		            sstt_destinos d
+		            inner join owv_proveedores p on p.ID_PROVEEDOR = d.i_destino
+		        where d.s_vigente = 'S'
+		            AND d.id_origen = #{idUbicacion})
+		from dual
+	</select>
+
+	<select id="getByFilter" parameterType="FilterDestino" resultMap="destino">
+		select
+			id_destino
+			,id_origen
+			,i_destino
+			,s_vigente
+		from sstt_destinos
+		where 
+			id_origen = #{idOrigen}
+		and i_destino = #{idDestino}
+	</select>
+	
+	<update id="updateVigencia" parameterType="Destino">
+		update sstt_destinos
+		set s_vigente = #{vigente}
+		where id_destino = #{id}
+	</update>
+	
+	<insert id="save" parameterType="Destino">
+		insert into sstt_destinos (
+			id_origen
+			,i_destino
+			,s_vigente
+		) values (
+			#{origen.id}
+			,#{destino.id}
+			,#{vigente}
+		)
+	</insert>
+	
+	<select id="isDestinoDeUbicacion" parameterType="Map" resultType="Integer">
+		select
+			count(1)
+		from 
+			sstt_destinos
+		where
+				id_origen = #{idOrigen}
+			and i_destino = #{idDestino}
+			and s_vigente = 'S'
+	</select>
+	
+</mapper>

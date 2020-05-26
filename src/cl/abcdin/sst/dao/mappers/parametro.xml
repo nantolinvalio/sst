@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="parametro">
+
+	<resultMap type="Parametro" id="parametro">
+		<result property="id"     column="id_parametro"/>
+		<result property="codigo" column="s_nombre"/>
+		<result property="glosa"  column="s_descripcion"/>
+		<result property="grupo"  column="s_string1"/>
+		<result property="integer1"	column="i_integer1"/>
+		<result property="integer2"	column="i_integer2"/>
+		<result property="integer3"	column="i_integer3"/>
+		<result property="integer4"	column="i_integer4"/>
+	</resultMap>
+
+	<select id="listParametrosByTipo" parameterType="String" resultMap="parametro">
+       select 
+            id_parametro, 
+            s_nombre,
+            s_descripcion,
+            s_string1,
+            i_integer1,
+            i_integer2,
+            i_integer3,
+            i_integer4
+        from 
+            sstt_parametros 
+        where 
+            s_string1 = #{grupo}
+        order by 
+            id_parametro asc
+	</select>
+	
+	<select id="listParametrosByShowTipo" parameterType="String" resultMap="parametro">
+	       select 
+            id_parametro, 
+            s_nombre,
+            s_descripcion
+        from 
+            sstt_parametros 
+        where 
+            s_string1 = #{grupo}
+            and s_string2 = 'S'
+        order by 
+            id_parametro asc
+	</select>
+	
+	<insert id="insertCondicionRecepcion" parameterType="CondicionRecepcion" keyProperty="id" keyColumn="id_condicion" >
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_condiciones.nextval from dual
+		</selectKey>
+		insert into sstt_condiciones
+		(id_condicion, s_descripcion, id_usuario, d_fecha_creacion)
+		values
+		(#{id}, #{descripcion}, #{usuarioCreacion.id}, sysdate)
+	</insert>
+	
+	<update id="updateCondicionRecepcion" parameterType="CondicionRecepcion" >
+		update sstt_condiciones
+		set s_descripcion = #{descripcion},
+		id_usuario = #{usuarioCreacion.id},
+		d_fecha_creacion = sysdate
+		where id_condicion = #{id}
+	</update>
+
+	<update id="updateParametros" parameterType="Parametro">
+	    update sstt_parametros set
+	    
+	    i_integer1 = #{integer1},
+	    
+	     
+	    i_integer2 = #{integer2},
+	    
+	     
+	    i_integer3 = #{integer3},
+	     
+	    i_integer4 = #{integer4}
+	    
+	    where id_parametro = #{id}
+	</update>
+	
+	<insert id="saveParametros" parameterType="Parametro">
+	   insert into sstt_parametros
+	   ( i_integer1,  i_integer2,  i_integer3)
+	   values(#{10001000}, #{10002000}, #{10003000})
+	   where id_parametro = #{10001000}
+	</insert>
+	
+	<select id="getCondicionRecepcion" resultType="CondicionRecepcion">
+		select id_condicion as id
+		 ,s_descripcion as descripcion
+	    from sstt_condiciones
+	</select>
+	
+	<resultMap type="TipoOT" id="tipoOT">
+		<result property="glosa"	column="s_descripcion"/>
+		<result property="codigo"	column="s_nombre"/>
+	</resultMap>
+	
+	<select id="getTipoOTbyCodigo" parameterType="String" resultMap="tipoOT">
+		select 
+			pa.s_nombre
+			,pa.s_descripcion
+		from sstt_parametros pa
+		where pa.s_nombre = #{codigo}
+		and s_string1 = 'TIOT'
+	</select>
+	
+	<select id="getRangoParametroById" parameterType="Long"  resultMap="parametro">
+		select 
+		    i_integer1,
+		    i_integer2,
+		    i_integer3 
+		from 
+		    sstt_parametros 
+		where 
+		    id_parametro = #{id}
+	</select>
+	
+	<select id="listProveedorRemateLiquidacion"  resultType="Parametro">
+		select 
+		    p.id_parametro codigo,
+		    p.s_descripcion glosa,
+		    p.s_nombre nombre
+		from
+		    sstt_parametros p
+		where
+		    s_nombre in  ('PR','LQ','CR','ST')
+		    order by s_descripcion asc
+	</select>
+</mapper>

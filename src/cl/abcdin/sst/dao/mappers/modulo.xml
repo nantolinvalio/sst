@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="modulo">
+
+	<resultMap type="Modulo" id="modulo">
+		<result property="id"          column="id_modulo" />
+		<result property="codigo"      column="s_codigo" />
+		<result property="nombre"      column="s_nombre" />
+		<result property="macro"       column="s_macro" />
+		<result property="tipo"        column="s_tipo" />
+		<result property="etiqueta"    column="s_etiqueta" />
+		<result property="orden"       column="i_orden" />
+		<result property="icono"       column="s_icono" />
+		<result property="padre"       column="i_modulo_padre" />
+		<result property="migrado"     column="s_migrado" />
+		<result property="descripcion" column="s_descripcion" />
+		<result property="grupo"       column="i_grupo" />
+	</resultMap>
+	
+	<select id=""></select>
+
+	<select id="getModuloByNombre" resultMap="modulo" parameterType="String">
+		select 
+			m.id_modulo,
+	        m.s_codigo,
+	        m.s_nombre,
+	        m.s_macro,
+	        m.s_tipo,
+	        m.s_etiqueta,
+	        m.i_orden,
+	        m.s_icono,
+	        m.i_modulo_padre,
+	        m.s_migrado,
+            m.s_descripcion
+        from sstt_modulos m
+        where m.s_nombre = #{modulo} 
+	</select>
+	
+	<select id="getModuloInicialByUsuario" resultMap="modulo" parameterType="Usuario">
+		SELECT DISTINCT 
+		    u.id_usuario, 
+		    m.id_modulo, 
+		    m.i_modulo_padre, 
+		    m.s_nombre,
+		    m.s_tipo, 
+		    m.s_etiqueta, 
+		    m.s_macro, 
+		    m.i_orden, 
+		    m.i_grupo,
+		    m.s_codigo, m.s_icono, m.s_migrado
+		FROM 
+		    sstt_usuarios u 
+		    INNER JOIN sstt_usuarios_roles ur ON ur.id_usuario = u.id_usuario
+		    INNER JOIN sstt_roles r ON r.id_rol = ur.id_rol
+		    INNER JOIN sstt_roles_modulos rm ON rm.id_rol = r.id_rol
+		    INNER JOIN sstt_modulos m ON m.id_modulo = rm.id_modulo
+		WHERE 
+		        u.s_vigente = 'S' 
+		    AND r.s_vigente = 'S'
+		    AND m.s_vigente = 'S'
+		    and m.s_tipo = 'M'
+		    and u.id_usuario = #{rut, typeHandler=RunTypeHandler}
+		    and m.i_modulo_padre = 0
+	</select>
+	
+	<select id="listModulosMenu" resultMap="modulo" parameterType="Usuario">
+		SELECT DISTINCT 
+		    u.id_usuario, 
+		    m.id_modulo, 
+		    m.i_modulo_padre, 
+		    m.s_nombre,
+		    m.s_tipo, 
+		    m.s_etiqueta, 
+		    m.s_macro, 
+		    m.i_orden, 
+		    m.i_grupo,
+		    m.s_codigo, m.s_icono, m.s_migrado
+		FROM 
+		    sstt_usuarios u 
+		    INNER JOIN sstt_usuarios_roles ur ON ur.id_usuario = u.id_usuario
+		    INNER JOIN sstt_roles r ON r.id_rol = ur.id_rol
+		    INNER JOIN sstt_roles_modulos rm ON rm.id_rol = r.id_rol
+		    INNER JOIN sstt_modulos m ON m.id_modulo = rm.id_modulo
+		WHERE 
+		        u.s_vigente = 'S' 
+		    AND r.s_vigente = 'S'
+		    AND m.s_vigente = 'S'
+		    and m.s_tipo = 'M'
+		    and u.id_usuario = #{rut, typeHandler=RunTypeHandler}
+		    and m.i_modulo_padre = 42
+ 		ORDER BY i_grupo ASC, i_orden ASC
+	</select>
+	
+	<select id="getModuloByNombreUsuario" resultMap="modulo" parameterType="Map">
+	   select
+	   		distinct
+			m.id_modulo, 
+			m.s_codigo, 
+			m.s_nombre,
+			m.s_macro, 
+			m.s_tipo, 
+			m.s_etiqueta, 
+			m.i_orden, 
+			m.s_icono,
+			m.i_modulo_padre,
+			m.s_migrado,
+            m.s_descripcion
+	    from
+	        sstt_modulos m
+	        inner join sstt_roles_modulos rm on rm.id_modulo = m.id_modulo
+	        inner join sstt_roles r on r.id_rol = rm.id_rol
+	        inner join sstt_usuarios_roles ur on ur.id_rol = r.id_rol
+	        inner join sstt_usuarios u on u.id_usuario = ur.id_usuario
+	    where
+	        r.s_vigente = 'S'
+	        and u.s_vigente = 'S'
+	        and m.s_vigente = 'S'
+<!-- 	        and u.id_usuario = #{rut, typeHandler=RunTypeHandler} -->
+	        and m.s_nombre = #{modulo}		
+	</select>
+	
+	<select id="getModuloByNombreUsuarioPermisos" resultMap="modulo" parameterType="Map">
+	   select
+	   		distinct
+			m.id_modulo, 
+			m.s_codigo, 
+			m.s_nombre,
+			m.s_macro, 
+			m.s_tipo, 
+			m.s_etiqueta, 
+			m.i_orden, 
+			m.s_icono,
+			m.i_modulo_padre,
+			m.s_migrado,
+            m.s_descripcion
+	    from
+	        sstt_modulos m
+	        inner join sstt_roles_modulos rm on rm.id_modulo = m.id_modulo
+	        inner join sstt_roles r on r.id_rol = rm.id_rol
+	        inner join sstt_usuarios_roles ur on ur.id_rol = r.id_rol
+	        inner join sstt_usuarios u on u.id_usuario = ur.id_usuario
+	    where
+	        r.s_vigente = 'S'
+	        and u.s_vigente = 'S'
+	        and m.s_vigente = 'S'
+	        and u.id_usuario = #{rut, typeHandler=RunTypeHandler}
+	        and m.s_nombre = #{modulo}		
+	</select>
+	
+	<select id="listSubModuloByFilter" resultMap="modulo" parameterType="Map">
+		select 
+		    mp.id_pestana id_modulo,
+		    m.s_codigo,
+		    m.s_nombre,
+		    m.s_macro,
+		    m.s_tipo,
+		    m.s_etiqueta,
+		    m.s_icono,
+		    m.i_modulo_padre,
+		    m.s_migrado,
+		    avg(mp.i_orden) i_orden
+		from sstt_usuarios_roles ur
+		    inner join sstt_roles r on r.id_rol = ur.id_rol
+		    inner join sstt_modulos_pestanas mp on mp.id_rol = r.id_rol
+		    inner join sstt_modulos m on m.id_modulo = mp.id_pestana
+		<where>
+			r.s_vigente = 'S'
+			<if test="rut != null and !rut.equals('')">
+				and ur.id_usuario = #{rut, typeHandler=RunTypeHandler}
+			</if>
+			<if test="idModulo != null and idModulo != 0">
+				and mp.id_modulo = #{idModulo}
+			</if>
+		</where>
+		group by 
+		    mp.id_pestana,
+		    m.s_codigo,
+		    m.s_nombre,
+		    m.s_macro,
+		    m.s_tipo,
+		    m.s_etiqueta,
+		    m.s_icono,
+		    m.i_modulo_padre,
+		    m.s_migrado
+		order by i_orden asc
+	</select>
+	
+	<select id="getModuloByCodigo" parameterType="String" resultMap="modulo">
+		select 
+			m.id_modulo,
+	        m.s_codigo,
+	        m.s_nombre,
+	        m.s_macro,
+	        m.s_tipo,
+	        m.s_etiqueta,
+	        m.i_orden,
+	        m.s_icono,
+	        m.i_modulo_padre,
+	        m.s_migrado
+        from sstt_modulos m
+        where m.s_codigo = #{codigo} 
+	</select>
+	
+	<select id="getModuloById" parameterType="Long" resultMap="modulo">
+		select 
+			m.id_modulo,
+	        m.s_codigo,
+	        m.s_nombre,
+	        m.s_macro,
+	        m.s_tipo,
+	        m.s_etiqueta,
+	        m.i_orden,
+	        m.s_icono,
+	        m.i_modulo_padre,
+	        m.s_migrado,
+            m.s_descripcion
+        from sstt_modulos m
+        where m.id_modulo = #{id} 
+	</select>
+	
+	<select id="listMacros" resultType="Macro">
+		select distinct s_macro as nombre 
+		from sstt_modulos
+	</select>
+	
+	<select id="listModulosInRolByMacro" parameterType="Map" resultMap="modulo">
+		select 
+			m.id_modulo,
+	        m.s_codigo,
+	        m.s_nombre,
+	        m.s_macro,
+	        m.s_tipo,
+	        m.s_etiqueta,
+	        m.i_orden,
+	        m.s_icono,
+	        m.i_modulo_padre,
+	        m.s_migrado,
+            m.s_descripcion
+		from 
+		    sstt_modulos m  
+		where 
+		        m.s_vigente = 'S'   
+		    and m.s_tipo in ('M','E','P') 
+		    and exists (select 1 from sstt_roles_modulos rm where m.id_modulo = rm.id_modulo and rm.id_rol = #{idRol} )
+		    <if test="macro != null and !macro.equals('')">
+		    	and m.s_macro = #{macro}
+		    </if>
+		order by 
+		    m.s_macro asc, m.s_tipo asc, m.s_etiqueta asc
+	</select>
+	
+	<select id="listSubModulosInModuloByRol" parameterType="Map" resultMap="modulo">
+		select 
+		    m.id_modulo,
+		    m.s_codigo,
+		    m.s_nombre,
+		    m.s_macro,
+		    m.s_tipo,
+		    m.s_etiqueta,
+		    m.i_orden,
+		    m.s_icono,
+		    m.i_modulo_padre,
+		    m.s_migrado,
+		    m.s_descripcion 
+		from
+		    sstt_modulos_pestanas mp
+		    inner join sstt_modulos m on m.id_modulo = mp.id_pestana and m.s_tipo = 'T'
+		where
+		        mp.id_modulo = #{idModulo}
+		    and mp.id_rol = #{idRol}
+		order by 
+			mp.i_orden asc
+	</select>
+	
+	<select id="listSubModulosNotInModuloByRol" parameterType="Map" resultMap="modulo">
+		select 
+		    m.id_modulo,
+		    m.s_codigo,
+		    m.s_nombre,
+		    m.s_macro,
+		    m.s_tipo,
+		    m.s_etiqueta,
+		    m.i_orden,
+		    m.s_icono,
+		    m.i_modulo_padre,
+		    m.s_migrado,
+		    m.s_descripcion 
+		from
+		    sstt_modulos m 
+		where
+		        m.s_tipo = 'T'
+		    and not exists (select 1 from sstt_modulos_pestanas mp where m.id_modulo = mp.id_pestana and mp.id_rol = #{idRol} and mp.id_modulo = #{idModulo} )
+	</select>
+	
+	<select id="listModulosNotInRolByMacro" parameterType="Map" resultMap="modulo">
+		select 
+			m.id_modulo,
+	        m.s_codigo,
+	        m.s_nombre,
+	        m.s_macro,
+	        m.s_tipo,
+	        m.s_etiqueta,
+	        m.i_orden,
+	        m.s_icono,
+	        m.i_modulo_padre,
+	        m.s_migrado,
+            m.s_descripcion
+		from 
+		    sstt_modulos m  
+		where 
+		        m.s_vigente = 'S'   
+		    and m.s_tipo in ('M','E','P') 
+		    and not exists (select 1 from sstt_roles_modulos rm where m.id_modulo = rm.id_modulo and rm.id_rol = #{idRol} )
+			<if test="macro != null and !macro.equals('')">
+		    	and m.s_macro = #{macro}
+		    </if>
+		order by 
+		    m.s_macro asc, m.s_tipo asc, m.s_etiqueta asc
+	</select>
+	
+	<delete id="deleteModuloByRol" parameterType="Long">
+		delete from sstt_roles_modulos where id_rol = #{idRol}
+	</delete>
+	
+	<insert id="saveRolModulo" parameterType="Map" keyProperty="id" keyColumn="id_rol_modulo">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_roles_modulos.nextval from dual
+		</selectKey>	
+		insert into sstt_roles_modulos (
+			id_rol_modulo, 
+			id_rol, 
+			id_modulo, 
+			s_permiso
+		) values (
+			#{id},
+			#{idRol},
+			#{idModulo},
+			'W'
+		)
+	</insert>
+	
+	<delete id="deleteSubModulosByRolAndModulo" parameterType="Map">
+		delete from sstt_modulos_pestanas
+		where 
+			id_rol = #{idRol}
+		and id_modulo = #{idModulo}
+	</delete>
+	
+	<insert id="saveRolModuloSubModulo" parameterType="Map" keyProperty="id" keyColumn="id_modulo_pestana">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_modulos_pestanas.nextval from dual
+		</selectKey>
+		insert into sstt_modulos_pestanas (
+			id_modulo_pestana,
+			id_rol, 
+			id_modulo, 
+			id_pestana, 
+			i_orden
+		) values (
+			#{id},
+			#{idRol}, 
+			#{idModulo}, 
+			#{idSubModulo}, 
+			#{orden}
+		)
+	</insert>
+	
+</mapper>

@@ -1,0 +1,451 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="familia">
+
+	<resultMap type="FamiliaExcluida" id="familiaExcluida">
+		<result column="id_familia"          property="id"/>
+		<result column="s_nombre"            property="nombre"/>
+		<result column="id_linea"            property="linea.codigo"/>
+		<result column="s_linea_nomnbre"     property="linea.glosa"/>
+		<result column="s_exluida"           property="excluida"/>
+		<result column="d_fecha_exclusion"   property="fechaExclusion"/>
+		<result column="s_usuario_exclusion" property="usuarioExclusion.nombreCompleto"/>
+	</resultMap>
+
+	<select id="listByFilter" parameterType="FilterProducto" resultType="Familia">
+		select 
+			id_familia id, 
+			s_nombre   nombre, 
+			i_cantidad_productos cantidad
+		from 
+			owv_familias
+		<where>
+			<if test="idLinea != null and !idLinea.equals('')">
+				and id_linea = #{idLinea}
+			</if>
+		</where>
+		order by s_nombre asc
+	</select>
+	
+	<select id="getById" parameterType="String" resultType="Familia">
+		select 
+			id_familia id, 
+			s_nombre   nombre, 
+			i_cantidad_productos cantidad
+		from 
+			owv_familias
+		<where>
+			id_familia = #{idFamilia}
+		</where>
+		order by s_nombre asc
+	</select>
+	
+	<select id="getByIdProducto" parameterType="Integer" resultType="Familia">
+		select 
+		    id_familia as id,
+		    s_nombre as nombre
+		from 
+		    owv_familias f
+		where
+		    exists (select 1 from owv_productos p where p.id_familia = f.id_familia and p.id_producto = #{idProducto} )
+	</select>
+
+	<select id="listByFilterAsTreeView" parameterType="FilterProducto" resultType="TreeView">
+		select 
+            to_char(id_familia) id,
+            to_char(id_familia) "metadata.id",
+            'FAMILIA' "metadata.tipo",
+		    id_familia || ' ' || s_nombre data
+		from 
+			owv_familias
+		<where>
+			<if test="idLinea != null and !idLinea.equals('')">
+				and id_linea = #{idLinea}
+			</if>
+		</where>
+	</select>
+
+	<select id="listByFilterReglaAsTreeView" parameterType="FilterRegla" resultType="TreeView">
+		select 
+            to_char(f.id_familia) id,
+            to_char(f.id_familia) "metadata.id",
+            'FAMILIA' "metadata.tipo",
+		    f.id_familia || ' ' || f.s_nombre data,
+            case when re.id_regla_comercial is not null then 
+                'checked'
+            end as checked
+		from 
+			owv_familias f
+            left join sstt_regla_entidad re 
+                on re.id_familia = f.id_familia
+               and re.id_regla_comercial =  #{idRegla}
+               and re.s_entidad = 'F'
+		where
+			f.id_linea = #{idLinea}
+	</select>
+
+	<select id="listHistoricasByFilterReglaAsTreeView" parameterType="FilterRegla" resultType="TreeView">
+		select 
+            to_char(f.id_familia) id,
+            to_char(f.id_familia) "metadata.id",
+            'FAMILIA' "metadata.tipo",
+		    f.id_familia || ' ' || f.s_nombre data,
+            case when re.id_regla_comercial is not null then 
+                'checked'
+            end as checked
+		from 
+			owv_familias f
+            left join sstt_regla_entidad_hist re 
+                on re.id_familia = f.id_familia
+               and re.id_regla_comercial_hist =  #{idReglaHistorica}
+               and re.s_entidad = 'F'
+		where
+			f.id_linea = #{idLinea}
+	</select>
+
+	<select id="getCountFamiliasByFilter" parameterType="FilterRegla" resultType="Integer">
+		select 
+            count(1)
+		from 
+			owv_familias f
+            inner join sstt_regla_entidad re 
+                on re.id_familia = f.id_familia
+               and re.id_regla_comercial =  #{idRegla}
+               and re.s_entidad = 'F'
+		where
+			f.id_linea = #{idLinea}
+	</select>
+
+	<select id="getCountFamiliasHistoricasByFilter" parameterType="FilterRegla" resultType="Integer">
+		select 
+            count(1)
+		from 
+			owv_familias f
+            inner join sstt_regla_entidad_hist re 
+                on re.id_familia = f.id_familia
+               and re.id_regla_comercial_hist =  #{idReglaHistorica}
+               and re.s_entidad = 'F'
+		where
+			f.id_linea = #{idLinea}
+	</select>
+	
+	<select id="listFamiliasExcluidasByFilter" resultMap="familiaExcluida" parameterType="FilterProducto">
+		select
+		    f.id_familia
+		    ,f.s_nombre
+		    ,l.id_linea
+		    ,l.s_nombre s_linea_nomnbre
+		    ,case when fe.id_familia_excluida_falla is not null then 'S'
+		     else 'N' end s_exluida
+		    ,fe.d_fecha_creacion d_fecha_exclusion
+		    ,u.s_nombre || ' ' || u.s_apellido_paterno || ' ' || u.s_apellido_materno s_usuario_exclusion
+		from
+		    owv_familias f
+		    inner join owv_lineas l on f.id_linea = l.id_linea
+		    left join sstt_familias_excluidas_falla fe on fe.id_familia = f.id_familia
+    		left join sstt_usuarios u on u.id_usuario = fe.id_usuario
+		<where>
+			<if test="idLinea != null and !idLinea.equals('')">
+				and f.id_linea = #{idLinea}			
+			</if>
+		</where>
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTotalFamiliasExcluidasByFilter" resultType="Integer" parameterType="FilterProducto">
+		select
+		    count(1)
+		from
+		    owv_familias f
+		    inner join owv_lineas l on f.id_linea = l.id_linea
+		<where>
+			<if test="idLinea != null and !idLinea.equals('')">
+				and f.id_linea = #{idLinea}			
+			</if>
+		</where>
+	</select>
+	
+	<delete id="deleteFamiliaExcluida" parameterType="FamiliaExcluida">
+		delete sstt_familias_excluidas_falla where id_familia = #{id}
+	</delete>
+	
+	<select id="getFamiliaExcluidaByIdFamilia" parameterType="FamiliaExcluida" resultMap="familiaExcluida">
+		select
+		    f.id_familia
+		    ,f.s_nombre
+		    ,l.id_linea
+		    ,l.s_nombre s_linea_nomnbre
+		    ,case when fe.id_familia_excluida_falla is not null then 'S'
+		     else 'N' end s_exluida
+		    ,fe.d_fecha_creacion d_fecha_exclusion
+		    ,u.s_nombre || ' ' || u.s_apellido_paterno || ' ' || u.s_apellido_materno s_usuario_exclusion
+		from
+			sstt_familias_excluidas_falla fe
+			inner join owv_familias f on fe.id_familia = f.id_familia
+		    inner join owv_lineas l on f.id_linea = l.id_linea
+    		inner join sstt_usuarios u on u.id_usuario = fe.id_usuario
+		where
+			fe.id_familia = #{idFamilia}			
+	</select>
+	
+	<insert id="saveFamiliaExcluida" parameterType="FamiliaExcluida" keyColumn="id_familia_excluida_falla" keyProperty="idFamiliaExcluida">
+		<selectKey resultType="Long" keyProperty="idFamiliaExcluida" order="BEFORE">
+			select ssts_familias_excluidas_falla.nextval from dual
+		</selectKey>
+			insert into sstt_familias_excluidas_falla (
+				id_familia_excluida_falla,
+				id_familia,
+				id_usuario,
+				d_fecha_creacion
+			) values (
+				#{idFamiliaExcluida},
+				#{id},
+				#{usuarioExclusion.id},
+				sysdate
+			)
+	</insert>
+	
+	<select id="listFamiliasExcluidasSerieByFilter" resultMap="familiaExcluida" parameterType="FilterProducto">
+		select
+		    f.id_familia
+		    ,f.s_nombre
+		    ,l.id_linea
+		    ,l.s_nombre s_linea_nomnbre
+		    ,case when fe.id_familia_excluida_serie is not null then 'S'
+		     else 'N' end s_exluida
+		    ,fe.d_fecha_creacion d_fecha_exclusion
+		    ,u.s_nombre || ' ' || u.s_apellido_paterno || ' ' || u.s_apellido_materno s_usuario_exclusion
+		from
+		    owv_familias f
+		    inner join owv_lineas l on f.id_linea = l.id_linea
+		    left join sstt_familias_excluidas_serie fe on fe.id_familia = f.id_familia
+    		left join sstt_usuarios u on u.id_usuario = fe.id_usuario
+		<where>
+			<if test="idLinea != null and !idLinea.equals('')">
+				and f.id_linea = #{idLinea}			
+			</if>
+		</where>
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getFamiliaExcluidaSerieByIdFamilia" parameterType="FamiliaExcluida" resultMap="familiaExcluida">
+		select
+		    f.id_familia
+		    ,f.s_nombre
+		    ,l.id_linea
+		    ,l.s_nombre s_linea_nomnbre
+		    ,case when fe.id_familia_excluida_serie is not null then 'S'
+		     else 'N' end s_exluida
+		    ,fe.d_fecha_creacion d_fecha_exclusion
+		    ,u.s_nombre || ' ' || u.s_apellido_paterno || ' ' || u.s_apellido_materno s_usuario_exclusion
+		from
+			sstt_familias_excluidas_serie fe
+			inner join owv_familias f on fe.id_familia = f.id_familia
+		    inner join owv_lineas l on f.id_linea = l.id_linea
+    		inner join sstt_usuarios u on u.id_usuario = fe.id_usuario
+		where
+			fe.id_familia = #{idFamilia}			
+	</select>
+	
+	<insert id="saveFamiliaExcluidaSerie" parameterType="FamiliaExcluida" keyColumn="id_familia_excluida_serie" keyProperty="idFamiliaExcluida">	
+		<selectKey resultType="Long" keyProperty="idFamiliaExcluida" order="BEFORE">
+			select ssts_familias_excluidas_serie.nextval from dual
+		</selectKey>
+			insert into sstt_familias_excluidas_serie (
+				id_familia_excluida_serie,
+				id_familia,
+				id_usuario,
+				d_fecha_creacion
+			) values (
+				#{idFamiliaExcluida},
+				#{id},
+				#{usuarioExclusion.id},
+				sysdate
+			)
+	</insert>
+	
+	<delete id="deleteFamiliaExcluidaSerie" parameterType="FamiliaExcluida">
+		delete sstt_familias_excluidas_serie where id_familia = #{id}
+	</delete>
+	
+	<resultMap type="Familia" id="familiasParaExcluirCC">
+		<result property="id"                      column="id_familia"/>
+		<result property="nombre"                  column="s_nombre"/>
+		<result property="usuario.id"              column="id_usuario"/>
+		<result property="usuario.nombreCompleto"  column="s_nombre_usuario"/>
+		<result property="fechaCreacion"           column="d_fecha_creacion"/>
+	</resultMap>
+	
+	<select id="listFamiliasParaExcluirCC" resultMap="familiasParaExcluirCC">
+        select 
+            f.id_familia
+            ,f.s_nombre
+            ,fe.id_usuario
+            ,trim(u.s_nombre)||' '||trim(u.s_apellido_paterno)||' '||trim(u.s_apellido_materno) as s_nombre_usuario
+            ,fe.d_fecha_creacion
+        from owv_familias f
+            left join sstt_familias_excluidas_cc fe on fe.id_familia = f.id_familia
+            left join sstt_usuarios u on u.id_usuario = fe.id_usuario
+        <if test="orderBy != null and !orderBy.equals('')">
+            order by ${orderBy}
+            <if test="sortOrder != null and !sortOrder.equals('')">
+                ${sortOrder}
+            </if>    
+        </if>
+	</select>
+	
+	<select id="getTotalFamiliasParaExcluirCC" resultType="Integer">
+        select count(1)
+        from owv_familias
+	</select>
+	
+	<select id="listAllFamiliaCheck" resultType="CheckForFlexigrid">
+	    select
+		    f.id_familia as "codigo"
+		    ,CASE WHEN f.id_familia in (select id_familia from sstt_familias_excluidas_cc) THEN 
+		       'S' 
+	         ELSE 
+	           'N' 
+	     	 END as "check"
+	    from owv_familias f
+	</select>
+	
+	<select id="getFamiliaExcluidaCCByIdFamilia" parameterType="String" resultMap="familiasParaExcluirCC">
+		select 
+            f.id_familia
+            ,f.s_nombre
+            ,fe.id_usuario
+            ,trim(u.s_nombre)||' '||trim(u.s_apellido_paterno)||' '||trim(u.s_apellido_materno) as s_nombre_usuario
+            ,fe.d_fecha_creacion
+        from owv_familias f
+            inner join sstt_familias_excluidas_cc fe on fe.id_familia = f.id_familia
+            left join sstt_usuarios u on u.id_usuario = fe.id_usuario
+        where
+        	f.id_familia = #{idFamilia}
+	</select>
+	
+	<insert id="saveFamiliaExcluidaCC" parameterType="FamiliaExcluidaControlCalidad" keyColumn="id_familia_excluida_cc">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_familias_excluidas_cc.nextval from dual
+		</selectKey> 
+		insert into sstt_familias_excluidas_cc (
+			id_familia_excluida_cc
+			,id_familia
+			,id_usuario
+			,d_fecha_creacion
+			)
+		values(
+			#{id}
+			,#{familia.id}
+			,#{usuario.id}
+			,SYSDATE
+		)
+	</insert>
+	
+	<delete id="deleteFamiliaExcluidaCC" parameterType="java.util.List">
+		delete from sstt_familias_excluidas_cc
+		where id_familia in
+		<foreach collection="list" item="idFamilia" open="(" separator="," close=")">
+			#{idFamilia}
+		</foreach>
+	</delete>
+	
+	<delete id="deleteAllFamiliaExcluidaCC" >
+		delete from sstt_familias_excluidas_cc
+	</delete>
+	
+	<select id="getFamiliaByFilter" parameterType="FilterProducto" resultType="Familia">
+		select 
+		    f.id_familia as id
+		    ,f.s_nombre as nombre
+		    ,i_cantidad_productos as cantidad
+		    ,id_linea as linea
+		from
+		    owv_familias f
+		    inner join owv_productos p on p.id_familia = f.id_familia
+	    <where>
+			<if test="idProducto != null and !idProducto.equals('')">
+				and p.id_producto = #{idProducto}			
+			</if>
+			<if test="idFamilia != null and !idFamilia.equals('')">
+				 and p.id_familia =  #{idFamilia}
+			</if>
+		</where>
+		 group by f.id_familia 
+            ,f.s_nombre
+            ,i_cantidad_productos 
+            ,id_linea
+	</select>
+	
+	<select id="listFamiliasByIdUbicacionInterna" parameterType="Integer" resultType="Familia">
+        select
+            fa.id_familia as id
+		    ,fa.s_nombre as nombre
+        from owv_familias fa
+            inner join SSTT_UBICACION_INTERNA_DET ubid on ubid.id_familia = fa.id_familia
+        where ubid.id_ubicacion_interna = #{idUbicacionInterna}
+        order by fa.s_nombre
+	</select>
+	
+	<select id="getTotalFamiliasByIdUbicacionInterna" parameterType="Integer" resultType="Integer">
+        select count(1)
+        from owv_familias fa
+            inner join SSTT_UBICACION_INTERNA_DET ubid on ubid.id_familia = fa.id_familia
+        where ubid.id_ubicacion_interna = #{idUbicacionInterna}
+	</select>
+	
+	<select id="listFamiliaLessCodigoUbicacion" resultType="Familia" parameterType="String">
+		select
+			id_familia codigo,
+			s_nombre nombre
+		from
+			owv_familias
+		where id_familia not in (select ubid.id_familia
+								from sstt_ubicacion_interna_det ubid
+									left join sstt_ubicaciones_internas ubi on ubi.id_ubicacion_interna = ubid.id_ubicacion_interna
+								where ubi.s_codigo=#{codigo} and ubid.id_familia is not null)
+		order by s_nombre
+	</select>
+	
+	<select id="getTotalFamiliaLessCodigoUbicacion" resultType="Integer" parameterType="String">
+		select count(1)
+		from
+			owv_familias
+		where id_familia not in (select ubid.id_familia
+								from sstt_ubicacion_interna_det ubid
+									left join sstt_ubicaciones_internas ubi on ubi.id_ubicacion_interna = ubid.id_ubicacion_interna
+								where ubi.s_codigo=#{codigo} and ubid.id_familia is not null)
+	</select>
+	
+	<select id="listAllFamiliaLessCodigoUbicacion" resultType="CheckForFlexigrid" parameterType="String">
+		select
+			id_familia as "codigo",
+			'N' as "check"
+		from
+			owv_familias
+		where id_familia not in (select ubid.id_familia
+								from sstt_ubicacion_interna_det ubid
+									left join sstt_ubicaciones_internas ubi on ubi.id_ubicacion_interna = ubid.id_ubicacion_interna
+								where ubi.s_codigo=#{codigo} and ubid.id_familia is not null)
+	</select>
+	
+	<select id="isFamiliaExcluidaCCByIdProducto" parameterType="Integer" resultType="Integer">
+		select count(fec.id_familia_excluida_cc)
+		from sstt_familias_excluidas_cc fec
+  			left join owv_productos p on p.id_familia = fec.id_familia
+		where p.id_producto = #{idProducto}
+	</select>
+</mapper>

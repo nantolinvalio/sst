@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="servicioTecnicoEjecutiva">
+
+	<resultMap type="STecnicoEjecutiva" id="stecnicoejecutiva">
+			<result property="id"				column="id_ejecutiva_sta_marca"/>
+			<result property="usuario.id"		column="id_ejecutiva"/>
+			<result property="ubicacion.id"		column="id_stecnico"/>
+			<result property="marca.codigo"			column="id_marca"/>
+	</resultMap>
+
+	<insert id="save" parameterType="STecnicoEjecutiva">
+		insert into sstt_ejecutivas_sta_marcas(
+		    id_ejecutiva_sta_marca
+		    ,id_ejecutiva
+		    ,id_stecnico
+		    ,id_marca
+		) values (
+		    ssts_ejecutivas_sta_marcas.nextval
+		    ,#{usuario.id}
+		    ,#{ubicacion.id}
+		    ,#{marca.codigo}
+		)
+	</insert>
+	
+	<update id="update" parameterType="STecnicoEjecutiva">
+		update sstt_ejecutivas_sta_marcas
+			set id_ejecutiva = #{usuario.id}
+		where
+			  id_ejecutiva_sta_marca = #{id}
+	</update>
+	
+	<select id="get" parameterType="STecnicoEjecutiva" resultMap="stecnicoejecutiva">
+		select 
+			 id_ejecutiva_sta_marca
+		    ,id_ejecutiva
+		    ,id_stecnico
+		    ,id_marca
+	    from
+	    	sstt_ejecutivas_sta_marcas
+    	where   
+    		id_stecnico = #{ubicacion.id}
+    		and id_marca = #{marca.codigo}
+	</select>
+	
+	<select id="getExiste" parameterType="STecnicoEjecutiva" resultType="Integer">
+		select 
+			count(1)
+	    from
+	    	sstt_ejecutivas_sta_marcas
+    	where   
+    		id_stecnico = #{ubicacion.id}
+    		and id_marca = #{marca.codigo}
+	</select>
+
+</mapper>

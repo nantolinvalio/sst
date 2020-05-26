@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="gestiones">
+
+	<select id="listGestionesByIdOT" parameterType="Long" resultType="Gestion">
+		select 	
+				g.id_ot as "ot.id",
+				g.id_gestion as id,
+				g.d_fecha_realizada as fecha
+				,u.s_nombre || ' ' || u.s_apellido_paterno AS ejecutiva
+				,g.s_gestion as gestion
+				,g.s_archivo as archivo
+		from	sstt_gestiones g
+				left join sstt_usuarios u on g.id_usuario =
+				u.id_usuario
+		where g.id_ot = #{idOT}
+		order by g.id_gestion asc
+	</select>
+	
+	<select id="get" parameterType="Long" resultType="Gestion">
+		select
+				g.id_ot as "ot.id", 
+				g.id_gestion as id,
+				g.d_fecha_realizada as fecha
+				,u.s_nombre || ' ' || u.s_apellido_paterno AS ejecutiva
+				,g.s_gestion as gestion
+				,g.s_archivo as archivo
+		from	sstt_gestiones g
+				left join sstt_usuarios u on g.id_usuario =
+				u.id_usuario
+		where g.id_gestion = #{id}
+	</select>
+	
+	<select id="saveGestion" parameterType="Gestion">
+		insert into sstt_gestiones(
+			id_ot 
+			,id_usuario
+			,d_fecha_realizada
+			,d_fecha_registro
+			,s_gestion 
+			,s_archivo
+			,s_tipo_archivo)
+		values (
+			#{ot.id}
+			,#{usuario.rut, typeHandler=RunTypeHandler}
+			<if test="fecha != null">
+				,#{fecha}
+			</if>
+			<if test="fecha == null">
+				,sysdate
+			</if>
+			,sysdate
+			,#{gestion}
+			,#{archivo}
+			,#{tipoArchivo})
+	</select>
+	
+</mapper>
+

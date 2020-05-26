@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="guiaRemate">
+
+	<insert id="save" parameterType="Guia" keyColumn="id_guia_remate" keyProperty="id">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_guias_remate.nextval from dual
+		</selectKey>
+		insert into sstt_guias_remate (
+			id_guia_remate,
+			id_usuario,
+			id_origen,
+			id_destino,
+			id_estado,
+			d_fecha_registro,
+			s_vigente
+		) values (
+			#{id}
+			,#{usuario.id}
+			,#{origen.id}
+			,#{destino.id}
+			,#{estado.id}
+			,sysdate
+			,#{vigente}
+		)
+	</insert>
+
+	<insert id="saveDetalle" parameterType="GuiaRemateDetalle" keyColumn="id_guia_remate_detalle" keyProperty="id">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_guias_remate_detalle.nextval from dual
+		</selectKey>
+		insert into sstt_guias_remate_detalle (
+			id_guia_remate_detalle,
+			id_guia_remate,
+			id_ot
+		) values (
+			#{id}
+			,#{guia.id}
+			,#{ordenTrabajo.id}
+		)
+	</insert>
+	
+	<resultMap type="GuiaPendienteAgrupada" id="guiaRemate">
+		<result column="id_guia_remate"         property="id" />  
+		<result column="i_numero"               property="numero" />
+		<result column="i_cantidad_ots"         property="cantidadOT" />  
+		<result column="id_destino"             property="destino.id"/> 
+		<result column="s_tipo"                 property="destino.tipo" />
+		<result column="s_destino"              property="destino.nombre" />
+		<result column="s_direccion"            property="destino.direccion" />
+		<result column="s_estado_guia"          property="estado.nombre" />
+		<result column="id_estado_guia"         property="estado.id" />
+		<result column="id_origen"              property="origen.id"/>
+		<result column="id_transportista"       property="transportista.id"/>
+		<result column="d_fecha_emision"        property="fechaEmision"/>
+		<result column="s_patente"              property="transportista.patente"/>
+	</resultMap>
+	
+	<select id="getGuiaRemateById" parameterType="Long" resultMap="guiaRemate">
+		select 
+		    g.id_guia_remate      
+		    ,g.i_numero      
+		    ,count(gd.id_guia_remate_detalle) as i_cantidad_ots      
+		    ,g.id_destino
+		    ,d.s_tipo      
+		    ,d.s_nombre as s_destino      
+		    ,d.s_direccion      
+		    ,g.id_estado as id_estado_guia
+		    ,e.s_nombre as s_estado_guia  
+		    ,g.id_origen
+		    ,g.id_transportista
+		    ,g.d_fecha_emision
+            ,g.s_patente
+		from 
+		    sstt_guias_remate g 
+		    inner join sstt_guias_remate_detalle gd on gd.id_guia_remate = g.id_guia_remate  
+		    left join sstt_ubicaciones d on d.id_ubicacion = g.id_destino 
+		    inner join sstt_estados e on e.id_estado = g.id_estado 
+		where 	
+			g.id_guia_remate = #{id}
+		group by 
+		    g.id_guia_remate
+		    ,g.i_numero
+		    ,g.id_destino
+		    ,d.s_tipo
+		    ,d.s_nombre
+		    ,d.s_direccion
+			,g.id_estado
+		    ,e.s_nombre
+		    ,g.id_origen
+		    ,g.id_transportista
+		    ,g.d_fecha_emision
+            ,g.s_patente
+	</select>
+	
+	<select id="listGuiasRemate" resultMap="guiaRemate">
+		select 
+		    g.id_guia_remate      
+		    ,g.i_numero      
+		    ,count(gd.id_guia_remate_detalle) as i_cantidad_ots      
+		    ,d.s_tipo      
+		    ,d.s_nombre as s_destino      
+		    ,d.s_direccion    
+		    ,g.id_estado as id_estado_guia  
+		    ,e.s_nombre as s_estado_guia  
+		from 
+		    sstt_guias_remate g 
+		    inner join sstt_guias_remate_detalle gd on gd.id_guia_remate = g.id_guia_remate  
+		    left join sstt_ubicaciones d on d.id_ubicacion = g.id_destino 
+		    inner join sstt_estados e on e.id_estado = g.id_estado 
+		where 
+		        g.s_vigente = 'S'   
+		    and g.id_estado in (50001000,50002000) 
+		group by 
+		    g.id_guia_remate
+		    ,g.i_numero
+		    ,d.s_tipo
+		    ,d.s_nombre
+		    ,d.s_direccion
+		    ,g.id_estado
+		    ,e.s_nombre
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>		    
+	</select>
+	
+	<select id="getTotalGuiasRemate" resultType="Integer">
+		select 
+		    count(distinct g.id_guia_remate)
+		from 
+		    sstt_guias_remate g 
+		    inner join sstt_guias_remate_detalle gd on gd.id_guia_remate = g.id_guia_remate  
+		where 
+		        g.s_vigente = 'S'   
+		    and g.id_estado in (50001000,50002000) 
+	</select>
+	
+	<delete id="deleteDetalleGuiaRemate" parameterType="Long">
+		delete sstt_guias_remate_detalle where id_guia_remate = #{id}
+	</delete>
+	
+	<delete id="deleteGuiaRemate" parameterType="Long">
+		delete sstt_guias_remate where id_guia_remate = #{id}
+	</delete>
+	
+	<update id="updateEstado" parameterType="GuiaPendienteAgrupada">
+            update sstt_guias_remate g
+               set g.id_estado = #{estado.id}
+             where g.id_guia_remate = #{id}
+	</update>
+	
+	<update id="cerrarOTFromGuiaRemate" parameterType="GuiaPendienteAgrupada">
+		update 
+			sstt_ordenes_trabajo ot
+		set 
+			ot.s_cerrada = 'S'
+		where ot.id_ot in (	select gd.id_ot
+							from sstt_guias_remate_detalle gd
+							where gd.id_guia_remate = #{id})
+	</update>
+	
+	<select id="getGuiaRemateByNumero" parameterType="Long" resultMap="guiaRemate">
+		select 
+		    g.id_guia_remate      
+		    ,g.i_numero      
+		    ,count(gd.id_guia_remate_detalle) as i_cantidad_ots      
+		    ,d.s_tipo      
+		    ,d.s_nombre as s_destino      
+		    ,d.s_direccion      
+		    ,g.id_estado as id_estado_guia
+		    ,e.s_nombre as s_estado_guia  
+		from 
+		    sstt_guias_remate g 
+		    inner join sstt_guias_remate_detalle gd on gd.id_guia_remate = g.id_guia_remate  
+		    left join sstt_ubicaciones d on d.id_ubicacion = g.id_destino 
+		    inner join sstt_estados e on e.id_estado = g.id_estado 
+		where 	
+			g.i_numero = #{numero}
+		group by 
+		    g.id_guia_remate
+		    ,g.i_numero
+		    ,d.s_tipo
+		    ,d.s_nombre
+		    ,d.s_direccion
+			,g.id_estado
+		    ,e.s_nombre
+	</select>
+	
+	<update id="emitirGuiaRemate" parameterType="GuiaPendienteAgrupada">
+		UPDATE sstt_guias_remate g
+           SET g.id_usuario        = #{usuario.id}
+              ,g.id_estado         = #{estado.id}
+              ,g.id_transportista  = #{transportista.id}
+              ,g.i_numero          = #{numero}
+              ,g.d_fecha_emision   = #{fechaEmision}
+              ,g.s_patente         = #{transportista.patente}
+              ,g.d_fecha_impresion = sysdate
+         WHERE 
+         	g.id_guia_remate = #{id}
+	</update>
+	
+	<resultMap type="ProductoReport" id="productoReport">
+		<result property="producto.id"           column="id_producto"/>
+		<result property="producto.descripcion"  column="s_descripcion"/>
+		<result property="producto.marca.nombre" column="s_nombre"/>
+		<result property="cantidadAccesorios"    column="cant_accesorios"/>
+		<result property="cantidadOT"            column="cant_ot"/>
+		<result property="producto.precioVenta"  column="i_costo"/>
+	</resultMap>
+	
+	<select id="listDetalleGuiaRemateByIdGuia" parameterType="Long" resultMap="productoReport">
+		select 
+            ot.id_producto,
+            p.s_descripcion,
+            m.s_nombre,
+            count(distinct ac.id_accesorio) as cant_accesorios,
+            count(distinct ot.id_ot) as cant_ot,
+            OWF_OBTENER_COSTO_PRODUCTO(ot.id_producto) * count(distinct ot.id_ot) as i_costo
+        from
+            sstt_guias_remate g
+            inner join sstt_guias_remate_detalle grd on grd.id_guia_remate = g.id_guia_remate
+            inner join sstt_ordenes_trabajo ot on ot.id_ot = grd.id_ot
+            left join owv_productos p on p.id_producto = ot.id_producto
+            left join owv_marcas m on m.id_marca = p.id_marca
+            left join sstt_accesorios ac on ((ac.id_producto = p.id_producto) or (ac.id_familia = p.id_familia )) and ac.s_vigente = 'S'
+        where 
+            g.id_guia_remate = #{idGuia}
+        group by
+            ot.id_producto,
+            p.s_descripcion,
+            m.s_nombre
+	</select>
+</mapper>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="inventarioProducto">
+	<insert id="save" parameterType="InventarioProducto" keyColumn="id_inventario_producto" keyProperty="id">
+		<selectKey resultType="Integer" keyProperty="id" order="BEFORE">
+			select ssts_inventario_productos.nextval from dual
+		</selectKey>
+		insert into sstt_inventario_productos(
+			id_inventario_producto
+			,id_inventario_ubicacion
+			,id_ot
+			,s_preparado
+			,s_inventariado
+		) values (
+			#{id}
+			,#{inventarioUbicacion.id}
+			,#{ordenTrabajo.id}
+			,#{preparado}
+			,#{inventariado}
+		)
+	</insert>
+	
+	<resultMap type="InventarioProducto" id="inventarioProducto">
+		<result property="id"                                 column="id_inventario_producto"/>
+		<result property="ordenTrabajo.id"                    column="id_ot"/>
+		<result property="inventariado"                       column="s_inventariado"/>
+		<result property="preparado"                          column="s_preparado"/>
+		<result property="fechaInventario"                    column="d_fecha_inventario"/>
+		<result property="ordenTrabajo.codigoBarra"           column="i_cod_barra" typeHandler="CodigoBarrasTypeHandler"/>
+		<result property="ordenTrabajo.fechaCreacion"         column="d_fecha_creacion"/>
+		<result property="ordenTrabajo.producto.descripcion"  column="s_descripcion"/>
+		<result property="ubicacion.nombre"                   column="s_ubicacion"/>
+		<result property="ubicacionInterna.nombre"            column="s_ubicacion_interna"/>
+	</resultMap>
+	
+	<select id="listInventarioProductoByFilter" parameterType="FilterInventario" resultMap="inventarioProducto">
+		select
+			ip.id_inventario_producto
+			,ip.id_ot
+			,ub.s_nombre as s_ubicacion
+      		,ubi.s_nombre as s_ubicacion_interna
+			,ip.s_inventariado
+			,ip.s_preparado
+			,ip.d_fecha_inventario
+			,ot.i_cod_barra
+			,ot.d_fecha_creacion
+			,trim(p.s_descripcion)||' - '||trim(m.s_nombre) as s_descripcion
+		from sstt_inventario_productos ip
+			left join sstt_ordenes_trabajo ot on ot.id_ot = ip.id_ot
+			left join owv_productos p on p.id_producto = ot.id_producto
+			left join owv_marcas m on m.id_marca = p.id_marca
+			left join sstt_bitacoras b on b.id_ot = ot.id_ot and b.d_fecha_salida is null
+      		left join sstt_ubicaciones ub on ub.id_ubicacion = b.id_ubicacion
+      		left join sstt_bitacoras_internas bi on bi.id_ot = ot.id_ot and bi.d_fecha_termino is null
+      		left join sstt_ubicaciones_internas ubi on ubi.id_ubicacion_interna = bi.id_ubicacion_interna
+		where ip.id_inventario_ubicacion = #{idInventarioUbicacion} 
+		<if test="orderBy != null and !orderBy.equals('')">
+            order by ${orderBy}
+            <if test="sortOrder != null and !sortOrder.equals('')">
+                ${sortOrder}
+            </if>    
+        </if>
+	</select>
+	
+	<select id="getTotalInventarioProductoByFilter" parameterType="FilterInventario" resultType="Integer">
+		select
+			count(ip.id_inventario_producto)
+		from sstt_inventario_productos ip
+		where ip.id_inventario_ubicacion = #{idInventarioUbicacion} 
+	</select>
+</mapper>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dwr PUBLIC "-//GetAhead Limited//DTD Direct Web Remoting 3.0//EN" "http://getahead.org/dwr/dwr30.dtd">
+<dwr>
+	<allow>
+		<filter class="cl.abcdin.sst.filter.DWRFilter" />
+		
+		<create creator="new" javascript="SSTFacade" scope="script">
+			<param name="class" value="cl.abcdin.sst.facade.SSTFacade"/>
+			<exclude method="setLoginService"/>
+			<exclude method="setSucursalService"/>
+			<exclude method="setUtilService"/>
+			<exclude method="setEjecutivaService"/>
+			<exclude method="setAdministracionService"/>
+		</create>
+			  
+		<convert match="cl.abcdin.sst.model.*" converter="bean"/>
+		<convert match="cl.abcdin.sst.model.vo.*" converter="bean"/>	
+		<convert match="cl.abcdin.sst.model.filters.*" converter="bean"/>
+		<convert match="org.apache.ibatis.session.RowBounds" converter="bean"/>
+		<convert match="ar.com.fdvs.dj.domain.CustomExpression" converter="bean"/>
+		<convert match="org.apache.commons.fileupload.FileItem" converter="bean"/>		
+		
+		<convert match="java.lang.Exception" converter="exception"/>
+		<convert match="java.lang.StackTraceElement" converter="bean"/>
+
+	</allow>
+</dwr>

@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<mapper namespace="include">
+
+	<sql id="selectOT">
+		select 
+		  ot.id_ot
+		  ,ot.d_fecha_creacion		      
+		  ,ot.id_sucursal		     
+		  ,(select s_descripcion from sstt_parametros where s_string1 = 'TIOT' and s_nombre = ot.s_tipo) as s_tipo_ot
+		  ,ot.s_nmro_serie
+		  ,ot.i_nmro_cargo
+		  ,ot.i_nmro_folio    
+		  ,ot.i_nmro_atencion 
+		  ,ot.s_contrato 
+		  ,ot.id_facturar
+		  ,ot.d_fecha_cambio_autorizado
+		  ,ot.i_semaforo_sucursal_inicio
+		  ,ot.i_semaforo_sucursal_fin
+		  ,ot.i_semaforo_stecnico
+		  ,ot.d_fecha_cierre_cliente		      
+		  ,ot.id_producto		   as id_codigo_corto
+		  ,ot.s_vigente
+		  ,ot.s_cerrada_cliente
+		  ,ot.s_cerrada
+		  ,ot.s_tarea_urgente
+		  ,ot.id_estado
+		  ,cl.s_nombre			      as s_nombre_cliente
+		  ,ub.s_nombre			      as s_ubicacionNombre
+		  ,es.s_nombre			      as s_estadonombre
+		  ,ubi.s_nombre			     as s_stecnico_nombre
+		  ,(us.s_nombre || ' ' || us.s_apellido_paterno) as s_nombre_completo_ejecutiva
+		  ,prod.s_descripcion as s_descripcion_producto
+		  ,ma.s_nombre as s_nombre_marca
+		  ,floor(OWF_OBTENER_COSTO_PRODUCTO(prod.id_producto) * (select par.f_float1 from sstt_parametros par where par.id_parametro = 30001000)) as i_iva
+		  ,floor(OWF_OBTENER_COSTO_PRODUCTO(prod.id_producto)) as i_costo
+		  ,ot.s_cambio_autorizado
+		  ,nvl((case when ot.s_cambio_autorizado = 'N' then
+				   (select 
+					  sum(trunc(nvl(b1.d_fecha_salida, sysdate)) - trunc(b1.d_fecha_entrada))
+				    from sstt_bitacoras b1 
+				    where b1.id_ot = ot.id_ot
+				    and b1.d_fecha_entrada is not null 
+				    and b1.id_ubicacion = ot.id_stecnico) 
+			else
+				   (select  sum(case when b2.d_fecha_salida is null then 
+						    trunc(sysdate) - trunc(b2.d_fecha_entrada)
+						else
+						    case when b2.d_fecha_entrada &lt; ot.d_fecha_cambio_autorizado then
+							  case when ot.d_fecha_cambio_autorizado &lt; b2.d_fecha_salida then
+							      trunc(ot.d_fecha_cambio_autorizado) - trunc(b2.d_fecha_entrada)
+							  else
+							      trunc(b2.d_fecha_salida) - trunc(b2.d_fecha_entrada)					    
+							  end 
+						    end      
+						end)     
+				    from sstt_bitacoras b2 
+				    where b2.id_ot = ot.id_ot
+				    and b2.d_fecha_entrada is not null 
+				    and b2.id_ubicacion = ot.id_stecnico)
+			end), 0) as i_dias_servicio_tecnico
+		  ,nvl((select
+			   sum(trunc(nvl(b2.d_fecha_salida, sysdate)) - trunc(b2.d_fecha_entrada))
+			   from sstt_bitacoras b2 where b2.id_ot = ot.id_ot
+			   and b2.id_estado in (20002000, 20008000, 20016000)),0) as i_dias_sucursal_inicio       
+		  ,nvl((select 
+			  sum(case when ot.s_cambio_autorizado = 'N' then
+				  trunc(nvl(b3.d_fecha_salida, sysdate)) - trunc(b3.d_fecha_entrada)		  
+			      else
+				  trunc(nvl(ot.d_fecha_cierre_cliente, sysdate)) - trunc(ot.d_fecha_cambio_autorizado)		
+			      end) 
+			from sstt_bitacoras b3 
+			where b3.id_ot = ot.id_ot
+			and b3.d_fecha_entrada is not null
+			and b3.id_ubicacion = ot.id_sucursal
+			and b3.id_estado = 20006000), 0) as i_dias_sucursal_termino
+		  , case when ot.s_facturar_tipo = 'Tienda' then
+				u.s_nombre
+			 when ot.s_facturar_tipo = 'Proveedor' then
+				ot.s_facturar_tipo
+			 else
+				'NO SE HA ELEGIDO A QUIEN FACTURAR'
+			 end as s_empresa_factura
+		   , (select g.i_numero from sstt_guias g where g.id_guia = (select max(g3.id_guia) from 
+												sstt_bitacoras b 
+												inner join sstt_guias g3 on b.id_guia = g3.id_guia  
+												where g3.id_ot = ot.id_ot 
+												and g3.id_origen = 10015 
+												and g3.id_estado in (50002000,50003000,50005000,50007000,50008000,50009000) 
+												and g3.s_vigente = 'S'
+												and g3.id_destino = ot.id_sucursal)) as id_guia_a_sucursal
+		   , (select i_nmro_guia from sstt_recepciones r where r.id_recepcion = (select max(r2.id_recepcion) from 
+												sstt_recepciones r2 
+												where r2.id_origen = ot.id_sucursal
+												and r2.id_estado in (60001000, 60002000,60003000)
+												and r2.id_ot = ot.id_ot)) as i_guia_desde_sucursal	       
+		   , (select g.d_fecha_emision from sstt_guias g where g.id_guia = (select max(g2.id_guia) from 
+												sstt_bitacoras b 
+												inner join sstt_guias g2 on b.id_guia = g2.id_guia   
+												inner join sstt_ubicaciones suc on suc.id_ubicacion = g2.id_destino
+												where b.id_ot = ot.id_ot
+												and suc.s_tipo = 'SC'
+												and g2.id_estado IN (50002000,50003000,50005000,50007000,50008000,50009000)
+												and g2.s_vigente = 'S')) as d_fecha_guia_a_sucursal  
+		   , (select d_fecha_recepcion from sstt_recepciones r where r.id_recepcion = (select max(r2.id_recepcion) from 
+												sstt_recepciones r2 
+												where r2.id_origen = ot.id_sucursal
+												and r2.id_estado in (60001000, 60002000,60003000)
+												and r2.id_ot = ot.id_ot)) as d_fecha_guia_desde_sucursal
+		    , (select d_fecha_emision from sstt_guias where id_guia = (select max(g2.id_guia) from 
+												sstt_bitacoras b 
+												inner join sstt_guias g2 on b.id_guia = g2.id_guia  
+												inner join sstt_ubicaciones suc on suc.id_ubicacion = g2.id_origen
+												where suc.s_tipo = 'SC'
+												and g2.id_estado IN (50002000,50003000,50005000,50007000,50008000,50009000)
+												and g2.s_vigente = 'S' 
+												and b.id_ot = ot.id_ot)) as d_fecha_guia_suc_envia
+		    ,(select i_numero from sstt_guias where id_guia = (select max(g2.id_guia) from 
+												sstt_bitacoras b 
+												inner join sstt_guias g2 on b.id_guia = g2.id_guia   
+												inner join sstt_ubicaciones suc on suc.id_ubicacion = g2.id_destino
+												where suc.s_tipo = 'ST'
+												and g2.id_estado IN (50002000,50003000,50005000,50007000,50008000,50009000)
+												and g2.s_vigente = 'S' 
+												and b.id_ot = ot.id_ot)) as i_guia_stecnico
+		   , (select d_fecha_emision from sstt_guias where id_guia = (select max(g2.id_guia) from 		   						
+												sstt_bitacoras b 
+												inner join sstt_guias g2 on b.id_guia = g2.id_guia   
+												inner join sstt_ubicaciones suc on suc.id_ubicacion = g2.id_destino
+												where suc.s_tipo = 'ST'
+												and g2.id_estado IN (50002000,50003000,50005000,50007000,50008000,50009000)
+												and g2.s_vigente = 'S' 
+												and b.id_ot = ot.id_ot)) as d_fecha_guia_stecnico			
+		   , (select d_fecha_recepcion from sstt_recepciones r where r.id_recepcion = (select max(r2.id_recepcion) from 
+												sstt_recepciones r2 
+												where r2.id_origen = ot.id_stecnico
+												and r2.id_estado in (60001000, 60002000,60003000)
+												and r2.id_ot = ot.id_ot)) as d_fecha_guia_desde_stecnico 
+		   , (select i_numero from sstt_guias where id_guia = (select max(g2.id_guia) from 
+												sstt_bitacoras b 
+												inner join sstt_guias g2 on b.id_guia = g2.id_guia 
+												inner join sstt_ubicaciones suc on suc.id_ubicacion = g2.id_origen
+												where suc.s_tipo = 'SC'
+												and g2.id_estado IN (50002000,50003000,50005000,50007000,50008000,50009000)
+												and g2.s_vigente = 'S' 
+												and b.id_ot = ot.id_ot)) as i_guia_suc_envia  
+		   , (select i_nmro_guia from sstt_recepciones r where r.id_recepcion = (select max(r2.id_recepcion) from 
+		   										sstt_recepciones r2 
+												where r2.id_origen = ot.id_stecnico
+												and r2.id_estado in (60001000, 60002000,60003000)
+												and r2.id_ot = ot.id_ot)) as i_guia_desde_stecnico  
+		   , (select d_fecha_recepcion from sstt_recepciones r where r.id_recepcion = (select max(r2.id_recepcion) from 
+		   										sstt_recepciones r2 
+												inner join sstt_ubicaciones suc on r2.id_origen = suc.id_ubicacion
+												where suc.s_tipo = 'BR'
+												and r2.id_estado in (60001000, 60002000,60003000)
+												and r2.id_ot = ot.id_ot)) as d_fecha_guia_desde_bodega
+		   , (select d_fecha_emision from sstt_guias where id_guia = (select max(g2.id_guia) from
+												sstt_bitacoras b 
+												inner join sstt_guias g2 on b.id_guia = g2.id_guia  
+												inner join sstt_ubicaciones suc on suc.id_ubicacion = g2.id_destino  
+												where suc.s_tipo = 'BR'
+												and g2.id_estado IN (50002000,50003000,50005000,50007000,50008000,50009000)
+												and g2.s_vigente = 'S' 
+												and g2.id_ot = ot.id_ot)) as d_fecha_guia_a_bodega
+		   ,  (select i_numero from sstt_guias where id_guia = (select max(g2.id_guia) from 
+												sstt_bitacoras b 
+												inner join sstt_guias g2 on b.id_guia = g2.id_guia 
+												inner join sstt_ubicaciones suc on suc.id_ubicacion = g2.id_destino  
+												where suc.s_tipo = 'BR'
+												and g2.id_estado IN (50002000,50003000,50005000,50007000,50008000,50009000)
+												and g2.s_vigente = 'S' 
+												and b.id_ot = ot.id_ot)) as i_guia_a_bodega				    
+		   , (select i_nmro_guia from sstt_recepciones r where r.id_recepcion = (select max(r2.id_recepcion) from 
+		   										sstt_recepciones r2 
+												inner join sstt_ubicaciones suc on r2.id_origen = suc.id_ubicacion
+												where suc.s_tipo = 'BR'
+												and r2.id_estado in (60001000, 60002000,60003000)
+												and r2.id_ot = ot.id_ot)) as i_nmro_guia_desde_bodega
+		   , es3.s_descripcion as s_accion
+		   , (select r.i_nmro_guia 
+		      from sstt_recepciones r
+		      where r.id_recepcion = (select max(r2.id_recepcion) from sstt_recepciones r2 
+					      where r2.id_ubicacion = ot.id_sucursal
+					      and r2.id_estado in (60001000, 60002000,60003000)
+					      and r2.id_ot = ot.id_ot)) as i_guia_recibe_sucursal
+		   , (select r.d_fecha_recepcion 
+		      from sstt_recepciones r
+		      where r.id_recepcion = (select max(r2.id_recepcion) from sstt_recepciones r2 
+					      where r2.id_ubicacion = ot.id_sucursal
+					      and r2.id_estado in (60001000, 60002000,60003000)
+					      and r2.id_ot = ot.id_ot)) as d_fecha_guia_recibe_sucursal
+		   , (select count(*)
+		      from sstt_guias g 
+					where g.id_destino = ot.id_stecnico
+					and g.id_ot = ot.id_ot
+		      and g.i_numero &gt; 0
+		      and g.d_fecha_emision is not null
+		      and g.s_vigente = 'S') as i_nmro_envios_stecnico
+		   , 0 as checkMarca      
+		from sstt_ordenes_trabajo ot
+	        left join sstt_clientes cl on ot.id_cliente = cl.id_cliente
+	        left join sstt_ubicaciones u on u.id_ubicacion = ot.id_facturar
+	        left join sstt_ubicaciones ub on ub.id_ubicacion = ot.id_sucursal
+	        left join sstt_estados es on es.id_estado = ot.id_estado
+	        left join sstt_ubicaciones ubi on ot.id_stecnico = ubi.id_ubicacion
+	        left join sstt_usuarios us on ot.id_ejecutiva = us.id_usuario
+	        left join owv_productos prod on prod.id_producto = ot.id_producto
+	        left join owv_marcas ma on ma.id_marca = prod.id_marca
+	        left join sstt_bitacoras bi on bi.id_ot = ot.id_ot and bi.d_fecha_salida is null
+	        left join sstt_estados es3 on bi.id_estado = es3.id_estado
+	        left join sstt_estados es2 on es2.id_estado = es3.id_estado_siguiente
+	</sql>
+
+</mapper>

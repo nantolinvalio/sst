@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ejecutiva">
+
+	<resultMap type="Persona" id="ejecutiva">
+		<result property="id" 				column="id_usuario"          />
+		<result property="rut" 				column="id_usuario" typeHandler="RunTypeHandler"/>
+		<result property="nombre" 			column="s_nombre"            />
+		<result property="apPaterno" 	    column="s_apellido_paterno"  />
+		<result property="apMaterno" 	    column="s_apellido_materno"  />
+		<result property="nombreCompleto" 	column="nombre_Completo"  	 />
+		<result property="anexo" 		 	column="s_interno"           />
+		<result property="email"			column="s_email"/>
+		<result property="celular"			column="s_celular"/>
+		<result property="ubicacion.id"		column="id_ubicacion"/>
+	</resultMap>
+	
+	<select id="getEjecutivaByOT" parameterType="Long" resultMap="ejecutiva">
+		select 
+			u.id_usuario,
+			u.s_nombre,
+			u.s_apellido_paterno,
+			u.s_apellido_materno,
+			(s_nombre || ' ' || s_apellido_paterno || ' ' || s_apellido_materno) as nombre_Completo, 
+			u.s_interno
+		from 
+		    sstt_ejecutivas_sta_marcas esm
+		    inner join sstt_ordenes_trabajo ot on ot.id_stecnico = esm.id_stecnico
+		                                      and ot.s_tipo != 'GM'
+		    inner join owv_productos p on p.id_producto = ot.id_producto
+		                              and p.id_marca = esm.id_marca
+		    inner join sstt_usuarios u on u.id_usuario = esm.id_ejecutiva
+		where
+		    ot.id_ot = #{id}
+	</select>
+	
+	<select id="existeEjecutivaByFilter" parameterType="FilterEjecutiva" resultType="Integer">
+		select count(t.id_ejecutiva)
+		  from sstt_ejecutivas_sta_marcas t
+		       left outer join owv_productos p
+		         on p.id_marca = t.id_marca
+        <!--
+		* Proyecto : 10021 - Mejoras Servicio Tecnico
+		* Objetivo : Asignar la ejecutiva al momento de crear la OT
+		* Fecha    : 07/09/2015
+		* Autor    : Richard Flores - ScriptIA
+		* 
+		* INICIO
+		******************* Original ********************
+		 where t.id_stecnico = #{idSTecnico}
+		   and p.id_producto = #{idProducto}
+		*************************************************
+		*-->
+		<where>
+			<choose>
+				<when test="idSTecnico.equals(0L)">
+					p.id_producto = #{idProducto}
+				</when>
+				<otherwise>
+					t.id_stecnico = #{idSTecnico}
+					and p.id_producto = #{idProducto}
+				</otherwise>
+			</choose>
+		</where>
+		<!-- 
+		* FIN
+		*-->
+	</select>
+	
+	<select id="getIdEjecutivaStaMarcasByFilter" parameterType="FilterEjecutiva" resultType="Long">
+		select 
+			t.id_ejecutiva
+		from sstt_ejecutivas_sta_marcas t
+			left outer join owv_productos p on p.id_marca = t.id_marca
+		where t.id_stecnico = #{idSTecnico}
+			and p.id_producto = #{idProducto}
+	</select>
+	
+	
+	<select id="getEjecutivaByFilter" parameterType="FilterEjecutiva" resultMap="ejecutiva">
+		select
+			us.id_usuario
+    		,us.s_nombre
+    		,us.s_apellido_paterno
+    		,us.s_apellido_materno
+    		,(s_nombre || ' ' || s_apellido_paterno || ' ' || s_apellido_materno) as nombre_Completo
+    		,us.s_celular
+    		,us.s_interno
+    		,us.s_email
+    		,us.id_ubicacion
+		from sstt_usuarios us
+			left join sstt_ejecutivas_sta_marcas em on em.id_ejecutiva = us.id_usuario
+			left join owv_productos pr on pr.id_marca = em.id_marca
+		<!--
+		* Proyecto : 10021 - Mejoras Servicio Tecnico
+		* Objetivo : Asignar la ejecutiva al momento de crear la OT
+		* Fecha    : 07/09/2015
+		* Autor    : Richard Flores - ScriptIA
+		* 
+		* INICIO
+		******************* Original ********************
+		where em.id_stecnico = #{idSTecnico}
+			and pr.id_producto = #{idProducto}
+		*************************************************
+		*-->
+		<where>
+			<choose>
+				<when test="idSTecnico.equals(0L)">
+					pr.id_producto = #{idProducto}
+					and ROWNUM &lt; 2
+				</when>
+				<otherwise>
+					em.id_stecnico = #{idSTecnico}
+					and pr.id_producto = #{idProducto}
+				</otherwise>
+			</choose>
+		</where>
+		<!-- 
+		* FIN
+		*-->
+	</select>
+</mapper>
+

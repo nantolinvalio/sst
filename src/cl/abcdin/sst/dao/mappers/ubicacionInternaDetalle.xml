@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ubicacionInternaDetalle">
+	<insert id="save" parameterType="UbicacionInternaDetalle" keyColumn="id_ubicacion_interna_detalle" keyProperty="id">
+		<selectKey resultType="Integer" keyProperty="id" order="BEFORE">
+			select SSTS_UBICACION_INTERNA_DET.nextval from dual
+		</selectKey>
+		insert into sstt_ubicacion_interna_det(
+			id_ubicacion_interna_detalle
+			,id_ubicacion_interna
+			<if test="producto!=null">
+				,id_producto
+			</if>
+			<if test="familia!=null">
+				,id_familia
+			</if>
+			<if test="linea!=null">
+				,id_linea
+			</if>
+			<if test="sucursal!=null">
+				,id_sucursal
+			</if>
+		) values (
+			#{id}
+			,#{ubicacionInterna.id}
+			<if test="producto!=null">
+				,#{producto.id}
+			</if>
+			<if test="familia!=null">
+				,#{familia.codigo}
+			</if>
+			<if test="linea!=null">
+				,#{linea.codigo}
+			</if>
+			<if test="sucursal!=null">
+				,#{sucursal.id}
+			</if>
+		)
+	</insert>
+	
+	
+	<delete id="eliminarFromUbicacionInternaDetalle" parameterType="UbicacionInternaDetalle">
+		delete sstt_ubicacion_interna_det
+		<where>
+			id_ubicacion_interna = #{ubicacionInterna.id}
+			<if test="producto!=null and producto.id!=null">
+				and id_producto=#{producto.id}
+			</if>
+			<if test="familia!=null and familia.id!=null and !familia.id.equals('')">
+				and id_familia = #{familia.id}
+			</if>
+			<if test="linea!=null and linea.codigo!=null and !linea.codigo.equals('')">
+				and id_linea = #{linea.codigo}
+			</if>
+			<if test="sucursal!=null and sucursal.id!=null">
+				and id_sucursal=#{sucursal.id}
+			</if>
+		</where>
+	</delete>
+	
+	<select id="hasSucursalesByIdUbicacionInterna" parameterType="Long" resultType="Integer">
+		select count(1)
+		from sstt_ubicacion_interna_det
+		where id_ubicacion_interna = #{idUbicacionInterna}
+  			and id_sucursal is not null
+	</select>
+	
+	
+</mapper>

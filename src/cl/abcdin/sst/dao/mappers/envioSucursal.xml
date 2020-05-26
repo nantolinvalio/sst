@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="envioSucursal">
+
+	<resultMap type="EnvioSucursal" id="envios">
+		<result property="sucursal.id"         column="id_ubicacion"/>
+		<result property="sucursal.glosa"      column="s_nombre_sucursal"/>
+		<result property="sucursal.direccion"  column="s_direccion"/>
+		<result property="fechaInicio"         column="d_fecha_inicio"/>
+		<result property="fechaTermino"        column="d_fecha_cierre"/>
+		<result property="totalLeidas"         column="i_total_leidas"/>
+		<result property="almacenadas"         column="i_almacenadas"/>
+	</resultMap>
+	
+	<select id="listEnviosToSucursal" resultMap="envios" parameterType="FilterEnvioSucursal">
+		select 
+			su.id_ubicacion
+			,su.s_nombre as s_nombre_sucursal
+			,su.s_direccion
+			,es.d_fecha_inicio as d_fecha_inicio
+			,es.d_fecha_cierre as d_fecha_cierre
+			,SUM(case when bi.id_ubicacion_interna =1001500003 then 1 else 0 end) as i_total_leidas
+			,SUM(case when bi.id_estado = 100010200 then 1 else 0 end) as i_almacenadas
+		from sstt_ubicaciones su
+			left join sstt_envios_sucursales es on es.id_sucursal = su.id_ubicacion
+			left join sstt_ordenes_trabajo ot on ot.id_sucursal = su.id_ubicacion
+			left join sstt_bitacoras_internas bi on bi.id_ot = ot.id_ot and d_fecha_termino is null
+		where 
+			su.s_tipo = 'SC'
+			and su.s_vigente ='S'
+			and su.s_vigente ='S'
+      		and (es.id_envio_sucursal in (select max(es2.id_envio_sucursal) from sstt_envios_sucursales es2 where es2.id_sucursal = es.id_sucursal)
+          		or su.id_ubicacion not in (select id_sucursal from sstt_envios_sucursales) )
+			<if test="fechaInicio!=null and !fechaInicio.equals('')">
+				es.d_fecha_inicio = #{fecha_inicio}
+			</if>
+		group by
+    		su.id_ubicacion
+			,su.s_nombre
+			,su.s_direccion
+      		,es.d_fecha_inicio
+      		,es.d_fecha_cierre
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTotalEnviosToSucursal" resultType="Integer">
+		select count(1)
+		from sstt_ubicaciones su
+		where su.s_tipo ='SC'
+			and su.s_vigente = 'S'
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<insert id="save" parameterType="EnvioSucursal" keyColumn="id_envio_sucursal" keyProperty="id">
+		<selectKey resultType="Integer" keyProperty="id" order="BEFORE">
+			select ssts_envios_sucursales.nextval from dual
+		</selectKey>
+		insert into sstt_envios_sucursales(
+			id_envio_sucursal
+			,id_sucursal
+			,d_fecha_inicio
+			,id_usuario_inicio
+			,i_cant_ot
+		) values (
+			#{id}
+			,#{sucursal.id}
+			,sysdate
+			,#{usuarioInicio.id}
+			,#{totalOT}
+		)
+	</insert>
+	
+	<resultMap type="EnvioSucursal" id="enviosBySucursal">
+		<result property="id"                      column="id_envio_sucursal"/>
+		<result property="sucursal.id"             column="id_sucursal"/>
+		<result property="usuarioInicio.id"        column="id_usuario_inicio"/>
+		<result property="fechaInicio"             column="d_fecha_inicio"/>
+		<result property="usuarioTermino.id"       column="id_usuario_cierre"/>
+		<result property="fechaTermino"            column="d_fecha_cierre"/>
+		<result property="totalOT"                 column="i_cant_ot"/>
+	</resultMap>
+	
+	<select id="getEnvioToSucursalByIdSucursal" parameterType="Integer" resultMap="enviosBySucursal">
+		select
+			id_envio_sucursal
+			,id_sucursal
+			,id_usuario_inicio
+			,d_fecha_inicio
+			,id_usuario_cierre
+			,d_fecha_cierre
+			,i_cant_ot
+		from sstt_envios_sucursales
+		where id_sucursal = #{idSucursal}
+			and d_fecha_cierre is null
+	</select>
+	
+	<update id="cerrarEnvioSucursalByEnvioSucursal"  parameterType="EnvioSucursal">
+		update sstt_envios_sucursales
+			set d_fecha_cierre = sysdate
+				,id_usuario_cierre = #{usuarioTermino.id}
+		where id_envio_sucursal = #{id}
+	</update>
+	
+</mapper>

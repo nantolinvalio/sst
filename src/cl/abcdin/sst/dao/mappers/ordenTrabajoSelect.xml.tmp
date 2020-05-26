@@ -1,0 +1,2731 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ordenTrabajoSelect">
+
+	<resultMap type="OrdenTrabajo" id="otTransito">
+		<result property="id"                               column="id_ot"/>
+		<result property="cliente.nombre"                   column="s_nombre_cliente"/>
+		<result property="producto.id"                      column="id_producto"/>
+		<result property="producto.descripcion"             column="s_descripcion_producto"/>
+		<result property="producto.marca.nombre"            column="s_marca"/>
+		<result property="estado.glosa"                     column="s_estado"/>
+		<result property="ejecutiva.nombreCompleto"         column="s_ej_nombre_completo"/>
+		<result property="ejecutiva.email"                  column="s_ejecutiva_email"/>
+		<result property="ubicacion.id"                     column="id_ubicacion"/>
+		<result property="ubicacion.glosa"                  column="s_nombre"/>
+		<result property="ubicacion.tipo"                   column="s_tipo"/>
+		<result property="diasTransito"                     column="i_dias"/>
+		<result property="destino.nombre"                   column="s_nombre_destino"/>
+	</resultMap>
+
+	<select id="listOTEnTransito" parameterType="FilterOT" resultMap="otTransito">
+		select   
+            ot.id_ot, 
+            cl.s_nombre as s_nombre_cliente, 
+            ot.id_producto,
+            p.s_descripcion as s_descripcion_producto,
+            m.s_nombre as s_marca,
+            e.s_nombre as s_estado,
+            ej.s_nombre || ' ' || ej.s_apellido_paterno || ' ' || ej.s_apellido_materno as s_ej_nombre_completo,
+            ej.s_email as s_ejecutiva_email,
+            u.s_tipo, 
+            u.id_ubicacion, 
+            nvl(u.s_nombre,'TRANSPORTE') as s_nombre,
+            round(sysdate - (select min (g.d_fecha_emision) from sstt_guias g where g.id_ot = ot.id_ot)) as i_dias,
+            g.id_destino,
+            ud.S_NOMBRE as s_nombre_destino
+        from 
+            sstt_ordenes_trabajo ot 
+            left join sstt_clientes cl on cl.id_cliente = ot.id_cliente
+		    left join owv_productos p on p.id_producto = ot.id_producto
+		    left join owv_marcas m on m.id_marca = p.id_marca
+		    inner join sstt_estados e on e.id_estado = ot.id_estado
+		    left join sstt_usuarios ej on ej.id_usuario = ot.id_ejecutiva
+		    left join sstt_bitacoras b on b.id_ot = ot.id_ot
+		                              and b.d_fecha_entrada is not null
+		                              and b.d_fecha_salida is null
+		    left join sstt_ubicaciones u ON u.id_ubicacion = b.id_ubicacion
+            left join sstt_guias g on g.id_ot = b.id_ot and g.id_estado in (50002000,50003000) and g.s_vigente = 'S'
+            left join sstt_ubicaciones ud on ud.id_ubicacion = g.id_destino
+		where 
+		        ot.id_estado in (10004000, 10005000, 10006000, 10007000, 10016000, 10017000, 10018000, 10022000, 10023000, 10024000, 10025000, 10026000)
+		    and ot.s_vigente = 'S'
+		    and ot.s_cerrada = 'N'
+		    and ot.s_cerrada_cliente = 'N'
+		    and ot.s_tipo != 'BT'
+		    and ot.id_sucursal = #{sucursal}
+			<if test="orderBy != null and !orderBy.equals('')">
+				order by ${orderBy}
+				<if test="sortOrder != null and !sortOrder.equals('')">
+					${sortOrder}
+				</if>	
+			</if>
+	</select>
+
+	<select id="getTotalOTEnTransito" parameterType="FilterOT" resultType="Integer">
+		select   
+		    count(1)
+		from 
+		    sstt_ordenes_trabajo ot 
+		    inner join sstt_estados e on e.id_estado = ot.id_estado
+		where 
+		        ot.id_estado in (10004000, 10005000, 10006000, 10007000, 10016000, 10017000, 10018000, 10022000, 10023000, 10024000, 10025000, 10026000)
+		    and ot.s_vigente = 'S'
+		    and ot.s_cerrada = 'N'
+		    and ot.s_cerrada_cliente = 'N'
+		    and ot.s_tipo != 'BT'
+		    and ot.id_sucursal = #{sucursal}
+	</select>
+
+	<resultMap type="OrdenTrabajo" id="otPendienteAccesorio">
+		<result property="id"                               column="id_ot"/>
+		<result property="cliente.nombre"                   column="s_nombre_cliente"/>
+		<result property="cliente.telefono"                 column="s_telefono"/>
+		<result property="cliente.celular"                  column="s_celular"/>
+		<result property="producto.id"                      column="id_producto"/>
+		<result property="producto.descripcion"             column="s_descripcion_producto"/>
+		<result property="producto.marca.nombre"            column="s_marca"/>
+		<result property="estado.id"                        column="id_estado"/>
+		<result property="estado.glosa"                     column="s_estado"/>
+	</resultMap>
+	
+	<select id="listOTPendientesEnSucursal" parameterType="FilterOT" resultMap="otPendienteAccesorio">
+		select
+		    o.id_ot, 
+		    cl.s_nombre as s_nombre_cliente,
+		    cl.s_telefono,
+		    cl.s_celular,
+		    o.id_producto, 
+		    p.s_descripcion as s_descripcion_producto,
+		    m.s_nombre as s_marca,
+		    e.id_estado,
+		    e.s_nombre as s_estado
+		from 
+		    sstt_ordenes_trabajo o
+		    left join sstt_clientes cl on cl.id_cliente = o.id_cliente
+		    inner join sstt_estados e on e.id_estado = o.id_estado
+		    left join owv_productos p on p.id_producto = o.id_producto
+		    left join owv_marcas m on m.id_marca = p.id_marca
+		where
+		        o.id_estado in (10001000, 10002000, 10009000)
+		    and o.s_vigente = 'S'
+		    and o.s_cerrada_cliente = 'N'
+		    and o.s_cerrada = 'N'
+		    and o.id_sucursal = #{sucursal}
+		    <if test="orderBy != null and !orderBy.equals('')">
+				order by ${orderBy}
+				<if test="sortOrder != null and !sortOrder.equals('')">
+					${sortOrder}
+				</if>	
+			</if>
+	</select>
+	
+	<select id="getTotalOTPendientesEnSucursal" parameterType="FilterOT" resultType="Integer">
+		select
+		    count(1)
+		from 
+		    sstt_ordenes_trabajo o
+		    inner join sstt_estados e on e.id_estado = o.id_estado
+		where
+		        o.id_estado in (10001000, 10002000,10009000)
+		    and o.s_vigente = 'S'
+		    and o.s_cerrada_cliente = 'N'
+		    and o.s_cerrada = 'N'
+		    and o.id_sucursal = #{sucursal}
+	</select>
+	
+	<resultMap type="OrdenTrabajo" id="otSingle">
+		<result property="id"                                column="id_ot" />
+		<result property="contratoEmitido"                   column="s_contrato_emitido" />
+		<result property="numeroContrato"                    column="s_contrato" />
+		<result property="vigente"                           column="s_vigente" />
+		<result property="cambioAutorizado"                  column="s_cambio_autorizado" />
+		<result property="fechaCreacion"                     column="d_fecha_creacion"/>
+		<result property="cerradaCliente"                    column="s_cerrada_cliente" />
+		<result property="cerrada"                           column="s_cerrada" />
+		<result property="cliente.id"                        column="id_cliente" />
+		<result property="cliente.nombre"				     column="s_nombre_cliente"/>
+		<result property="cliente.rut"                       column="id_cliente" typeHandler="RunTypeHandler"/>
+		<result property="cliente.telefono"                  column="s_telefono" />
+		<result	property="cliente.celular"                   column="s_celular" />
+		<result property="tipo.codigo"                       column="s_tipo" />
+		<result property="tipo.glosa"                        column="s_tipo_glosa"/>
+		<result property="estado.id"                         column="id_estado" />
+		<result property="estado.glosa"                      column="s_nombre" />
+		<result property="estado.descripcion"                column="s_descripcion" />
+		<result property="empresaFacturar.nombre"            column="s_facturar_tipo" />
+		<result property="motivoCierre"		                 column="s_motivo_cierre"/>
+		<result property="producto.id"		                 column="id_producto"/>
+		<result property="producto.marca.codigo"             column="s_codigo_marca"/>
+		<result property="producto.marca.nombre"             column="s_nombre_marca"/>
+		<result property="producto.descripcion"              column="s_descripcion_producto"/>
+		<result property="producto.bigTicket"                column="s_big_ticket"/>
+		<result property="producto.familia.id"               column="id_familia"/>
+		<result property="producto.familia.nombre"           column="s_nombre_familia"/>
+		<result property="producto.familia.linea.id"         column="id_linea" />
+		<result property="producto.familia.linea.codigo"     column="id_linea" />
+		<result property="producto.familia.linea.glosa"      column="s_nombre_linea" />
+		<result property="ejecutiva.id"                      column="id_ejecutiva" />
+		<result property="fechaVencimiento"                  column="d_fecha_vencimiento"/>
+		<result property="tipoDocumento"                     column="s_tipo_documento"/>
+		<result property="idDocumento"                       column="id_documento"/>
+		<result property="fechaEmision"                      column="d_fecha_emision"/>
+		<result property="logistico.nombreCompleto"          column="s_logistico_nombre"/>
+		<result property="logistico.anexo"                   column="s_logistico_anexo"/>
+		<result property="logistico.email"                   column="s_logistico_email"/>
+		<result property="ejecutiva.nombreCompleto"          column="s_ejecutiva_nombre"/>
+		<result property="ejecutiva.anexo"                   column="s_ejecutiva_anexo"/>
+		<result property="ejecutiva.email"                   column="s_ejecutiva_email"/>
+		<result property="sucursal.id"                       column="id_sucursal"/>
+		<result property="sucursal.glosa"                    column="s_sucursal"/>
+		<result property="sucursal.direccion"                column="s_sucursal_direccion"/>
+		<result property="sucursal.telefono"                 column="s_sucursal_telefono"/>
+		<result property="sucursal.comuna.glosa"             column="s_comuna"/>
+		<result property="sucursal.region.glosa"             column="s_region"/>
+		<result property="numeroAtencion"                    column="i_nmro_atencion"/>
+		<result property="numeroCambio"                      column="i_nmro_cambio"/>
+		<result property="descripcionFalla"                  column="s_descripcion_falla"/>
+		<result property="numeroSerie"					     column="s_nmro_serie"/>
+		<result property="descripcionFisica"                 column="s_descripcion_fisica"/>
+		<result property="numeroCelular"                     column="s_nmro_telefono"/>
+		<result property="descripcionEstado"			     column="s_descripcion_estado"/>
+		<result property="sTecnico.id"                       column="id_stecnico"/>
+		<result property="numeroFolio"                       column="i_nmro_folio"/>
+		<result property="tipoCambio.codigo"			     column="s_tipo_cambio"/>
+		<result property="tipoCambioJT.codigo"			     column="s_tipo_cambio_jt"/>
+		<result property="tipoCambio.descripcion"		     column="s_descripcion_tipo_cambio"/>
+		<result property="tipoCambioJT.descripcion"		     column="s_descripcion_tipo_cambio_jt"/>
+		<result property="imei"							     column="s_imei"/>
+		<result property="codigoBarra"					     column="i_cod_barra" typeHandler="CodigoBarrasTypeHandler"/>
+		<result property="numeroAtencion"				     column="i_nmro_atencion"/>
+		<result property="numeroIncidenteMarca"			     column="s_nmro_incidente_marca"/>
+		<result property="notaCredito"					     column="i_nota_credito"/>
+		<result property="ticketCambio"					     column="i_ticket_cambio"/>
+		<result property="fechaCierreCliente"			     column="d_fecha_cierre_cliente"/>
+		<result property="usuarioCambio.nombreCompleto"      column="s_usuario_cambio"/>
+		<result property="idDestino"                         column="id_destino"/>
+		<result property="calificaFR"                        column="s_califica_fr"/>
+		<result property="empresaFacturar.id"			     column="id_facturar"/>
+		<result property="empresaFacturar.rut"               column="id_facturar" typeHandler="RunTypeHandler"/>
+		<result property="cambio.motivoCambio"               column="s_motivo_cambio"/>
+		<result property="motivoDesactivacion"               column="s_motivo_desactivacion"/>
+		<result property="idDestinoAntesFacturar"            column="id_destino_cambio"/>
+		<result property="numeroCargo"                       column="i_nmro_cargo"/>
+		<result property="usuarioCCalidad.id"                column="id_usuario_ccalidad"/>
+		<result property="usuarioCCalidad.rut"               column="id_usuario_ccalidad" typeHandler="RunTypeHandler"/>
+		<result property="usuarioCCalidad.nombre"            column="s_nombre_usuario_ccalidad"/>
+		<result property="usuarioCCalidad.apellidoPaterno"   column="s_apellido_paterno_ccalidad"/>
+		<result property="cCalidadAprueba"                   column="s_ccalidad_aprueba"/>
+		<result property="cCalidadObservacion"               column="s_ccalidad_observacion"/>
+		<result property="ubicacion.direccion"               column="s_direccion"/>
+		<result property="ubicacion.id"               		 column="id_ubicacion"/>
+		<result property="despachoDetalle.estado.id"         column="id_estado_despacho_estado"/>
+		<result property="despachoDetalle.estado.descripcion" column="s_descripcion_despacho_estado"/>
+		<result property="despachoDetalle.despachoInterno.estado.id" column="id_estado_despacho"/>
+		<result property="clasificacion.codigo"              column="s_clasificacion"/>
+		<result property="clasificacion.glosa"               column="s_descripcion_clasificacion"/>
+		<result property="nombreTecnico"                     column="s_nombre_tecnico"/>
+		<result property="fechaRevision"                     column="d_fecha_revision"/>
+		<result property="observacionRevision"               column="s_observacion_revision"/>	
+		<result property="fechaGuiaDesdeSucursal"			 column="d_fecha_guia_sucursal_recibe"/>
+        <result property="bitacoraInterna.id"                column="id_bitacora_interno"/>
+        <result property="bitacoraInterna.estado.id"         column="estado_bitacora_interna"/>
+        <result property="bitacoraInterna.estado.glosa"      column="glosa_estado_b_interna"/>
+        <result property="fechaCambio"                       column="d_fecha_cambio_autorizado"/>
+        <result property="bitacoraInterna.estado.id"         column="id_estado_bitacora_interna"/>
+        <result property="excluyeCCalidad"                   column="s_excluye_ccalidad"/>
+        <result property="procesadoOW"        				 column="s_procesado_ow"/>
+        <result property="numeroXN"           			     column="i_nmro_xn"/>
+	</resultMap>
+	
+	<select id="getOTById" parameterType="Long" resultMap="otSingle">
+		select
+            ot.id_ot  
+            ,ot.s_contrato_emitido
+            ,ot.s_contrato 
+            ,ot.s_vigente      
+            ,ot.s_cambio_autorizado   
+            ,ot.d_fecha_creacion    
+            ,ot.s_cerrada_cliente      
+            ,ot.s_cerrada      
+            ,ot.s_tipo
+            ,ot.id_cliente
+            ,cl.id_comuna
+            ,cl.s_nombre as s_nombre_cliente
+            ,cl.s_celular
+            ,cl.s_telefono
+            ,par.s_descripcion as s_tipo_glosa
+            ,e.id_estado      
+            ,e.s_nombre
+            ,e.s_descripcion
+            ,ot.s_facturar_tipo
+            ,ot.s_motivo_cierre
+            ,ot.id_producto
+            ,ot.id_ejecutiva
+            ,ot.d_fecha_vencimiento
+            ,ot.s_tipo_documento
+            ,ot.id_documento
+            ,to_date(to_char(d.d_fecha_emision+1900000),'YYYYDDD') as d_fecha_emision
+            ,u1.s_nombre || ' ' || u1.s_apellido_paterno AS s_logistico_nombre
+            ,u1.s_email AS s_logistico_email
+            ,u1.s_interno AS s_logistico_anexo
+            ,u2.s_nombre || ' ' || u2.s_apellido_paterno AS s_ejecutiva_nombre
+            ,u2.s_email AS s_ejecutiva_email
+            ,u2.s_interno AS s_ejecutiva_anexo
+            ,ub.id_ubicacion AS id_sucursal
+            ,ub.s_nombre AS s_sucursal
+            ,ub.s_direccion AS s_sucursal_direccion
+            ,ub.s_telefono AS s_sucursal_telefono
+            ,c.s_nombre as s_comuna
+            ,r.s_nombre as s_region
+            ,ot.i_nmro_atencion
+            ,ot.i_nmro_cambio
+            ,ot.s_descripcion_falla
+            ,ot.s_nmro_serie  
+            ,ot.s_descripcion_fisica
+            ,ot.s_nmro_telefono
+            ,ot.s_descripcion_estado
+            ,ot.id_stecnico
+            ,ot.i_nmro_folio
+            ,ot.s_clasificacion
+            ,ot.s_nombre_tecnico
+            ,ot.d_fecha_revision
+            ,ot.s_observacion_revision
+            ,pr.id_marca as s_codigo_marca
+            ,pr.s_descripcion as s_descripcion_producto
+            ,pr.s_big_ticket
+            ,pr.id_familia
+            ,fa.s_nombre as s_nombre_familia
+            ,li.id_linea
+            ,li.s_nombre as s_nombre_linea
+            ,ma.s_nombre as s_nombre_marca
+            ,ot.s_tipo_cambio
+            ,ot.s_tipo_cambio_jt
+            ,paca.s_descripcion as s_descripcion_tipo_cambio
+            ,pacajt.s_descripcion as s_descripcion_tipo_cambio_jt
+            ,ot.s_imei
+            ,ot.i_cod_barra
+            ,ot.s_nmro_incidente_marca
+            ,ot.i_nota_credito
+            ,ot.i_ticket_cambio
+            ,u3.s_nombre || ' ' || u3.s_apellido_paterno AS s_usuario_cambio
+            ,ot.id_destino
+            ,ot.s_califica_fr
+            ,ot.id_facturar
+            ,ot.s_motivo_cambio
+            ,ot.s_motivo_desactivacion
+            ,ot.id_destino_cambio
+            ,ot.i_nmro_cargo
+            ,ot.id_usuario_ccalidad
+            ,u4.s_nombre as s_nombre_usuario_ccalidad
+            ,u4.s_apellido_paterno as s_apellido_paterno_ccalidad
+            ,ot.s_ccalidad_aprueba
+            ,ot.s_ccalidad_observacion
+            ,ot.s_clasificacion
+            ,paclas.s_descripcion as s_descripcion_clasificacion
+            ,(select max(r.d_fecha_recepcion) 
+                from sstt_recepciones r inner 
+                    join sstt_ubicaciones sc2 on sc2.id_ubicacion = r.id_origen where 
+                    r.id_ot = ot.id_ot
+                and r.id_ubicacion = 10015
+                and sc2.s_tipo = 'SC'
+                and r.id_estado in (60001000, 60002000,60003000)) as d_fecha_guia_sucursal_recibe
+            ,bi.id_bitacora_interna
+            ,bi.id_estado as estado_bitacora_interna
+            ,e2.s_descripcion as glosa_estado_b_interna
+            ,ot.d_fecha_cambio_autorizado
+            ,CASE WHEN ot.s_excluye_ccalidad IS NULL THEN
+            	'N'
+            ELSE
+            	ot.s_excluye_ccalidad
+            END AS s_excluye_ccalidad
+            ,ot.s_procesado_ow
+            ,ot.i_nmro_xn
+        from
+            sstt_ordenes_trabajo ot
+            left join sstt_clientes cl on cl.id_cliente = ot.id_cliente
+            left join sstt_estados e on ot.id_estado = e.id_estado
+            left join sstt_usuarios u1 on ot.id_logistico = u1.id_usuario
+            left join sstt_usuarios u2 on ot.id_ejecutiva = u2.id_usuario
+            left join sstt_usuarios u3 on ot.id_usuario_cambio = u3.id_usuario
+            left join sstt_usuarios u4 on ot.id_usuario_ccalidad = u4.id_usuario
+            left join sstt_ubicaciones ub on ot.id_sucursal = ub.id_ubicacion
+            left join sstt_comunas c on c.id_comuna = ub.id_comuna
+            left join sstt_provincias p on p.id_provincia = c.id_provincia
+            left join sstt_regiones r on r.id_region = p.id_region
+            left join sstt_parametros par on par.s_nombre = ot.s_tipo and par.s_string1 = 'TIOT'
+            left join sstt_parametros paca on paca.s_nombre = ot.s_tipo_cambio and paca.s_string1 = 'TICA'
+            left join sstt_parametros pacajt on pacajt.s_nombre = ot.s_tipo_cambio_jt and pacajt.s_string1 = 'TICA'
+            left join owv_productos pr on pr.id_producto = ot.id_producto
+            left join owv_marcas ma on ma.id_marca = pr.id_marca
+            left join owv_familias fa on fa.id_familia = pr.id_familia
+            left join owv_lineas li on li.id_linea = fa.id_linea
+            left join owv_documentos d on d.id_documento = ot.id_documento and d.s_tipo_documento = ot.s_tipo_documento
+            left join sstt_parametros paclas on paclas.s_nombre = ot.s_clasificacion and paclas.s_string1='CB'
+            left join sstt_bitacoras_internas bi on bi.id_ot = ot.id_ot and bi.d_fecha_termino is null
+			left join sstt_estados e2 on e2.id_estado = bi.id_estado
+		where
+		    ot.id_ot = #{idOt}
+	</select>
+	
+	<select id="getTotalNumeroCambio" parameterType="Integer" resultType="Integer">
+		select count(*)
+		from 
+		    sstt_ordenes_trabajo ot
+		where 
+		    ot.i_nmro_cambio = #{numeroCambio} and 
+		    ot.s_vigente = 'S'
+	</select>
+	
+	
+	<select id="listOTAbiertasSucursal" resultMap="ordenTrabajo.ot" parameterType="FilterOT">
+		select
+            ot.id_ot
+            ,ot.s_tipo as s_tipo_ot
+            ,es.s_nombre                      as s_estadonombre
+            ,ot.id_producto                   as id_codigo_corto
+            ,ot.d_fecha_creacion
+            ,i_semaforo_stecnico
+            ,i_semaforo_sucursal_inicio
+            ,i_semaforo_sucursal_fin
+            ,(us.s_nombre || ' ' || us.s_apellido_paterno) as s_nombre_completo_ejecutiva
+            ,es3.s_descripcion as s_accion
+        from 
+            sstt_ordenes_trabajo ot
+		    left join sstt_usuarios us on ot.id_ejecutiva = us.id_usuario
+		    left join sstt_estados es on es.id_estado = ot.id_estado
+		    inner join sstt_bitacoras bi on bi.id_ot = ot.id_ot
+										and bi.id_bitacora = (select max(id_bitacora) from sstt_bitacoras where id_ot = ot.id_ot)
+			inner join sstt_estados es3 on bi.id_estado = es3.id_estado
+		where 
+			ot.s_cerrada_cliente = 'N'
+		and ot.s_vigente = 'S'
+		and ot.id_sucursal = #{sucursal}
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTotalOTAbiertasSucursal" resultType="Integer" parameterType="FilterOT">
+		select count(*)
+		from sstt_ordenes_trabajo ot
+		where 
+			ot.s_cerrada_cliente = 'N'
+		and ot.s_vigente = 'S'
+		and ot.id_sucursal = #{sucursal}
+	</select>
+	
+	<select id="listOTPendienteAccesorios" resultMap="ordenTrabajo.ot" parameterType="FilterOT">
+		select
+            ot.id_ot
+            ,ot.s_tipo as s_tipo_ot
+            ,es.s_nombre                      as s_estadonombre
+            ,ot.id_producto                   as id_codigo_corto
+            ,ot.d_fecha_creacion
+            ,i_semaforo_stecnico
+            ,i_semaforo_sucursal_inicio
+            ,i_semaforo_sucursal_fin
+            ,(us.s_nombre || ' ' || us.s_apellido_paterno) as s_nombre_completo_ejecutiva
+            ,es3.s_descripcion as s_accion
+        from 
+            sstt_ordenes_trabajo ot
+		    left join sstt_usuarios us on ot.id_ejecutiva = us.id_usuario
+		    left join sstt_estados es on es.id_estado = ot.id_estado
+		    inner join sstt_bitacoras bi on bi.id_ot = ot.id_ot
+										and bi.id_bitacora = (select max(id_bitacora) from sstt_bitacoras where id_ot = ot.id_ot)
+			inner join sstt_estados es3 on bi.id_estado = es3.id_estado
+		where 
+			ot.id_estado = 10002000
+		and ot.s_vigente = 'S'
+		and ot.s_cerrada_cliente = 'N'
+		and ot.s_cerrada = 'N'
+		and ot.id_sucursal = #{sucursal}
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTotalOTPendienteAccesorios" resultType="Integer" parameterType="FilterOT">
+		select count(*)
+		from sstt_ordenes_trabajo ot
+		where 
+			ot.id_estado = 10002000
+		and ot.s_vigente = 'S'
+		and ot.s_cerrada_cliente = 'N'
+		and ot.s_cerrada = 'N'
+		and ot.id_sucursal = #{sucursal}
+	</select>
+	
+	<select id="listOTPendienteGuia" resultMap="ordenTrabajo.ot" parameterType="FilterOT">
+		select
+            ot.id_ot
+            ,ot.s_tipo as s_tipo_ot
+            ,es.s_nombre                      as s_estadonombre
+            ,ot.id_producto                   as id_codigo_corto
+            ,ot.d_fecha_creacion
+            ,i_semaforo_stecnico
+            ,i_semaforo_sucursal_inicio
+            ,i_semaforo_sucursal_fin
+            ,(us.s_nombre || ' ' || us.s_apellido_paterno) as s_nombre_completo_ejecutiva
+            ,es3.s_descripcion as s_accion
+        from 
+        	sstv_guias_sucursales t
+        	inner join sstt_ordenes_trabajo ot on ot.id_ot = t.id_ot
+		    left join sstt_usuarios us on ot.id_ejecutiva = us.id_usuario
+		    left join sstt_estados es on es.id_estado = ot.id_estado
+		    inner join sstt_bitacoras bi on bi.id_ot = ot.id_ot
+										and bi.id_bitacora = (select max(id_bitacora) from sstt_bitacoras where id_ot = ot.id_ot)
+			inner join sstt_estados es3 on bi.id_estado = es3.id_estado
+		where 
+			t.id_origen = #{sucursal}
+		and t.id_estado = 50001000
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTotalOTPendienteGuia" resultType="Integer" parameterType="FilterOT">
+		select count(*)
+		from sstv_guias_sucursales t
+		where 
+			t.id_origen = #{sucursal}
+		and t.id_estado = 50001000
+	</select>
+	
+	<select id="listOTPendienteEntregaCliente" resultMap="ordenTrabajo.ot" parameterType="FilterOT">
+		select
+            ot.id_ot
+            ,ot.s_tipo as s_tipo_ot
+            ,es.s_nombre                      as s_estadonombre
+            ,ot.id_producto                   as id_codigo_corto
+            ,ot.d_fecha_creacion
+            ,i_semaforo_stecnico
+            ,i_semaforo_sucursal_inicio
+            ,i_semaforo_sucursal_fin
+            ,(us.s_nombre || ' ' || us.s_apellido_paterno) as s_nombre_completo_ejecutiva
+            ,es3.s_descripcion as s_accion
+        from 
+            sstt_ordenes_trabajo ot
+		    left join sstt_usuarios us on ot.id_ejecutiva = us.id_usuario
+		    left join sstt_estados es on es.id_estado = ot.id_estado
+		    inner join sstt_bitacoras bi on bi.id_ot = ot.id_ot
+										and bi.id_bitacora = (select max(id_bitacora) from sstt_bitacoras where id_ot = ot.id_ot)
+			inner join sstt_estados es3 on bi.id_estado = es3.id_estado
+		where 
+			ot.id_estado = 10011000
+		and ot.s_vigente = 'S'
+		and ot.s_cerrada_cliente = 'N'
+		and ot.id_sucursal = #{sucursal}
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTotalOTPendienteEntregaCliente" resultType="Integer" parameterType="FilterOT">
+		select count(*)
+		from sstt_ordenes_trabajo ot
+		where 
+			ot.id_estado = 10011000
+		and ot.s_vigente = 'S'
+		and ot.s_cerrada_cliente = 'N'
+		and ot.id_sucursal = #{sucursal}
+	</select>
+	
+	<select id="listOTEnviadasSTLSinContrato" resultMap="ordenTrabajo.ot" parameterType="FilterOT">
+		select
+            ot.id_ot
+            ,ot.s_tipo as s_tipo_ot
+            ,es.s_nombre                      as s_estadonombre
+            ,ot.id_producto                   as id_codigo_corto
+            ,ot.d_fecha_creacion
+            ,i_semaforo_stecnico
+            ,i_semaforo_sucursal_inicio
+            ,i_semaforo_sucursal_fin
+            ,(us.s_nombre || ' ' || us.s_apellido_paterno) as s_nombre_completo_ejecutiva
+            ,es3.s_descripcion as s_accion
+        from 
+            sstt_ordenes_trabajo ot
+		    left join sstt_usuarios us on ot.id_ejecutiva = us.id_usuario
+		    left join sstt_estados es on es.id_estado = ot.id_estado
+		    inner join sstt_bitacoras bi on bi.id_ot = ot.id_ot
+										and bi.id_bitacora = (select max(id_bitacora) from sstt_bitacoras where id_ot = ot.id_ot)
+			inner join sstt_estados es3 on bi.id_estado = es3.id_estado
+		where 
+			ot.id_estado = 10005000
+		and ot.s_vigente = 'S'
+		and ot.s_cambio_autorizado = 'N'
+		and ot.id_sucursal = #{sucursal}
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTotalOTEnviadasSTLSinContrato" resultType="Integer" parameterType="FilterOT">
+		select count(*)
+		from sstt_ordenes_trabajo ot
+			inner join sstt_guias g  on g.id_ot = ot.id_ot 
+									and g.id_origen = ot.id_sucursal
+									and g.id_destino = ot.id_stecnico
+									and g.id_estado in (50002000, 50003000)
+		where 
+			ot.id_estado = 10005000
+		and ot.s_vigente = 'S'
+		and ot.s_cambio_autorizado = 'N'
+		and ot.id_sucursal = #{sucursal}
+	</select>
+	
+	<select id="listOTAutorizadaCambio" resultMap="ordenTrabajo.ot" parameterType="FilterOT">
+		select
+            ot.id_ot
+            ,ot.s_tipo as s_tipo_ot
+            ,es.s_nombre                      as s_estadonombre
+            ,ot.id_producto                   as id_codigo_corto
+            ,ot.d_fecha_creacion
+            ,i_semaforo_stecnico
+            ,i_semaforo_sucursal_inicio
+            ,i_semaforo_sucursal_fin
+            ,(us.s_nombre || ' ' || us.s_apellido_paterno) as s_nombre_completo_ejecutiva
+            ,es3.s_descripcion as s_accion
+        from 
+            sstt_ordenes_trabajo ot
+		    left join sstt_usuarios us on ot.id_ejecutiva = us.id_usuario
+		    left join sstt_estados es on es.id_estado = ot.id_estado
+		    inner join sstt_bitacoras bi on bi.id_ot = ot.id_ot
+										and bi.id_bitacora = (select max(id_bitacora) from sstt_bitacoras where id_ot = ot.id_ot)
+			inner join sstt_estados es3 on bi.id_estado = es3.id_estado
+		where 
+			ot.s_cambio_autorizado = 'S'
+		and ot.s_vigente = 'S'
+		and ot.s_cerrada_cliente = 'N'
+		and ot.s_cerrada = 'N'
+		and ot.id_sucursal = #{sucursal}
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTotalOTAutorizadaCambio" resultType="Integer" parameterType="FilterOT">
+		select count(*)
+		from sstt_ordenes_trabajo ot
+		where 
+			ot.s_cambio_autorizado = 'S'
+		and ot.s_vigente = 'S'
+		and ot.s_cerrada_cliente = 'N'
+		and ot.s_cerrada = 'N'
+		and ot.id_sucursal = #{sucursal}
+	</select>
+	
+	<resultMap type="OrdenTrabajo" id="otCambioAutorizado">
+		<result property="id"                                 column="id_ot"/>
+		<result property="tipoDocumento"                      column="s_tipo_documento"/>
+		<result property="idDocumento"                        column="id_documento"/>
+		<result property="tipoCambio.codigo"                  column="s_tipo_cambio"/>
+		<result property="tipoCambio.glosa"                   column="s_tipo_cambio_glosa"/>
+		<result property="numeroSerie"                        column="s_nmro_serie"/>
+		<result property="numeroFolio"                        column="i_nmro_folio"/>
+		<result property="fechaCreacion"                      column="d_fecha_creacion"/>
+		<result property="cliente.rut"                        column="id_cliente" typeHandler="RunTypeHandler"/>
+		<result property="cliente.nombre"                     column="s_nombre_cliente"/>
+		<result property="producto.id"                        column="id_producto"/>
+		<result property="producto.descripcion"               column="s_nombre_producto"/>
+		<result property="producto.familia.id"                column="id_familia"/>
+		<result property="producto.familia.nombre"            column="s_nombre_familia"/>
+		<result property="producto.familia.linea.id"          column="id_linea"/>
+		<result property="producto.familia.linea.glosa"       column="s_nombre_linea"/>
+		<result property="producto.marca.codigo"              column="id_marca"/>
+		<result property="producto.marca.nombre"              column="s_nombre_marca"/>
+		<result property="sucursal.id"                        column="id_ubicacion"/>
+		<result property="sucursal.glosa"                     column="s_nombre_sucursal"/>
+		<result property="sucursal.zona.nombre"               column="s_nombre_zona"/>
+		<result property="sucursal.zona.id"         	      column="id_zona"/>
+		<result property="fechaCambio"                        column="d_fecha_cambio_autorizado"/>
+   		<result property="estado.codigo"				      column="s_nombre_estado"/>
+   		<result property="estado.glosa"				          column="s_estado_glosa"/>
+   		<result property="codigoBarra"                        column="i_cod_barra" typeHandler="CodigoBarrasTypeHandler"/>
+   		<result property="estado.id"                          column="id_estado"/>
+   		<result property="clasificacion.codigo"                column="s_clasificacion"/>
+   		<result property="clasificacion.glosa"                column="s_descripcion_clasificacion"/>
+	</resultMap> 
+	
+	<select id="listOTRecepcionBodegaByFilter" parameterType="FilterRecepcionProducto" resultMap="otCambioAutorizado">
+	 	select
+			g.id_guia,
+		    g.i_numero,
+		    g.id_origen,
+		    o.s_nombre,
+		    g.d_fecha_emision,
+            e.id_estado,
+            e.s_descripcion,
+            e.s_nombre,
+		    ot.i_cod_barra,
+		    ot.s_nmro_serie,
+            ot.id_ot,
+		    p.id_producto,
+		    p.s_descripcion as s_nombre_producto
+		from
+		    sstt_recepciones_camion rc
+		    inner join sstt_recepciones_camion_guias rcg on rcg.id_recepcion_camion = rc.id_recepcion_camion
+		    inner join sstt_recepciones_camion_ot rco on rcg.id_recepcion_camion_guia = rco.id_recepcion_camion_guia
+		    inner join sstt_guias g on g.id_guia = rcg.id_guia
+		    inner join sstt_ubicaciones o on o.id_ubicacion = g.id_origen
+            inner join sstt_estados e on e.id_estado = rco.id_estado_ot
+            inner join sstt_ordenes_trabajo ot on ot.id_ot = rco.id_ot
+		    left join owv_productos p on p.id_producto = ot.id_producto
+		where
+                rc.id_recepcion_camion = #{idRecepcionCamion}
+            and g.id_guia = #{idGuia}
+	</select>
+	
+	<select id="getTotalOTRecepcionBodegaByFilter" parameterType="FilterRecepcionProducto" resultType="Integer">
+	 	select
+			count(1)
+		from
+		    sstt_recepciones_camion rc
+		    inner join sstt_recepciones_camion_guias rcg on rcg.id_recepcion_camion = rc.id_recepcion_camion
+		    inner join sstt_recepciones_camion_ot rco on rcg.id_recepcion_camion_guia = rco.id_recepcion_camion_guia
+		    inner join sstt_guias g on g.id_guia = rcg.id_guia
+		    inner join sstt_ubicaciones o on o.id_ubicacion = g.id_origen
+            inner join sstt_estados e on e.id_estado = rco.id_estado_ot
+            inner join sstt_ordenes_trabajo ot on ot.id_ot = rco.id_ot
+		where
+                rc.id_recepcion_camion = #{idRecepcionCamion}
+            and g.id_guia = #{idGuia}
+	</select>
+	
+	<select id="listOTCambioAuomaticoByFilter" parameterType="FilterOT" resultMap="otCambioAutorizado">
+		select 
+			distinct
+		    ot.id_ot,
+		    ot.s_tipo_documento,
+		    ot.id_documento,
+		    ot.id_estado,
+		    ot.s_tipo_cambio,
+		    ot.i_cod_barra,
+    		par_tica.s_descripcion as s_tipo_cambio_glosa,
+		    ot.s_nmro_serie,
+		    ot.d_fecha_creacion,
+		    ot.id_cliente,
+		    ot.s_clasificacion,
+		    par_cb.s_descripcion as s_descripcion_clasificacion,
+		    c.s_nombre as s_nombre_cliente,
+		    p.id_producto,
+		    p.s_descripcion as s_nombre_producto,
+		    f.id_familia,
+		    f.s_nombre as s_nombre_familia,
+		    l.id_linea,
+		    l.s_nombre as s_nombre_linea,
+		    m.id_marca,
+		    m.s_nombre as s_nombre_marca,
+		    suc.id_ubicacion,
+		    suc.s_nombre as s_nombre_sucursal,
+		    z.s_nombre as s_nombre_zona,
+		    z.id_zona,
+		    ot.d_fecha_cambio_autorizado
+		from 
+		    sstt_ordenes_trabajo ot
+		    left join sstt_parametros par_tica on par_tica.s_nombre = ot.s_tipo_cambio and par_tica.s_string1 = 'TICA'
+		    left join sstt_parametros par_cb on par_cb.s_nombre = ot.s_clasificacion and par_cb.s_string1 = 'CB'
+		    left join sstt_clientes c on c.id_cliente = ot.id_cliente
+		    left join owv_productos p on p.id_producto = ot.id_producto
+		    left join owv_familias f on f.id_familia = p.id_familia
+		    left join owv_lineas l on l.id_linea = f.id_linea
+		    left join owv_marcas m on m.id_marca = p.id_marca
+		    left join sstt_ubicaciones suc on suc.id_ubicacion = ot.id_sucursal
+		    left join sstt_ubicaciones_zonas uz on uz.id_ubicacion = suc.id_ubicacion
+		    left join sstt_zonas z on z.id_zona = uz.id_zona
+		    left join sstt_recepciones r on r.id_ot = ot.id_ot 
+		     left join sstt_guias g on g.i_numero = r.i_nmro_guia 
+		<where>	
+			and ot.s_cambio_autorizado = 'S'
+			<if test="idOT != null and !idOT.equals('')">
+				and ot.id_ot = #{idOT}
+			</if>
+			<if test="tipoCambio != null and !tipoCambio.equals('')">
+				and ot.s_tipo_cambio = #{tipoCambio}
+			</if>
+			<if test="tipoDocumento != null and !tipoDocumento.equals('')">
+				and ot.s_tipo_documento = #{tipoDocumento}
+			</if>
+			<if test="codigoBarra != null and !codigoBarra.equals('')">
+				and ot.i_cod_barra = #{codigoBarra, typeHandler=CodigoBarrasTypeHandler}
+			</if>
+			<if test="numeroDocumento != null">
+				and ot.id_documento = #{numeroDocumento}
+			</if>
+			<if test="numeroSerie != null and !numeroSerie.equals('')">
+				and ot.s_nmro_serie = #{numeroSerie}
+			</if>
+			<if test="numeroFolio != null and !numeroFolio.equals('')">
+				and ot.i_nmro_folio = #{numeroFolio}
+			</if>
+			<if test="rutCliente != null and !rutCliente.equals('') ">
+				and ot.id_cliente = #{rutCliente, typeHandler=RunTypeHandler}
+			</if>
+			<if test="idLinea != null and !idLinea.equals('')">
+				and l.id_linea = #{idLinea}
+			</if>
+			<if test="idFamilia != null and !idFamilia.equals('')">
+				and f.id_familia = #{idFamilia}
+			</if>
+			<if test="idProducto != null">
+				and ot.id_producto = #{idProducto}
+			</if>
+			<if test="idEstado != null and !idEstado.equals('')">
+				and ot.s_vigente = 'S' 
+				<if test="idEstado.equals('RC')">
+					and ot.id_estado not in (10001000,10002000) 
+				</if>
+				<if test="idEstado.equals('RST')">
+					and ot.s_tipo_cambio in ('FR','CC') 
+					and g.id_ot = ot.id_ot 
+					and g.id_origen = #{idSucursal}
+					and g.id_destino = 10015 
+					and g.id_estado in (50003000 , 50005000 , 50007000 , 50008000, 50009000)
+				</if>
+				<if test="idEstado.equals('ET')">
+					and ot.id_estado in (10030000,10003000,10001000,10002000)
+				</if>
+				<if test="idEstado.equals('EST')">
+					and ot.s_tipo_cambio in ('FR','CC') 
+					and g.id_ot = ot.id_ot 
+					and g.id_origen = #{idSucursal} 
+					and g.id_destino = 10015 
+					and g.id_estado in (50002000)
+				</if>
+				<if test="idEstado.equals('EFF')">
+					and ot.s_tipo_cambio in ('FF','CP') 
+					and ot.id_estado in (0031000 , 10032000 , 10033000 , 10034000 , 10035000)
+					and g.id_origen = #{idSucursal}
+					and g.id_destino = 10012
+					and g.id_estado in (50002000) 
+				</if>
+				<if test="idEstado.equals('EPR')">
+				</if>
+				<if test="idEstado.equals('AFF')">
+				</if>
+				<if test="idEstado.equals('RPR')">
+				</if>
+				<if test="idEstado.equals('ERE')">
+				</if>
+				<if test="idEstado.equals('DPR')">
+				</if>
+				<if test="idEstado.equals('ELS')">
+				</if>
+			</if>
+			<if test="clasificacion != null and !clasificacion.equals('')">
+				and ot.s_clasificacion = #{clasificacion}
+			</if>
+			<if test="idZona != null">
+				and z.id_zona = #{idZona}
+			</if>
+			<if test="idSucursal != null">
+				and ot.id_sucursal = #{idSucursal}
+			</if>
+			<if test="idMarca != null and !idMarca.equals('')">
+				and m.id_marca = #{idMarca}
+			</if>
+			<if test="fechaAutorizacionOtInicio != null">
+				and trunc(ot.d_fecha_cambio_autorizado) &gt;= #{fechaAutorizacionOtInicio}
+			</if>
+			<if test="fechaAutorizacionOtFin != null">
+				and trunc(ot.d_fecha_cambio_autorizado)  &lt;= #{fechaAutorizacionOtFin}
+			</if>
+			<if test="fechaCreacion != null">
+				and trunc(ot.d_fecha_creacion) &gt;= #{fechaCreacion}
+			</if>
+			<if test="fechaCreacionFin != null">
+				and trunc(ot.d_fecha_creacion) &lt;= #{fechaCreacionFin} 
+			</if>
+			<if test="idGuiaAgrupada != null">
+				and exists (select 1 from sstt_bitacoras b where b.id_ot = ot.id_ot and b.id_guia = #{idGuiaAgrupada})
+			</if>
+			<if test="numeroGuiaAgrupada != null">
+				and exists (select 1 from sstt_bitacoras b inner join sstt_guias g on g.id_guia = b.id_guia where b.id_ot = ot.id_ot and g.i_numero = #{numeroGuiaAgrupada})
+			</if>
+			<if test="fechaRecepcionOtInicio != null">
+				and   trunc(r.d_fecha_recepcion) &gt;= #{fechaRecepcionOtInicio} 
+			</if>
+			<if test="fechaRecepcionOtFin != null">
+				and  trunc(r.d_fecha_recepcion) &lt;= #{fechaRecepcionOtFin} 
+			</if>  
+		</where>
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+		    </if>	
+		</if>
+	</select>
+	
+	<select id="getTotalOTCambioAuomaticoByFilter" parameterType="FilterOT" resultType="Integer">
+		select 
+		  count(distinct ot.id_ot)
+		from 
+		    sstt_ordenes_trabajo ot
+		    left join sstt_parametros par_tica on par_tica.s_nombre = ot.s_tipo_cambio and par_tica.s_string1 = 'TICA'
+		    left join sstt_parametros par_cb on par_cb.s_nombre = ot.s_clasificacion and par_cb.s_string1 = 'CB'
+		    left join sstt_clientes c on c.id_cliente = ot.id_cliente
+		    left join owv_productos p on p.id_producto = ot.id_producto
+		    left join owv_familias f on f.id_familia = p.id_familia
+		    left join owv_lineas l on l.id_linea = f.id_linea
+		    left join owv_marcas m on m.id_marca = p.id_marca
+		    left join sstt_ubicaciones suc on suc.id_ubicacion = ot.id_sucursal
+		    left join sstt_ubicaciones_zonas uz on uz.id_ubicacion = suc.id_ubicacion
+		    left join sstt_zonas z on z.id_zona = uz.id_zona
+		    left join sstt_recepciones r on r.id_ot = ot.id_ot 
+		     left join sstt_guias g on g.i_numero = r.i_nmro_guia  
+		<where>	
+			and ot.s_cambio_autorizado = 'S'
+			<if test="idOT != null and !idOT.equals('')">
+				and ot.id_ot = #{idOT}
+			</if>
+			<if test="tipoCambio != null and !tipoCambio.equals('')">
+				and ot.s_tipo_cambio = #{tipoCambio}
+			</if>
+			<if test="tipoDocumento != null and !tipoDocumento.equals('')">
+				and ot.s_tipo_documento = #{tipoDocumento}
+			</if>
+			<if test="codigoBarra != null and !codigoBarra.equals('')">
+				and ot.i_cod_barra = #{codigoBarra, typeHandler=CodigoBarrasTypeHandler}
+			</if>
+			<if test="numeroDocumento != null">
+				and ot.id_documento = #{numeroDocumento}
+			</if>
+			<if test="numeroSerie != null and !numeroSerie.equals('')">
+				and ot.s_nmro_serie = #{numeroSerie}
+			</if>
+			<if test="numeroFolio != null and !numeroFolio.equals('')">
+				and ot.i_nmro_folio = #{numeroFolio}
+			</if>
+			<if test="rutCliente != null and !rutCliente.equals('') ">
+				and ot.id_cliente = #{rutCliente, typeHandler=RunTypeHandler}
+			</if>
+			<if test="idLinea != null and !idLinea.equals('')">
+				and l.id_linea = #{idLinea}
+			</if>
+			<if test="idFamilia != null and !idFamilia.equals('')">
+				and f.id_familia = #{idFamilia}
+			</if>
+			<if test="idProducto != null">
+				and ot.id_producto = #{idProducto}
+			</if>
+			<if test="idEstado != null and !idEstado.equals('')">
+				and ot.s_vigente = 'S' 
+				<if test="idEstado.equals('RC')">
+					and ot.id_estado not in (10001000,10002000) 
+				</if>
+				<if test="idEstado.equals('RST')">
+					and ot.s_tipo_cambio in ('FR','CC') 
+					and g.id_ot = ot.id_ot 
+					and g.id_origen = #{idSucursal}
+					and g.id_destino = 10015 
+					and g.id_estado in (50003000 , 50005000 , 50007000 , 50008000, 50009000)
+				</if>
+				<if test="idEstado.equals('ET')">
+					and ot.id_estado in (10030000,10003000,10001000,10002000)
+				</if>
+				<if test="idEstado.equals('EST')">
+					and ot.s_tipo_cambio in ('FR','CC') 
+					and g.id_ot = ot.id_ot 
+					and g.id_origen = #{idSucursal} 
+					and g.id_destino = 10015 
+					and g.id_estado in (50002000)
+				</if>
+				<if test="idEstado.equals('EFF')">
+					and ot.s_tipo_cambio in ('FF','CP') 
+					and ot.id_estado in (0031000 , 10032000 , 10033000 , 10034000 , 10035000)
+					and g.id_origen = #{idSucursal}
+					and g.id_destino = 10012
+					and g.id_estado in (50002000) 
+				</if>
+				<if test="idEstado.equals('EPR')">
+				</if>
+				<if test="idEstado.equals('AFF')">
+				</if>
+				<if test="idEstado.equals('RPR')">
+				</if>
+				<if test="idEstado.equals('ERE')">
+				</if>
+				<if test="idEstado.equals('DPR')">
+				</if>
+				<if test="idEstado.equals('ELS')">
+				</if>
+			</if>
+			<if test="clasificacion != null and !clasificacion.equals('')">
+				and ot.s_clasificacion = #{clasificacion}
+			</if>
+			<if test="idZona != null">
+				and z.id_zona = #{idZona}
+			</if>
+			<if test="idSucursal != null">
+				and ot.id_sucursal = #{idSucursal}
+			</if>
+			<if test="idMarca != null and !idMarca.equals('')">
+				and m.id_marca = #{idMarca}
+			</if>
+			<if test="fechaAutorizacionOtInicio != null">
+				and trunc(ot.d_fecha_cambio_autorizado) &gt;= #{fechaAutorizacionOtInicio}
+			</if>
+			<if test="fechaAutorizacionOtFin != null">
+				and trunc(ot.d_fecha_cambio_autorizado)  &lt;= #{fechaAutorizacionOtFin}
+			</if>
+			<if test="fechaCreacion != null">
+				and trunc(ot.d_fecha_creacion) &gt;= #{fechaCreacion}
+			</if>
+			<if test="fechaCreacionFin != null">
+				and trunc(ot.d_fecha_creacion) &lt;= #{fechaCreacionFin} 
+			</if>
+			<if test="idGuiaAgrupada != null">
+				and exists (select 1 from sstt_bitacoras b where b.id_ot = ot.id_ot and b.id_guia = #{idGuiaAgrupada})
+			</if>
+			<if test="numeroGuiaAgrupada != null">
+				and exists (select 1 from sstt_bitacoras b inner join sstt_guias g on g.id_guia = b.id_guia where b.id_ot = ot.id_ot and g.i_numero = #{numeroGuiaAgrupada})
+			</if>
+			<if test="fechaRecepcionOtInicio != null">
+				and  trunc(r.d_fecha_recepcion) &gt;= #{fechaRecepcionOtInicio} 
+			</if>
+			<if test="fechaRecepcionOtFin != null">
+				and  trunc(r.d_fecha_recepcion) &lt;= #{fechaRecepcionOtFin} 
+			</if>  
+		</where>
+	</select>
+	
+	<resultMap type="OrdenTrabajo" id="oTbyNumeroSerie">
+		<result property="id"					column="id_ot"/>
+		<result property="producto.id"			column="id_producto"/>
+		<result property="tipo.codigo"			column="s_tipo"/>
+		<result property="fechaCierreCliente"	column="d_fecha_cierre_cliente"/>
+	</resultMap>
+	
+	<select id="listOTbyNumeroSerie" parameterType="filterOT" resultMap="oTbyNumeroSerie">
+		select
+			ot.id_ot
+			,ot.id_producto
+			,ot.s_tipo
+			,ot.d_fecha_cierre_cliente
+		from sstt_ordenes_trabajo ot
+		where
+			ot.s_nmro_serie = #{numeroSerie}
+			and ot.s_contrato_emitido = #{contratoEmitido}
+		order by d_fecha_cierre_cliente desc
+	</select>
+	
+	<resultMap type="RecepcionCamionOT" id="oTRecepcionCamion">
+		<result property="id"                     column="id_recepcion_camion_ot"/>
+		<result property="recepcionCamionGuia.id" column="id_recepcion_camion_guia"/>
+		<result property="ordenTrabajo.estado.id" column="id_estado_ot"/>
+		<result property="ordenTrabajo.id"        column="id_ot"/>
+		<result property="fechaRecepcion"         column="d_fecha_recepcion"/>
+	</resultMap>
+	
+	<select id="listOTGuiaAgrupadaByIdGuia" parameterType="Long"  resultMap="oTRecepcionCamion">
+		select 
+    		ot.id_ot
+    		,ot.id_estado as id_estado_ot
+		from sstt_ordenes_trabajo ot
+    		inner join sstt_bitacoras b on b.id_ot = ot.id_ot
+    		inner join sstt_guias g on g.id_guia = b.id_guia
+		where 
+				g.id_guia = #{idGuia}
+			and g.s_vigente= 'S'
+	</select>
+	
+	<select id="listOTGuiaAgrupadaByIdRecepcionGuia" parameterType="Long"  resultMap="oTRecepcionCamion">
+		select 
+    		ot.id_recepcion_camion_ot
+    		,ot.id_recepcion_camion_guia
+    		,ot.id_estado_ot
+    		,ot.id_ot
+    		,ot.d_fecha_recepcion
+		from 
+			sstt_recepciones_camion_ot ot
+		where 
+            ot.id_recepcion_camion_guia = #{idRecepcionGuia}
+	</select>
+	
+	<select id="getOTGuiaAgrupadaByRecepcionCamionOT" parameterType="RecepcionCamionOT"  resultMap="oTRecepcionCamion">
+		select 
+    		ot.id_recepcion_camion_ot
+    		,ot.id_recepcion_camion_guia
+    		,ot.id_estado_ot
+    		,ot.id_ot
+    		,ot.d_fecha_recepcion
+		from 
+			sstt_recepciones_camion_ot ot
+		where 
+            ot.id_recepcion_camion_guia = #{recepcionCamionGuia.id}
+            and ot.id_ot = #{ordenTrabajo.id}
+	</select>
+	
+	
+	<resultMap type="OrdenTrabajo" id="oTRecepcion">
+		<result property="id"			column="id_ot"/>
+		<result property="producto.id"	column="id_producto"/>
+	</resultMap>
+	
+	<select id="listOTbyFilterRecepcion" parameterType="FilterRecepcion" resultMap="oTRecepcion">
+		select 
+		    ot.id_ot
+		    ,ot.id_producto
+		    ,ot.id_estado as id_estado_ot
+		from sstt_ordenes_trabajo ot
+		    left join sstt_bitacoras b on b.id_ot = ot.id_ot
+		    left join sstt_guias g on g.id_guia = b.id_guia
+		    left join sstt_recepciones_camion_guias rcg on rcg.id_guia = g.id_guia
+		where rcg.id_recepcion_camion = #{idRecepcion}
+		    and ot.id_estado = #{estadoOT.id}
+	</select>
+	
+	<resultMap type="OrdenTrabajo" id="otParaRemate">
+		<result property="id"                        column="id_ot"/>
+		<result property="tipo.codigo"               column="s_tipo"/>
+		<result property="tipo.glosa"                column="s_tipo_glosa"/>
+		<result property="producto.id"               column="id_producto"/>
+		<result property="producto.descripcion"      column="s_nombre_producto"/>
+		<result property="producto.marca.nombre"     column="s_nombre_marca"/>
+		<result property="empresaFacturar.id"        column="id_facturar"/>
+		<result property="empresaFacturar.rut"       column="id_facturar" typeHandler="RunTypeHandler"/>
+		<result property="empresaFacturar.nombre"    column="s_facturar_nombre"/>
+		<result property="destino.tipo"              column="s_tipo_ubicacion"/>
+		<result property="destino.glosa"             column="s_tipo_ubicacion_glosa"/>
+		<result property="destino.nombre"            column="s_nombre_destino"/>
+		<result property="destino.direccion"         column="s_direccion"/>
+		<result property="destino.comuna.glosa"      column="s_comuna"/>
+		<result property="fechaCambio"               column="d_fecha_cambio_autorizado"/>
+	</resultMap>
+	
+	<select id="listOTRemate" resultMap="otParaRemate">
+		select 
+		    ot.id_ot, 
+		    ot.s_tipo, 
+		    par.s_descripcion as s_tipo_glosa,
+		    ot.id_producto,
+		    p.s_descripcion as s_nombre_producto,
+		    m.s_nombre as s_nombre_marca,
+		    ot.id_facturar,
+		    CASE WHEN ot.s_facturar_tipo = 'Proveedor'
+		        THEN pv.s_nombre
+		    WHEN ot.s_facturar_tipo = 'Tienda'
+		        THEN pj.s_nombre
+		    END AS s_facturar_nombre,
+		    cr.s_tipo AS s_tipo_ubicacion, 
+		    dest.s_descripcion as s_tipo_ubicacion_glosa,
+		    cr.s_nombre as s_nombre_destino, 
+		    cr.s_direccion,
+		    c.s_nombre AS s_comuna,
+		    ot.d_fecha_cambio_autorizado
+		FROM 
+		    sstt_ordenes_trabajo ot 
+		    inner join sstt_parametros par on par.s_nombre = ot.s_tipo and par.s_string1 = 'TIOT'
+		    left join owv_productos p ON p.id_producto = ot.id_producto
+		    left join owv_marcas m ON m.id_marca = p.id_marca
+		    left join sstt_ubicaciones pj ON pj.i_rut = ot.id_facturar and pj.s_tipo = 'PJ'
+		    left join owv_proveedores pv ON pv.id_proveedor = ot.id_facturar
+		    left join sstt_ubicaciones cr ON cr.id_ubicacion = ot.id_destino_cambio
+		    left join sstt_parametros dest on dest.s_nombre = cr.s_tipo and dest.s_string1 = 'UBIC'
+		    left join sstt_comunas c ON c.id_comuna = cr.id_comuna
+		WHERE 
+		        ot.s_cambio_autorizado = 'S'
+		    AND ot.s_vigente = 'S'
+		    AND ot.id_facturar != 82982300
+		    AND ot.s_cerrada = 'N'
+		    AND ot.s_enviar_remate = 'S'
+		    AND NOT EXISTS (SELECT 1 FROM sstt_guias_remate_detalle gd WHERE gd.id_ot = ot.id_ot)
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+		<if test="sortOrder != null and !sortOrder.equals('')">
+			${sortOrder}
+		</if>
+		</if>
+	</select>
+	
+	<select id="getTotalOTRemate" resultType="Integer">
+		select 
+		    count(1)
+		FROM 
+		    sstt_ordenes_trabajo ot 
+		    left join owv_productos p ON p.id_producto = ot.id_producto
+		    left join owv_marcas m ON m.id_marca = p.id_marca
+		    left join sstt_ubicaciones pj ON pj.i_rut = ot.id_facturar and pj.s_tipo = 'PJ'
+		    left join owv_proveedores pv ON pv.id_proveedor = ot.id_facturar
+		    left join sstt_ubicaciones cr ON cr.id_ubicacion = ot.id_destino_cambio
+		    left join sstt_comunas c ON c.id_comuna = cr.id_comuna
+		WHERE 
+		        ot.s_cambio_autorizado = 'S'
+		    AND ot.s_vigente = 'S'
+		    AND ot.id_facturar != 82982300
+		    AND ot.s_cerrada = 'N'
+		    AND ot.s_enviar_remate = 'S'
+		    AND NOT EXISTS (SELECT 1 FROM sstt_guias_remate_detalle gd WHERE gd.id_ot = ot.id_ot)
+	</select>
+	
+	<select id="listOtTrasladoToFFByFilter" parameterType="FilterOT" resultMap="otSingle">
+		    select 
+	            ot.id_ot
+	            ,ot.id_producto
+	            ,ot.id_documento
+	            ,d.s_tipo_documento
+	            ,ot.s_tipo_cambio
+	            ,ot.id_cliente
+	            ,cl.s_nombre as s_nombre_cliente
+	            ,ot.d_fecha_creacion
+	            ,pa.s_descripcion as s_descripcion_tipo_cambio
+	            ,p.s_descripcion as s_descripcion_producto
+	            ,l.id_linea
+	            ,l.s_nombre as s_nombre_linea
+	            ,f.id_familia
+	            ,f.s_nombre as s_nombre_familia
+	        from
+	            sstt_ordenes_trabajo ot
+	            inner join sstt_bitacoras b on b.id_ot = ot.id_ot 
+	                                       and b.d_fecha_salida is null
+	                                       and b.id_ubicacion = #{idSucursal}
+	            inner join sstt_recepciones r on r.id_recepcion = ( select max(rec.id_recepcion)
+	                                                                from sstt_recepciones rec
+	                                                                where rec.id_ot = ot.id_ot
+	                                                                and rec.id_ubicacion = #{idSucursal}) 
+                left join sstt_despacho_interno_detalles dd on dd.id_ot = ot.id_ot
+                left join sstt_despachos_internos ds on ds.id_despacho_interno = dd.id_despacho_interno
+	            left join sstt_clientes cl on cl.id_cliente = ot.id_cliente
+	            left join owv_documentos d on d.id_documento= ot.id_documento
+	                                      and d.s_tipo_documento = ot.s_tipo_documento
+	            left join owv_productos p on p.id_producto = ot.id_producto
+	            left join owv_familias f on f.id_familia = p.id_familia
+	            left join owv_lineas l on l.id_linea = f.id_linea
+	            left join sstt_parametros pa on pa.s_nombre = ot.s_tipo_cambio
+	        <where>
+	                ot.s_cambio_autorizado = 'S'
+	            and ot.s_vigente = 'S'
+	            and ot.s_cerrada = 'N'
+	            and (exists (select 1 from sstt_despacho_interno_detalles di where di.ID_OT = ot.id_ot and id_estado in (90004000,90005000)) 
+                or not exists (select 1 from sstt_despacho_interno_detalles di where di.ID_OT = ot.id_ot ))
+	            and ot.s_tipo != 'GM'
+	            and exists (select 1        
+                                from sstt_guias g
+                                where   g.id_ot = ot.id_ot
+                                    and g.s_vigente = 'S' 
+                                    and g.s_procesado_ow = 'S'
+                                    and g.id_estado = 50005000)
+			<if test="idOT != null">
+				and ot.id_ot = #{idOT}
+			</if>
+			<if test="idLinea != null and !idLinea.equals('')">
+				and l.id_linea = #{idLinea}
+			</if>
+			<if test="idFamilia != null and !idFamilia.equals('')">
+				and f.id_familia = #{idFamilia}
+			</if>
+			<if test="fechaRecepcionOtInicio != null">
+				and (r.d_fecha_recepcion) &lt;= #{fechaRecepcionOtInicio}
+			</if>
+			<if test="codigoCorto != null">
+				and p.id_producto = #{codigoCorto}
+			</if>
+			<if test="tipoCambio != null and !tipoCambio.equals('')">
+				and ot.s_tipo_cambio = #{tipoCambio}
+			</if>
+		</where>
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	
+	<select id="getOtTrasladoToFFByFilter" parameterType="FilterOT" resultType="Integer">
+		 select 
+	            count(ot.id_ot)
+	        from
+	            sstt_ordenes_trabajo ot
+	            inner join sstt_bitacoras b on b.id_ot = ot.id_ot 
+	                                       and b.d_fecha_salida is null
+	                                       and b.id_ubicacion = #{idSucursal}
+	            inner join sstt_recepciones r on r.id_recepcion = ( select max(rec.id_recepcion)
+	                                                                from sstt_recepciones rec
+	                                                                where rec.id_ot = ot.id_ot
+	                                                                and rec.id_ubicacion = #{idSucursal}) 
+	          	left join sstt_despacho_interno_detalles dd on dd.id_ot = ot.id_ot
+                left join sstt_despachos_internos ds on ds.id_despacho_interno = dd.id_despacho_interno
+	            left join sstt_clientes cl on cl.id_cliente = ot.id_cliente
+	            left join owv_documentos d on d.id_documento= ot.id_documento
+	                                      and d.s_tipo_documento = ot.s_tipo_documento
+	            left join owv_productos p on p.id_producto = ot.id_producto
+	            left join owv_familias f on f.id_familia = p.id_familia
+	            left join owv_lineas l on l.id_linea = f.id_linea
+	            left join sstt_parametros pa on pa.s_nombre = ot.s_tipo_cambio
+	        <where>
+	               ot.s_cambio_autorizado = 'S'
+	            and ot.s_vigente = 'S'
+	            and ot.s_cerrada = 'N'
+	            and (exists (select 1 from sstt_despacho_interno_detalles di where di.ID_OT = ot.id_ot and id_estado in (90004000,90005000)) 
+                or not exists (select 1 from sstt_despacho_interno_detalles di where di.ID_OT = ot.id_ot ))
+	            and ot.s_tipo != 'GM'
+	            and exists (select 1        
+                                from sstt_guias g
+                                where   g.id_ot = ot.id_ot
+                                    and g.s_vigente = 'S' 
+                                    and g.s_procesado_ow = 'S'
+                                    and g.id_estado = 50005000)
+			<if test="idOT != null">
+				and ot.id_ot = #{idOT}
+			</if>
+			<if test="idLinea != null and !idLinea.equals('')">
+				and l.id_linea = #{idLinea}
+			</if>
+			<if test="idFamilia != null and !idFamilia.equals('')">
+				and f.id_familia = #{idFamilia}
+			</if>
+			<if test="fechaRecepcionOtInicio != null">
+				and (r.d_fecha_recepcion) &lt;= #{fechaRecepcionOtInicio}
+			</if>
+			<if test="codigoCorto != null">
+				and p.id_producto = #{codigoCorto}
+			</if>
+			<if test="tipoCambio != null and !tipoCambio.equals('')">
+				and ot.s_tipo_cambio = #{tipoCambio}
+			</if>
+		</where>
+	</select>
+	
+	<select id="listOTByGuiaRemate" parameterType="Long" resultMap="otSingle">
+		select
+			ot.id_ot,
+			ot.i_nmro_atencion,
+			ot.d_fecha_creacion,
+		    ot.d_fecha_vencimiento,
+		    ot.i_nmro_cambio,
+		    ot.id_logistico,
+		    usu.s_nombre || ' ' ||usu.s_apellido_paterno ||' '|| usu.s_apellido_materno as s_logistico_nombre,
+		    c.id_cliente,
+		    c.s_nombre as s_nombre_cliente,
+		    c.s_telefono,
+		    c.s_celular,
+		    p.id_producto,
+		    p.s_descripcion as s_descripcion_producto,
+		    p.id_marca,
+		    m.s_nombre as s_nombre_marca,
+		    u.id_ubicacion as id_sucursal,
+		    u.s_nombre as s_sucursal,
+		    co.id_comuna,
+		    co.s_nombre as s_comuna,
+		    r.id_region,
+		    r.s_nombre as s_region,    
+		    ot.s_vigente,      
+		    ot.s_cambio_autorizado, 
+		    ot.s_cerrada_cliente,
+		    ot.s_cerrada,
+		    ot.s_tipo,
+		    e.id_estado,
+		    e.s_nombre,
+		    e.s_descripcion,
+		    ot.s_facturar_tipo,
+		    ot.s_motivo_cierre,
+            ot.id_producto,
+            ot.d_fecha_cierre_cliente,
+            ot.id_documento,
+            ot.s_tipo_documento,
+            ot.s_imei,
+            ot.s_califica_fr,
+            ot.id_destino_cambio,
+            ot.s_nmro_serie
+		from
+			sstt_ordenes_trabajo ot
+			inner join sstt_estados e ON ot.id_estado = e.id_estado
+			left join sstt_clientes c on c.id_cliente = ot.id_cliente
+			left join sstt_usuarios usu on usu.id_usuario = ot.id_logistico
+			left join owv_productos p on p.id_producto = ot.id_producto
+			left join owv_marcas m on m.id_marca = p.id_marca
+			left join sstt_ubicaciones u on u.id_ubicacion = ot.id_sucursal
+			left join sstt_comunas co on co.id_comuna = u.id_comuna
+			left join sstt_provincias pr on pr.id_provincia = co.id_provincia
+			left join sstt_regiones r on r.id_region = pr.id_region
+			left join sstt_guias_remate_detalle grt on grt.id_ot = ot.id_ot
+		where
+			grt.id_guia_remate = #{idGuiaRemate}
+		
+	</select>
+	
+	<select id="listAllCheck" parameterType="FilterOT" resultType="CheckForFlexigrid">
+		    select 
+	            ot.id_ot as "id",
+            	'S' as "check"
+	        from
+	            sstt_ordenes_trabajo ot
+	            inner join sstt_bitacoras b on b.id_ot = ot.id_ot 
+	                                       and b.d_fecha_salida is null
+	                                       and b.id_ubicacion = #{idSucursal}
+	            inner join sstt_recepciones r on r.id_recepcion = ( select max(rec.id_recepcion)
+	                                                                from sstt_recepciones rec
+	                                                                where rec.id_ot = ot.id_ot
+	                                                                and rec.id_ubicacion = #{idSucursal}) 
+                left join sstt_despacho_interno_detalles dd on dd.id_ot = ot.id_ot
+                left join sstt_despachos_internos ds on ds.id_despacho_interno = dd.id_despacho_interno
+	            left join sstt_clientes cl on cl.id_cliente = ot.id_cliente
+	            left join owv_documentos d on d.id_documento= ot.id_documento
+	                                      and d.s_tipo_documento = ot.s_tipo_documento
+	            left join owv_productos p on p.id_producto = ot.id_producto
+	            left join owv_familias f on f.id_familia = p.id_familia
+	            left join owv_lineas l on l.id_linea = f.id_linea
+	            left join sstt_parametros pa on pa.s_nombre = ot.s_tipo_cambio
+	        <where>
+	                ot.s_cambio_autorizado = 'S'
+	            and ot.s_vigente = 'S'
+	            and ot.s_cerrada = 'N'
+	            and (exists (select 1 from sstt_despacho_interno_detalles di where di.ID_OT = ot.id_ot and id_estado in (90004000,90005000)) 
+                or not exists (select 1 from sstt_despacho_interno_detalles di where di.ID_OT = ot.id_ot ))
+	            and ot.s_tipo != 'GM'
+	            and not exists (select 1        
+	                            from sstt_guias g
+	                            where   g.id_ot = ot.id_ot
+	                                and g.s_vigente = 'S' 
+	                                and g.s_tipo_guia = 'GACC'
+	                                and g.id_estado in (50001000,50002000))
+			<if test="idOT != null">
+				and ot.id_ot = #{idOT}
+			</if>
+			<if test="idLinea != null and !idLinea.equals('')">
+				and l.id_linea = #{idLinea}
+			</if>
+			<if test="idFamilia != null and !idFamilia.equals('')">
+				and f.id_familia = #{idFamilia}
+			</if>
+			<if test="fechaRecepcionOtInicio != null">
+				and (r.d_fecha_recepcion) &lt;= #{fechaRecepcionOtInicio}
+			</if>
+			<if test="codigoCorto != null">
+				and p.id_producto = #{codigoCorto}
+			</if>
+			<if test="tipoCambio != null and !tipoCambio.equals('')">
+				and ot.s_tipo_cambio = #{tipoCambio}
+			</if>
+		</where>
+	</select>
+	
+	<select id="getOTbyCodigoAccesorio" parameterType="String" resultMap="otSingle">
+		select
+            ot.id_ot  
+            ,ot.s_contrato_emitido
+            ,ot.s_contrato 
+            ,ot.s_vigente      
+            ,ot.s_cambio_autorizado  
+            ,ot.d_fecha_creacion    
+            ,ot.s_cerrada_cliente      
+            ,ot.s_cerrada      
+            ,ot.s_tipo
+            ,ot.id_cliente
+            ,cl.id_comuna
+            ,cl.s_nombre as s_nombre_cliente
+            ,cl.s_celular
+            ,cl.s_telefono
+            ,par.s_descripcion as s_tipo_glosa
+            ,e.id_estado      
+            ,e.s_nombre
+            ,e.s_descripcion
+            ,ot.s_facturar_tipo
+            ,ot.s_motivo_cierre
+            ,ot.id_producto
+            ,ot.id_ejecutiva
+            ,ot.d_fecha_vencimiento
+            ,ot.s_tipo_documento
+            ,ot.id_documento
+            ,to_date(to_char(d.d_fecha_emision+1900000),'YYYYDDD') as d_fecha_emision
+            ,u1.s_nombre || ' ' || u1.s_apellido_paterno AS s_logistico_nombre
+            ,u1.s_email AS s_logistico_email
+            ,u1.s_interno AS s_logistico_anexo
+            ,u2.s_nombre || ' ' || u2.s_apellido_paterno AS s_ejecutiva_nombre
+            ,u2.s_email AS s_ejecutiva_email
+            ,u2.s_interno AS s_ejecutiva_anexo
+            ,ub.id_ubicacion AS id_sucursal
+            ,ub.s_nombre AS s_sucursal
+            ,ub.s_direccion AS s_sucursal_direccion
+            ,ub.s_telefono AS s_sucursal_telefono
+            ,c.s_nombre as s_comuna
+            ,r.s_nombre as s_region
+            ,ot.i_nmro_atencion
+            ,ot.i_nmro_cambio
+            ,ot.s_descripcion_falla
+            ,ot.s_nmro_serie
+            ,ot.s_descripcion_fisica
+            ,ot.s_nmro_telefono
+            ,ot.s_descripcion_estado
+            ,ot.id_stecnico
+            ,ot.i_nmro_folio
+            ,pr.id_marca as s_codigo_marca
+            ,pr.s_descripcion as s_descripcion_producto
+            ,pr.s_big_ticket
+            ,pr.id_familia
+            ,fa.s_nombre as s_nombre_familia
+            ,ma.s_nombre as s_nombre_marca
+            ,ot.s_tipo_cambio
+            ,ot.s_tipo_cambio_jt
+            ,paca.s_descripcion as s_descripcion_tipo_cambio
+            ,pacajt.s_descripcion as s_descripcion_tipo_cambio_jt
+            ,ot.s_imei
+            ,ot.i_cod_barra
+            ,ot.s_nmro_incidente_marca
+            ,ot.i_nota_credito
+            ,ot.i_ticket_cambio
+            ,u3.s_nombre || ' ' || u3.s_apellido_paterno AS s_usuario_cambio
+            ,ot.id_destino
+            ,ot.s_califica_fr
+            ,ot.id_facturar
+            ,ot.s_motivo_cambio
+            ,ot.s_motivo_desactivacion
+            ,ot.id_destino_cambio
+            ,ot.i_nmro_cargo
+            ,ot.id_usuario_ccalidad
+            ,u4.s_nombre as s_nombre_usuario_ccalidad
+            ,u4.s_apellido_paterno as s_apellido_paterno_ccalidad
+            ,ot.s_ccalidad_aprueba
+            ,ot.s_ccalidad_observacion
+        from
+            sstt_ordenes_trabajo ot
+            left join sstt_clientes cl on cl.id_cliente = ot.id_cliente
+            left join sstt_estados e on ot.id_estado = e.id_estado
+            left join sstt_usuarios u1 on ot.id_logistico = u1.id_usuario
+            left join sstt_usuarios u2 on ot.id_ejecutiva = u2.id_usuario
+            left join sstt_usuarios u3 on ot.id_usuario_cambio = u3.id_usuario
+            left join sstt_usuarios u4 on ot.id_usuario_ccalidad = u4.id_usuario
+            left join sstt_ubicaciones ub on ot.id_sucursal = ub.id_ubicacion
+            left join sstt_comunas c on c.id_comuna = ub.id_comuna
+            left join sstt_provincias p on p.id_provincia = c.id_provincia
+            left join sstt_regiones r on r.id_region = p.id_region
+            left join sstt_parametros par on par.s_nombre = ot.s_tipo and par.s_string1 = 'TIOT'
+            left join sstt_parametros paca on paca.s_nombre = ot.s_tipo_cambio and paca.s_string1 = 'TICA'
+            left join sstt_parametros pacajt on pacajt.s_nombre = ot.s_tipo_cambio_jt and pacajt.s_string1 = 'TICA'
+            left join owv_productos pr on pr.id_producto = ot.id_producto
+            left join owv_marcas ma on ma.id_marca = pr.id_marca
+            left join owv_familias fa on fa.id_familia = pr.id_familia
+            left join owv_documentos d on d.id_documento = ot.id_documento and d.s_tipo_documento = ot.s_tipo_documento
+            left join sstt_accesorios_ot ao on ao.id_ot = ot.id_ot
+		where ao.i_cod_barra = #{codigoBarra, typeHandler=CodigoBarrasTypeHandler}
+	</select>
+	
+	<select id="listOtByDespacho" parameterType="FilterDespachoInterno" resultMap="otSingle">
+		select 
+			ot.id_ot
+			,ot.s_clasificacion
+			,ot.id_producto
+			,ot.s_nmro_serie
+			,ot.i_cod_barra
+			,ot.s_tipo_cambio
+			,pa.s_descripcion s_descripcion_tipo_cambio
+			,es.s_descripcion as s_descripcion_despacho_estado
+			,did.id_estado as id_estado_despacho_estado
+			,p.s_descripcion as s_descripcion_producto
+			,u.s_direccion
+			,m.s_nombre as s_nombre_marca
+			,m.id_marca as s_codigo_marca
+			,l.s_nombre as s_nombre_linea
+			,f.s_nombre as s_nombre_familia
+			,di.id_estado as id_estado_despacho
+		from
+			sstt_despacho_interno_detalles did
+			inner join sstt_despachos_internos di on di.id_despacho_interno = did.id_despacho_interno
+			inner join sstt_ordenes_trabajo ot on ot.id_ot = did.id_ot
+			left join sstt_parametros pa on pa.s_nombre = ot.s_tipo_cambio 
+			inner join sstt_estados es on es.id_estado = did.id_estado
+			inner join owv_productos p on p.id_producto = ot.id_producto
+			inner join sstt_bitacoras b on b.id_ot = ot.id_ot
+			left join sstt_ubicaciones u on u.id_ubicacion = b.id_ubicacion
+			left join owv_familias f on f.id_familia = p.id_familia
+			left join owv_marcas m on m.id_marca = p.id_marca
+			left join owv_lineas l on l.id_linea = f.id_linea 
+		where
+			di.id_despacho_interno = #{idDespacho}
+			and did.id_estado != 90004000
+			and b.ID_BITACORA = (select max(id_bitacora)
+	                             from sstt_bitacoras b1
+	                             where id_ot = ot.id_ot) 
+	    <if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	<select id="listOtByDespachoToSP" parameterType="FilterDespachoInterno" resultMap="otSingle">
+		select 
+		    ot.id_ot
+		    ,ot.id_producto
+		    ,ot.s_nmro_serie
+		    ,ot.i_cod_barra
+		    ,ot.s_tipo_cambio
+		    ,es.s_descripcion as s_descripcion_despacho_estado
+		    ,did.id_estado as id_estado_despacho_estado
+		    ,p.s_descripcion as s_descripcion_producto
+		    ,u.s_direccion
+		    ,m.s_nombre as s_nombre_marca
+		    ,m.id_marca as s_codigo_marca
+		    ,l.s_nombre as s_nombre_linea
+		    ,f.s_nombre as s_nombre_familia
+		    ,di.id_estado as id_estado_despacho
+		    ,bi.id_estado as id_estado_bitacora_interna
+		from
+		    sstt_ordenes_trabajo ot
+		    inner join sstt_bitacoras b on b.id_ot = ot.id_ot 
+				and b.id_recepcion is not null
+				and b.d_fecha_salida is null
+            inner join sstt_ubicaciones u on u.id_ubicacion = b.id_ubicacion
+		    inner join sstt_despacho_interno_detalles did on did.id_ot = ot.id_ot
+		    inner join sstt_estados es on es.id_estado = did.id_estado
+		    inner join sstt_despachos_internos di on di.id_despacho_interno = did.id_despacho_interno
+		    inner join owv_productos p on p.id_producto = ot.id_producto
+		    inner join sstt_bitacoras_internas bi on bi.id_ot = ot.id_ot and d_fecha_termino is null
+		    left join owv_familias f on f.id_familia = p.id_familia
+		    left join owv_marcas m on m.id_marca = p.id_marca
+		    left join owv_lineas l on l.id_linea = f.id_linea    
+		where
+			di.id_despacho_interno = #{idDespacho}
+			and did.id_estado != 90004000
+			order by ot.id_producto asc
+	    <if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getOtByDespacho" parameterType="FilterDespachoInterno" resultType="Integer">
+		select 
+		   count(ot.id_ot)
+       from
+			sstt_despacho_interno_detalles did
+			inner join sstt_despachos_internos di on di.id_despacho_interno = did.id_despacho_interno
+			inner join sstt_ordenes_trabajo ot on ot.id_ot = did.id_ot
+			left join sstt_parametros pa on pa.s_nombre = ot.s_tipo_cambio 
+			inner join sstt_estados es on es.id_estado = did.id_estado
+			inner join owv_productos p on p.id_producto = ot.id_producto
+			inner join sstt_bitacoras b on b.id_ot = ot.id_ot
+			left join sstt_ubicaciones u on u.id_ubicacion = b.id_ubicacion
+			left join owv_familias f on f.id_familia = p.id_familia
+			left join owv_marcas m on m.id_marca = p.id_marca
+			left join owv_lineas l on l.id_linea = f.id_linea 
+		where
+			di.id_despacho_interno = #{idDespacho}
+			and did.id_estado != 90004000
+			and b.ID_BITACORA = (select max(id_bitacora)
+	                             from sstt_bitacoras b1
+	                             where id_ot = ot.id_ot) 
+	</select>
+	
+	
+	<select id="listOtByDespachoCheck" parameterType="despachoInterno" resultType="CheckForFlexigrid">
+		select 
+			ot.id_ot as "id",
+			'S' as "check"
+		 from
+			sstt_despacho_interno_detalles did
+			inner join sstt_despachos_internos di on di.id_despacho_interno = did.id_despacho_interno
+			inner join sstt_ordenes_trabajo ot on ot.id_ot = did.id_ot
+			left join sstt_parametros pa on pa.s_nombre = ot.s_tipo_cambio 
+			inner join sstt_estados es on es.id_estado = did.id_estado
+			inner join owv_productos p on p.id_producto = ot.id_producto
+			inner join sstt_bitacoras b on b.id_ot = ot.id_ot
+			left join sstt_ubicaciones u on u.id_ubicacion = b.id_ubicacion
+			left join owv_familias f on f.id_familia = p.id_familia
+			left join owv_marcas m on m.id_marca = p.id_marca
+			left join owv_lineas l on l.id_linea = f.id_linea 
+		where
+			di.id_despacho_interno = #{id}
+			and did.id_estado not in (90005000,90004000)
+			and b.ID_BITACORA = (select max(id_bitacora)
+	                             from sstt_bitacoras b1
+	                             where id_ot = ot.id_ot) 
+	</select>
+	
+	<resultMap type="OrdenTrabajo" id="paraRevision">
+		<result property="id"                            column="id_ot"/>
+		<result property="codigoBarra"                   column="i_cod_barra" typeHandler="CodigoBarrasTypeHandler"/>
+		<result property="tipoCambio.codigo"             column="s_tipoCambio"/>
+		<result property="tipoCambio.descripcion"        column="s_descripcion_tipo_cambio"/>
+		<result property="clasificacion.codigo"          column="s_clasificacion"/>
+		<result property="clasificacion.glosa"           column="s_descripcion_clasificacion"/>
+		<result property="producto.familia.id"           column="id_familia"/>
+		<result property="producto.familia.nombre"       column="s_nombre_familia"/>
+		<result property="producto.familia.linea.id"     column="id_linea"/>
+		<result property="producto.familia.linea.glosa"  column="s_nombre_linea"/>
+	</resultMap>
+	
+	<select id="listOtParaDespachoByFilter" parameterType="FilterOT" resultMap="paraRevision">
+		select
+            ot.id_ot
+            ,ot.i_cod_barra
+            ,ot.s_tipo_cambio
+            ,pa1.s_descripcion as s_descripcion_tipo_cambio
+            ,ot.s_clasificacion
+            ,pa2.s_descripcion as s_descripcion_clasificacion
+            ,f.id_familia
+            ,f.s_nombre as s_nombre_familia
+            ,l.id_linea
+            ,l.s_nombre as s_nombre_linea
+        from sstt_ordenes_trabajo ot
+            left join sstt_parametros pa1 on pa1.s_nombre = ot.s_tipo_cambio and pa1.s_string1 = 'TICA'
+            left join sstt_parametros pa2 on pa2.s_nombre = ot.s_clasificacion  and pa2.s_string1 = 'CB'
+            left join owv_productos p on p.id_producto = ot.id_producto
+            left join owv_familias f on f.id_familia = p.id_familia
+            left join owv_lineas l on l.id_linea = f.id_linea
+            left join sstt_bitacoras b on b.id_ot = ot.id_ot
+            left join sstt_bitacoras_internas bi on bi.id_bitacora = b.id_bitacora and bi.d_fecha_termino is null
+        <where>
+        	 b.d_fecha_salida is null
+             and bi.id_estado in (100001000,100005000)
+             and ot.s_clasificacion = 'RDEFP'
+             and exists(select 1 
+                        from sstt_recepciones_camion_ot rec
+                        inner join sstt_recepciones_camion_guias cg on cg.id_recepcion_camion_guia = rec.id_recepcion_camion_guia
+                        inner join sstt_recepciones_camion rc on rc.id_recepcion_camion = cg.id_recepcion_camion  
+                        where rec.id_ot = ot.id_ot
+                        and rc.id_estado = 80002000)
+            <if test="idUbicacion != null">
+            	and b.id_ubicacion = #{idUbicacion}
+            </if>
+            <if test="idFamilia != null and !idFamilia.equals('')">
+            	and f.id_familia = #{idFamilia}
+            </if>
+            <if test="idProveedor != null">
+            	and p.id_proveedor = #{idProveedor}
+            </if>
+            <if test="fechaCreacionCorte != null and !fechaCreacionCorte.equals('')">
+               and b.d_fecha_entrada &lt; #{fechaCreacionCorte}
+            </if>
+        </where> 
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTotalOtParaDespachoByFilter" parameterType="FilterOT" resultType="Integer">
+		select
+            count(*)
+        from sstt_ordenes_trabajo ot
+            left join owv_productos p on p.id_producto = ot.id_producto
+            left join owv_familias f on f.id_familia = p.id_familia
+            left join sstt_bitacoras b on b.id_ot = ot.id_ot
+            left join sstt_bitacoras_internas bi on bi.id_bitacora = b.id_bitacora and bi.d_fecha_termino is null
+        where 
+            b.d_fecha_salida is null
+            and bi.id_estado in (100001000,100005000)
+            and ot.s_clasificacion = 'RDEFP'
+            and exists(select 1 
+                        from sstt_recepciones_camion_ot rec
+                        inner join sstt_recepciones_camion_guias cg on cg.id_recepcion_camion_guia = rec.id_recepcion_camion_guia
+                        inner join sstt_recepciones_camion rc on rc.id_recepcion_camion = cg.id_recepcion_camion  
+                        where rec.id_ot = ot.id_ot
+                        and rc.id_estado = 80002000)
+            <if test="idUbicacion!=null">
+            	and b.id_ubicacion = #{idUbicacion}
+            </if>
+            <if test="idFamilia!=null and !idFamilia.equals('')">
+            	and f.id_familia = #{idFamilia}
+            </if>
+            <if test="idProveedor != null">
+            	and p.id_proveedor = #{idProveedor}
+            </if>
+            <if test="fechaCreacionCorte!=null and !fechaCreacionCorte.equals('')"> 
+               and b.d_fecha_entrada &lt; #{fechaCreacionCorte}
+            </if>
+	</select>
+	
+	<select id="listAllOtParaDespachoCheck" parameterType="FilterOT" resultType="CheckForFlexigrid">
+		select
+            ot.id_ot as id
+            ,'S' as "check"
+        from sstt_ordenes_trabajo ot
+            left join owv_productos p on p.id_producto = ot.id_producto
+            left join owv_familias f on f.id_familia = p.id_familia
+            left join sstt_bitacoras b on b.id_ot = ot.id_ot
+            left join sstt_bitacoras_internas bi on bi.id_bitacora = b.id_bitacora and bi.d_fecha_termino is null
+        where 
+            b.d_fecha_salida is null
+            and bi.id_estado in (100001000,100005000)
+            and ot.s_clasificacion = 'RDEFP'
+            and exists(select 1 
+                        from sstt_recepciones_camion_ot rec
+                        inner join sstt_recepciones_camion_guias cg on cg.id_recepcion_camion_guia = rec.id_recepcion_camion_guia
+                        inner join sstt_recepciones_camion rc on rc.id_recepcion_camion = cg.id_recepcion_camion  
+                        where rec.id_ot = ot.id_ot
+                        and rc.id_estado = 80002000)
+            <if test="idUbicacion!=null">
+            	and b.id_ubicacion = #{idUbicacion}
+            </if>
+            <if test="idFamilia!=null and !idFamilia.equals('')">
+            	and f.id_familia = #{idFamilia}
+            </if>
+            <if test="idProveedor != null">
+            	and p.id_proveedor = #{idProveedor}
+            </if>
+            <if test="fechaCreacionCorte!=null and !fechaCreacionCorte.equals('')"> -->
+               and b.d_fecha_entrada &lt; #{fechaCreacionCorte}
+            </if>
+	</select>
+	
+	<resultMap type="OrdenTrabajo" id="otRecepcion">
+		<result property="id"                        column="id_ot"/>
+		<result property="codigoBarra"               column="i_cod_barra" typeHandler="CodigoBarrasTypeHandler"/>
+		<result property="producto.id"               column="id_producto"/>
+		<result property="producto.descripcion"      column="s_descripcion_producto"/>
+		<result property="producto.marca.codigo"     column="id_marca"/>
+		<result property="producto.marca.nombre"     column="s_nombre_marca"/>
+		<result property="numeroSerie"               column="s_nmro_serie"/>
+		<result property="bitacoraInterna.estado.id" column="id_estado"/>
+		<result property="estado.id"				 column="id_estado_ot"/>
+	</resultMap>
+	
+    <select id="listOTRecepcionByDespachoInterno" parameterType="DespachoInterno" resultMap="otRecepcion">
+        select
+            ot.id_ot
+            ,ot.i_cod_barra
+            ,ot.id_producto
+            ,pro.s_descripcion as s_descripcion_producto
+            ,pro.id_marca
+            ,ma.s_nombre as s_nombre_marca
+            ,ot.s_nmro_serie
+            ,bi.id_estado
+        from sstt_ordenes_trabajo ot
+            left join owv_productos pro on pro.id_producto = ot.id_producto
+            left join owv_marcas ma on ma.id_marca = pro.id_marca
+            left join sstt_despacho_interno_detalles did on did.id_ot = ot.id_ot
+            left join sstt_bitacoras_internas bi on bi.id_ot = did.id_ot and bi.d_fecha_termino is null
+        where did.id_estado != 90004000 
+            and  did.id_despacho_interno = #{id}
+    </select>
+    <select id="getTotalOTRecepcionByDespachoInterno" parameterType="DespachoInterno" resultType="Integer">
+        select
+            count(1)
+        from sstt_ordenes_trabajo ot
+            left join sstt_despacho_interno_detalles did on did.id_ot = ot.id_ot
+        where did.id_estado != 90004000 
+            and  did.id_despacho_interno = #{id}
+    </select>
+    
+    <resultMap type="OrdenTrabajo" id="oTRecibirDespachoSP">
+    	<result property="id"                                        column="id_ot"/>
+    	<result property="bitacoraInterna.estado.id"                 column="id_estado_bitacora"/>
+    	<result property="despachoDetalle.despachoInterno.id"        column="id_despacho_interno"/>
+    	<result property="despachoDetalle.despachoInterno.estado.id" column="id_estado_despacho"/>
+    </resultMap>
+    
+    <select id="getOTRecebirDespachoSPByFilter" parameterType="FilterOT" resultMap="oTRecibirDespachoSP">
+        select 
+            ot.id_ot
+            ,bi.id_estado as id_estado_bitacora
+            ,di.id_despacho_interno
+            ,di.id_estado as id_estado_despacho
+        from sstt_ordenes_trabajo ot
+            left join sstt_despacho_interno_detalles did on did.id_ot = ot.id_ot and did.id_estado !=90004000
+            left join sstt_despachos_internos di on di.id_despacho_interno = did.id_despacho_interno
+            left join sstt_bitacoras_internas bi on bi.id_ot = ot.id_ot and bi.d_fecha_termino is null
+        <where>
+            di.id_origen = 10012
+            and di.id_destino_interno =1001200001
+            and di.id_estado in(90006001,90006003)
+            <if test="codigoBarra!=null and !codigoBarra.equals('')">
+            	and ot.i_cod_barra = #{codigoBarra, typeHandler=CodigoBarrasTypeHandler}
+            </if>
+            <if test="idOT!=null">
+            	and ot.id_ot = #{idOT}
+            </if>
+            <if test="numeroSerie!=null and !numeroSerie.equals('')">
+            	and ot.s_nmro_serie = #{numeroSerie}
+            </if>
+        </where>
+    </select>  
+    
+    <select id="listOtInFFTrasladoByFilter" parameterType="FilterOT" resultMap="otSingle">
+		select    
+		    ot.id_ot ,
+		    ot.id_producto ,
+		    ot.id_documento ,
+		    d.s_tipo_documento ,
+		    ot.s_clasificacion ,
+		    ot.id_cliente ,
+		    cl.s_nombre as s_nombre_cliente ,
+		    ot.d_fecha_creacion ,
+		    pa.s_descripcion as s_descripcion_clasificacion ,
+		    p.s_descripcion as s_descripcion_producto ,
+		    l.id_linea ,
+		    l.s_nombre as s_nombre_linea ,
+		    f.id_familia ,
+		    f.s_nombre as s_nombre_familia ,
+		    m.id_marca ,
+		    m.s_nombre as s_nombre_marca 
+        from
+            sstt_ordenes_trabajo ot
+            inner join sstt_bitacoras b on b.id_ot = ot.id_ot 
+                                       and b.d_fecha_salida is null
+                                       and b.id_ubicacion = #{idUbicacion}
+            inner join sstt_bitacoras_internas bi on bi.id_ot = ot.id_ot  
+                                           and id_ubicacion_interna = 1001200002 or id_ubicacion_interna = 1001200003
+            inner join sstt_recepciones r on r.id_recepcion = ( select max(rec.id_recepcion)
+                                                              from sstt_recepciones rec
+                                                              where rec.id_ot = ot.id_ot
+                                                              and rec.id_ubicacion =  #{idUbicacion}) 
+            inner join sstt_parametros pa on pa.s_nombre = ot.s_clasificacion and pa.s_string1 = 'CB'
+            left join sstt_despacho_interno_detalles dd on dd.id_ot = ot.id_ot
+            left join sstt_despachos_internos ds on ds.id_despacho_interno = dd.id_despacho_interno
+            left join sstt_clientes cl on cl.id_cliente = ot.id_cliente
+            left join owv_documentos d on d.id_documento= ot.id_documento
+                                      and d.s_tipo_documento = ot.s_tipo_documento
+            left join owv_productos p on p.id_producto = ot.id_producto
+            left join owv_marcas m on m.id_marca = p.id_marca
+            left join owv_familias f on f.id_familia = p.id_familia
+            left join owv_lineas l on l.id_linea = f.id_linea
+        <where>
+                ot.s_cambio_autorizado = 'S'
+            and ot.s_vigente = 'S'
+            and ot.s_cerrada = 'N'
+             and (exists (select 1 from sstt_despacho_interno_detalles di where di.ID_OT = ot.id_ot and id_estado in (90004000,90005000)) 
+                or not exists (select 1 from sstt_despacho_interno_detalles di where di.ID_OT = ot.id_ot )) 
+        <if test="tipoUbicacion != null and !tipoUbicacion.equals('') and tipoUbicacion.equals('PR')">
+        	   and ot.s_clasificacion = 'CP'
+        </if>
+        <if test="tipoUbicacion != null and !tipoUbicacion.equals('') and tipoUbicacion.equals('ST')">
+        	   and ot.s_clasificacion = 'RP' 
+        </if>
+         <if test="tipoUbicacion != null and !tipoUbicacion.equals('') and tipoUbicacion.equals('CR')">
+        	   and ot.s_clasificacion = 'DA'
+        </if>
+         <if test="tipoUbicacion != null and !tipoUbicacion.equals('') and tipoUbicacion.equals('LQ')">
+        	   and ot.s_clasificacion = 'AV'
+        </if>
+		<if test="idOT != null">
+			and ot.id_ot = #{idOT}
+		</if>
+		<if test="idLinea != null and !idLinea.equals('')">
+			and l.id_linea = #{idLinea}
+		</if>
+		<if test="idFamilia != null and !idFamilia.equals('')">
+			and f.id_familia = #{idFamilia}
+		</if>
+		<if test="fechaRecepcionOtInicio != null">
+			and (r.d_fecha_recepcion) &lt;= #{fechaRecepcionOtInicio}
+		</if>
+		<if test="codigoCorto != null">
+			and p.id_producto = #{codigoCorto}
+		</if>
+		<if test="idMarca != null and !idMarca.equals('')">
+			and m.id_marca = #{idMarca}
+		</if>
+		</where>
+		group by     
+			ot.id_ot
+			,ot.id_producto
+			,ot.id_documento
+			,d.s_tipo_documento
+			,ot.s_tipo_cambio
+			,ot.id_cliente
+			,cl.s_nombre 
+			,ot.d_fecha_creacion
+			,pa.s_descripcion 
+			,p.s_descripcion 
+			,l.id_linea
+			,l.s_nombre 
+			,f.id_familia
+			,f.s_nombre
+			,ot.s_clasificacion
+			,m.id_marca
+			,m.s_nombre
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getOtInFFTrasladoByFilter" parameterType="FilterOT" resultType="Integer">
+       	select 
+            count(distinct ot.id_ot)
+		  from
+               sstt_ordenes_trabajo ot
+            inner join sstt_bitacoras b on b.id_ot = ot.id_ot 
+                                       and b.d_fecha_salida is null
+                                       and b.id_ubicacion = #{idUbicacion}
+            inner join sstt_bitacoras_internas bi on bi.id_ot = ot.id_ot  
+                                           and id_ubicacion_interna = 1001200002 or id_ubicacion_interna = 1001200003
+            inner join sstt_recepciones r on r.id_recepcion = ( select max(rec.id_recepcion)
+                                                              from sstt_recepciones rec
+                                                              where rec.id_ot = ot.id_ot
+                                                              and rec.id_ubicacion =  #{idUbicacion}) 
+            inner join sstt_parametros pa on pa.s_nombre = ot.s_clasificacion and pa.s_string1 = 'CB'
+            left join sstt_despacho_interno_detalles dd on dd.id_ot = ot.id_ot
+            left join sstt_despachos_internos ds on ds.id_despacho_interno = dd.id_despacho_interno
+            left join sstt_clientes cl on cl.id_cliente = ot.id_cliente
+            left join owv_documentos d on d.id_documento= ot.id_documento
+                                      and d.s_tipo_documento = ot.s_tipo_documento
+            left join owv_productos p on p.id_producto = ot.id_producto
+            left join owv_marcas m on m.id_marca = p.id_marca
+            left join owv_familias f on f.id_familia = p.id_familia
+            left join owv_lineas l on l.id_linea = f.id_linea
+            <where>
+                    ot.s_cambio_autorizado = 'S'
+                and ot.s_vigente = 'S'
+                and ot.s_cerrada = 'N'
+                and (exists (select 1 from sstt_despacho_interno_detalles di where di.ID_OT = ot.id_ot and id_estado in (90004000,90005000)) 
+                	or not exists (select 1 from sstt_despacho_interno_detalles di where di.ID_OT = ot.id_ot )) 
+        <if test="tipoUbicacion != null and !tipoUbicacion.equals('') and tipoUbicacion.equals('PR')">
+        	   and ot.s_clasificacion = 'CP'
+        </if>
+        <if test="tipoUbicacion != null and !tipoUbicacion.equals('') and tipoUbicacion.equals('ST')">
+        	   and ot.s_clasificacion = 'RP' 
+        </if>
+         <if test="tipoUbicacion != null and !tipoUbicacion.equals('') and tipoUbicacion.equals('CR')">
+        	   and ot.s_clasificacion = 'DA'
+        </if>
+         <if test="tipoUbicacion != null and !tipoUbicacion.equals('') and tipoUbicacion.equals('LQ')">
+        	   and ot.s_clasificacion = 'AV'
+        </if>
+		<if test="idOT != null">
+			and ot.id_ot = #{idOT}
+		</if>
+		<if test="idLinea != null and !idLinea.equals('')">
+			and l.id_linea = #{idLinea}
+		</if>
+		<if test="idFamilia != null and !idFamilia.equals('')">
+			and f.id_familia = #{idFamilia}
+		</if>
+		<if test="fechaRecepcionOtInicio != null">
+			and (r.d_fecha_recepcion) &lt;= #{fechaRecepcionOtInicio}
+		</if>
+		<if test="codigoCorto != null">
+			and p.id_producto = #{codigoCorto}
+		</if>
+		<if test="idMarca != null and !idMarca.equals('')">
+			and m.id_marca = #{idMarca}
+		</if>
+		</where>
+	</select>
+	<select id="listALLOtInFFTrasladoCheck"  parameterType="FilterOT" resultType="CheckForFlexigrid">
+		select 
+			ot.id_ot as "id",
+			'S' as "check" 
+		  from
+            sstt_ordenes_trabajo ot
+            inner join sstt_bitacoras b on b.id_ot = ot.id_ot 
+                                       and b.d_fecha_salida is null
+                                       and b.id_ubicacion = #{idUbicacion}
+            inner join sstt_bitacoras_internas bi on bi.id_ot = ot.id_ot  
+                                           and id_ubicacion_interna = 1001200002 or id_ubicacion_interna = 1001200003
+            inner join sstt_recepciones r on r.id_recepcion = ( select max(rec.id_recepcion)
+                                                              from sstt_recepciones rec
+                                                              where rec.id_ot = ot.id_ot
+                                                              and rec.id_ubicacion =  #{idUbicacion}) 
+            inner join sstt_parametros pa on pa.s_nombre = ot.s_clasificacion and pa.s_string1 = 'CB'
+            left join sstt_despacho_interno_detalles dd on dd.id_ot = ot.id_ot
+            left join sstt_despachos_internos ds on ds.id_despacho_interno = dd.id_despacho_interno
+            left join sstt_clientes cl on cl.id_cliente = ot.id_cliente
+            left join owv_documentos d on d.id_documento= ot.id_documento
+                                      and d.s_tipo_documento = ot.s_tipo_documento
+            left join owv_productos p on p.id_producto = ot.id_producto
+            left join owv_marcas m on m.id_marca = p.id_marca
+            left join owv_familias f on f.id_familia = p.id_familia
+            left join owv_lineas l on l.id_linea = f.id_linea
+            <where>
+                    ot.s_cambio_autorizado = 'S'
+                and ot.s_vigente = 'S'
+                and ot.s_cerrada = 'N'
+                and (exists (select 1 from sstt_despacho_interno_detalles di where di.ID_OT = ot.id_ot and id_estado in (90004000,90005000)) 
+                	or not exists (select 1 from sstt_despacho_interno_detalles di where di.ID_OT = ot.id_ot )) 
+        <if test="tipoUbicacion != null and !tipoUbicacion.equals('') and tipoUbicacion.equals('PR')">
+        	   and ot.s_clasificacion = 'CP'
+        </if>
+        <if test="tipoUbicacion != null and !tipoUbicacion.equals('') and tipoUbicacion.equals('ST')">
+        	   and ot.s_clasificacion = 'RP' 
+        </if>
+         <if test="tipoUbicacion != null and !tipoUbicacion.equals('') and tipoUbicacion.equals('CR')">
+        	   and ot.s_clasificacion = 'DA'
+        </if>
+         <if test="tipoUbicacion != null and !tipoUbicacion.equals('') and tipoUbicacion.equals('LQ')">
+        	   and ot.s_clasificacion = 'AV'
+        </if>
+		<if test="idOT != null">
+			and ot.id_ot = #{idOT}
+		</if>
+		<if test="idLinea != null and !idLinea.equals('')">
+			and l.id_linea = #{idLinea}
+		</if>
+		<if test="idFamilia != null and !idFamilia.equals('')">
+			and f.id_familia = #{idFamilia}
+		</if>
+		<if test="fechaRecepcionOtInicio != null">
+			and (r.d_fecha_recepcion) &lt;= #{fechaRecepcionOtInicio}
+		</if>
+		<if test="codigoCorto != null">
+			and p.id_producto = #{codigoCorto}
+		</if>
+		<if test="idMarca != null and !idMarca.equals('')">
+			and m.id_marca = #{idMarca}
+		</if>
+		</where>
+		 group by     
+                ot.id_ot
+                ,ot.id_producto
+                ,ot.id_documento
+                ,d.s_tipo_documento
+                ,ot.s_tipo_cambio
+                ,ot.id_cliente
+                ,cl.s_nombre 
+                ,ot.d_fecha_creacion
+                ,pa.s_descripcion 
+                ,p.s_descripcion 
+                ,l.id_linea
+                ,l.s_nombre 
+                ,f.id_familia
+                ,f.s_nombre
+                ,ot.s_clasificacion
+                ,m.id_marca
+                ,m.s_nombre
+	</select>
+    
+      <select id="listOtEscaneadasByDespacho" parameterType="DespachoInterno" resultMap="otSingle">
+		select 
+            ot.id_ot
+            ,ot.id_producto
+            ,ot.s_nmro_serie
+            ,ot.i_cod_barra
+            ,ot.s_tipo_cambio
+            ,pa.s_descripcion s_descripcion_tipo_cambio
+            ,es.s_descripcion as s_descripcion_despacho_estado
+            ,did.id_estado as id_estado_despacho_estado
+            ,p.s_descripcion as s_descripcion_producto
+            ,u.s_direccion
+            ,m.s_nombre as s_nombre_marca
+            ,m.id_marca as s_codigo_marca
+            ,l.s_nombre as s_nombre_linea
+            ,f.s_nombre as s_nombre_familia
+            ,di.id_estado as id_estado_despacho
+          <!-- 		    ,bi.id_estado as id_estado_bitacora_interna -->
+        from
+            sstt_ordenes_trabajo ot
+            inner join sstt_parametros pa on pa.s_nombre = ot.s_tipo_cambio <!-- and pa.s_string1 = 'CB' -->
+            inner join sstt_bitacoras b on b.id_ot = ot.id_ot 
+                                                   and b.d_fecha_salida is null
+            left join sstt_ubicaciones u on u.id_ubicacion = b.id_ubicacion
+            inner join sstt_despacho_interno_detalles did on did.id_ot = ot.id_ot
+            inner join sstt_estados es on es.id_estado = did.id_estado
+            inner join sstt_despachos_internos di on di.id_despacho_interno = did.id_despacho_interno
+            inner join owv_productos p on p.id_producto = ot.id_producto
+         <!-- 		    inner join sstt_bitacoras_internas bi on bi.id_ot = ot.id_ot and d_fecha_termino is null -->
+            left join owv_familias f on f.id_familia = p.id_familia
+            left join owv_marcas m on m.id_marca = p.id_marca
+            left join owv_lineas l on l.id_linea = f.id_linea    
+		where
+			di.id_despacho_interno = #{id}
+			and did.id_estado = 90005000
+			order by ot.id_producto asc
+	</select>
+	
+	<select id="listOtByIdGuiaAndClasificacionAvOrDa" parameterType="FilterOT" resultMap="otSingle">
+		select 
+		    ot.id_ot
+		    ,pa.s_descripcion as s_descripcion_clasificacion
+		    ,p.s_descripcion as s_descripcion_producto
+		    ,p.id_producto
+		    ,f.s_nombre s_nombre_familia
+		    ,l.s_nombre s_nombre_linea
+		    ,m.s_nombre s_nombre_marca
+		from
+		     sstt_ordenes_trabajo ot
+            inner join sstt_bitacoras b on b.id_ot = ot.id_ot 
+            inner join sstt_parametros pa on pa.s_nombre = ot.s_clasificacion
+            left join owv_productos p on p.id_producto = ot.id_producto
+            left join owv_familias f on f.id_familia = p.id_familia
+            left join owv_lineas l on l.id_linea = f.id_linea
+            left join owv_marcas m on m.id_marca = p.id_marca
+	    <where>
+	    	 ot.id_estado not in (100008000,100008100,100008200,100010500,100010600,100010700,10032000)
+	    	 and ot.s_clasificacion in ('DA','AV')
+	    	 and b.id_guia = #{idGuia}
+	    </where> 
+	    <if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getOtByIdGuiaAndClasificacionAvOrDa" parameterType="FilterOT" resultType="Integer">
+		select 
+			count(distinct ot.id_ot)
+  		from
+		   sstt_ordenes_trabajo ot
+            inner join sstt_bitacoras b on b.id_ot = ot.id_ot 
+            inner join sstt_parametros pa on pa.s_nombre = ot.s_clasificacion
+            left join owv_productos p on p.id_producto = ot.id_producto
+            left join owv_familias f on f.id_familia = p.id_familia
+            left join owv_lineas l on l.id_linea = f.id_linea
+            left join owv_marcas m on m.id_marca = p.id_marca
+	    <where>
+	    	 ot.id_estado not in (100008000,100008100,100008200,100010500,100010600,100010700,10032000)
+    	    and ot.s_clasificacion in ('DA','AV')
+	    	and b.id_guia = #{idGuia}
+	    </where> 
+	</select>
+	
+	<select id="listAllOtByIdGuiaAndClasificacionAvOrDa" parameterType="FilterOT" resultType="CheckForFlexigrid">
+		select 
+			ot.id_ot as "id",
+			'N' as "check" 
+		from
+		  sstt_ordenes_trabajo ot
+            inner join sstt_bitacoras b on b.id_ot = ot.id_ot 
+            inner join sstt_parametros pa on pa.s_nombre = ot.s_clasificacion
+            left join owv_productos p on p.id_producto = ot.id_producto
+            left join owv_familias f on f.id_familia = p.id_familia
+            left join owv_lineas l on l.id_linea = f.id_linea
+            left join owv_marcas m on m.id_marca = p.id_marca
+	    <where>
+	    	 ot.id_estado not in (100008000,100008100,100008200,100010500,100010600,100010700,10032000)
+	    	and ot.s_clasificacion in ('DA','AV')
+	    	and b.id_guia = #{idGuia}
+	    </where> 
+	    <if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="listOtByIdGuiaAndClasificacionCpOrRp" parameterType="FilterOT" resultMap="otSingle">
+		select 
+		    ot.id_ot
+		    ,pa.s_descripcion as s_descripcion_clasificacion
+		    ,p.s_descripcion as s_descripcion_producto
+		    ,p.id_producto
+		    ,f.s_nombre s_nombre_familia
+		    ,l.s_nombre s_nombre_linea
+		    ,m.s_nombre s_nombre_marca
+		from
+		    sstt_ordenes_trabajo ot
+		    inner join sstt_bitacoras b on b.id_ot = ot.id_ot 
+		    left join sstt_parametros pa on pa.s_nombre = ot.s_clasificacion and pa.s_grupo = 'CB'
+		    left join owv_productos p on p.id_producto = ot.id_producto
+		    left join owv_familias f on f.id_familia = p.id_familia
+		    left join owv_lineas l on l.id_linea = f.id_linea
+		    left join owv_marcas m on m.id_marca = p.id_marca
+	    <where>
+	    	  ot.id_estado not in (100008000,100008100,100008200,100010500,100010600,100010700,10032000)
+	    	and ot.s_clasificacion in ('CP','RP')
+	    	 and b.id_guia = #{idGuia}
+	    </where> 
+	    <if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+
+	<select id="getOtByIdGuiaAndClasificacionCpOrRp" parameterType="FilterOT" resultType="Integer">
+		select 
+			count(distinct ot.id_ot)
+  		from
+		     sstt_ordenes_trabajo ot
+		    inner join sstt_bitacoras b on b.id_ot = ot.id_ot 
+		    left join sstt_parametros pa on pa.s_nombre = ot.s_clasificacion
+		    left join owv_productos p on p.id_producto = ot.id_producto
+		    left join owv_familias f on f.id_familia = p.id_familia
+		    left join owv_lineas l on l.id_linea = f.id_linea
+		    left join owv_marcas m on m.id_marca = p.id_marca
+	    <where>
+	    	 ot.id_estado not in (100008000,100008100,100008200,100010500,100010600,100010700,10032000)
+    	    and ot.s_clasificacion in ('CP','RP')
+	    	and b.id_guia = #{idGuia}
+	    </where> 
+	</select>
+	
+	<select id="listOtByIdGuia" parameterType="FilterOT" resultMap="otSingle"> 
+		   select 
+            ot.id_ot
+            ,pa.s_descripcion as s_descripcion_clasificacion
+            ,p.s_descripcion as s_descripcion_producto
+            ,p.id_producto
+            ,f.s_nombre s_nombre_familia
+            ,l.s_nombre s_nombre_linea
+            ,m.s_nombre s_nombre_marca
+        from
+            sstt_ordenes_trabajo ot
+            inner join sstt_bitacoras b on b.id_ot = ot.id_ot 
+            left join sstt_parametros pa on pa.s_nombre = ot.s_clasificacion and pa.s_grupo = 'CB'
+            left join owv_productos p on p.id_producto = ot.id_producto
+            left join owv_familias f on f.id_familia = p.id_familia
+            left join owv_lineas l on l.id_linea = f.id_linea
+            left join owv_marcas m on m.id_marca = p.id_marca
+        where
+            b.id_guia = #{idGuia}
+	</select>
+	
+	<select id="getOtByIdGuia" parameterType="FilterOT" resultMap="otSingle">
+		   select 
+            count(distinct ot.id_ot)
+        from
+            sstt_ordenes_trabajo ot
+            inner join sstt_bitacoras b on b.id_ot = ot.id_ot 
+            left join sstt_parametros pa on pa.s_nombre = ot.s_clasificacion and pa.s_grupo = 'CB'
+            left join owv_productos p on p.id_producto = ot.id_producto
+            left join owv_familias f on f.id_familia = p.id_familia
+            left join owv_lineas l on l.id_linea = f.id_linea
+            left join owv_marcas m on m.id_marca = p.id_marca
+        where
+            b.id_guia = #{idGuia}
+	</select>
+	
+	<select id="listAllOtByIdGuiaAndClasificacionCpOrRp" parameterType="FilterOT" resultType="CheckForFlexigrid">
+		select 
+			ot.id_ot as "id",
+			'N' as "check" 
+		from
+		       sstt_ordenes_trabajo ot
+		    inner join sstt_bitacoras b on b.id_ot = ot.id_ot 
+		    left join sstt_parametros pa on pa.s_nombre = ot.s_clasificacion
+		    left join owv_productos p on p.id_producto = ot.id_producto
+		    left join owv_familias f on f.id_familia = p.id_familia
+		    left join owv_lineas l on l.id_linea = f.id_linea
+		    left join owv_marcas m on m.id_marca = p.id_marca
+	    <where>
+	    	ot.id_estado not in (100008000,100008100,100008200,100010500,100010600,100010700,10032000)
+	    	and ot.s_clasificacion in ('CP','RP') 
+	    	and b.id_guia = #{idGuia}
+	    </where> 
+	    <if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="listOTByIdGuiaAgrupada" parameterType="Long"  resultMap="otSingle">
+		select 
+    		ot.id_ot
+    		,ot.id_estado
+    		,ot.id_estado_ultimo
+		from sstt_ordenes_trabajo ot
+    		inner join sstt_bitacoras b on b.id_ot = ot.id_ot
+    		inner join sstt_guias g on g.id_guia = b.id_guia
+		where 
+				g.id_guia = #{idGuia}
+			and g.s_vigente= 'S'
+	</select>
+	
+	<select id="listOTByUbicacionInterna" resultType="OrdenTrabajo" parameterType="Integer">
+		select 
+			id_ot as "id"
+		from sstt_bitacoras_internas
+		where d_fecha_termino is null
+			and id_ubicacion_interna = #{idUbicacionInterna}
+	</select>
+	
+	<select id="listOTToEnvioSucursal" parameterType="Integer" resultType="OrdenTrabajo">
+		select
+			ot.id_ot as "id"
+		from sstt_ordenes_trabajo ot
+			left join sstt_bitacoras_internas bi on bi.id_ot = ot.id_ot and bi.d_fecha_termino is null
+		where
+			ot.id_sucursal = #{idSucursal}
+			and bi.id_estado = 100010200
+<!-- 			OT en Alamcenada -->
+	</select>
+	
+	<resultMap type="OrdenTrabajo" id="oTToCambioEstado">
+		<result property="id"                        column="id_ot"/>
+		<result property="codigoBarra"               column="i_cod_barra" typeHandler="CodigoBarrasTypeHandler"/>
+		<result property="fechaCreacion"             column="d_fecha_creacion"/>
+		<result property="producto.id"               column="id_producto"/>
+		<result property="producto.descripcion"      column="s_descripcion_producto"/>
+		<result property="idEstadoCambio"            column="id_estado_cambio"/>
+		<result property="estado.id"                 column="id_estado"/>
+		<result property="ultimoEstado.id"           column="id_estado_ultimo"/>
+		<result property="procesadoOW"               column="s_procesado_ow"/>
+		<result property="excluyeCCalidad"           column="s_excluye_ccalidad"/>
+		<result property="cCalidadAprueba"           column="s_ccalidad_aprueba"/>
+	</resultMap>
+	
+	<select id="listOTToCambioEstadoByFilter" parameterType="FilterOT" resultMap="oTToCambioEstado">
+		select 
+			ot.id_ot
+			,ot.i_cod_barra
+			,ot.d_fecha_creacion
+			,ot.id_producto
+			,ot.id_estado
+			,ot.id_estado_ultimo
+			,ot.s_procesado_ow
+			,ot.s_excluye_ccalidad
+			,ot.s_ccalidad_aprueba
+			,trim(pro.s_descripcion)||' - '||trim(ma.s_nombre) as s_descripcion_producto
+			,case when bi.id_estado = 100010200 then
+				4  --almacenado
+			when bi.id_estado = 100010100 and ot.s_excluye_ccalidad is null and s_ccalidad_aprueba is null then
+				3 --enviado control calidad
+			when bi.id_estado = 100010300 then
+				5 --preparado para despacho sucursal
+			when exists (select 1 from sstt_recepciones r
+							inner join sstt_ubicaciones u on u.id_ubicacion = r.id_ubicacion and u.s_tipo = 'CD'
+						where r.id_ot = ot.id_ot
+							and r.d_fecha_recepcion is not null
+							and r.i_nmro_guia is not null
+							and r.id_estado in (60001000, 60002000,60003000))
+				and exists (select 1 from sstt_guias g
+								inner join sstt_ubicaciones u on u.id_ubicacion = g.id_origen and u.s_tipo = 'CD'
+							where g.id_destino = ot.id_stecnico
+								and g.id_ot = ot.id_ot
+								and g.id_estado in (50002000,50003000,50005000)
+								and g.d_fecha_emision is not null
+								and g.s_vigente = 'S')
+				and ot.id_estado in (10005000,10006000,10007000) then
+			    2 --enviada a st
+			end as id_estado_cambio
+		from sstt_ordenes_trabajo ot
+			left join sstt_bitacoras_internas bi on bi.id_ot = ot.id_ot and bi.d_fecha_termino is null
+			left join owv_productos pro on pro.id_producto = ot.id_producto
+			left join owv_marcas ma on ma.id_marca = pro.id_marca
+		<where>
+			ot.s_vigente = 'S'
+			and ot.s_cerrada = 'N'
+			and ot.s_cambio_autorizado = 'N'
+			and ot.s_modificado ='N'
+			<if test="idEstado==null or idEstado.equals('')">
+				and (bi.id_estado = 100010200
+					or (bi.id_estado = 100010100 and ot.s_excluye_ccalidad is null and s_ccalidad_aprueba is null)
+					or bi.id_estado = 100010300
+					or (exists(select 1 from sstt_recepciones r
+				    				inner join sstt_ubicaciones u on u.id_ubicacion = r.id_ubicacion and u.s_tipo = 'CD'
+							  where r.id_ot = ot.id_ot
+								and r.d_fecha_recepcion is not null
+								and r.i_nmro_guia is not null
+								and r.id_estado in (60001000, 60002000,60003000))
+				 		and exists (select 1 from sstt_guias g
+				                        inner join sstt_ubicaciones u on u.id_ubicacion = g.id_origen and u.s_tipo = 'CD'
+									where g.id_destino = ot.id_stecnico
+										and g.id_ot = ot.id_ot
+										and g.id_estado in (50002000,50003000,50005000)
+										and g.d_fecha_emision is not null
+										and g.s_vigente = 'S')
+						and ot.id_estado in (10005000,10006000,10007000)
+		  		))
+			</if>
+			<if test="idEstado!=null and idEstado == 1">
+			
+			</if>
+			<if test="idEstado!=null and idEstado == 2">
+				and exists (select 1 from sstt_recepciones r
+							inner join sstt_ubicaciones u on u.id_ubicacion = r.id_ubicacion and u.s_tipo = 'CD'
+						where r.id_ot = ot.id_ot
+							and r.d_fecha_recepcion is not null
+							and r.i_nmro_guia is not null
+							and r.id_estado in (60001000, 60002000,60003000))
+				and exists (select 1 from sstt_guias g
+								inner join sstt_ubicaciones u on u.id_ubicacion = g.id_origen and u.s_tipo = 'CD'
+							where g.id_destino = ot.id_stecnico
+								and g.id_ot = ot.id_ot
+								and g.id_estado in (50002000,50003000,50005000)
+								and g.d_fecha_emision is not null
+								and g.s_vigente = 'S')
+				and ot.id_estado in (10005000,10006000,10007000)
+			</if>
+			<if test="idEstado!=null and idEstado == 3">
+				and bi.id_estado = 100010100 
+				and ot.s_excluye_ccalidad is null 
+				and s_ccalidad_aprueba is null
+			</if>
+			<if test="idEstado!=null and idEstado == 4">
+				and bi.id_estado = 100010200
+			</if>
+			<if test="idEstado!=null and idEstado == 5">
+				and bi.id_estado = 100010300
+			</if>
+			<if test="idOT!=null">
+				and ot.id_ot = #{idOT}
+			</if>
+			<if test="fechaCambioEstadoInicio!=null and !fechaCambioEstadoInicio.equals('')">
+				and d_fecha_modificacion_estado &gt;=#{fechaCambioEstadoInicio}
+			</if>
+			<if test="fechaCambioEstadoFin!=null and !fechaCambioEstadoFin.equals('')">
+				and d_fecha_modificacion_estado &lt;=#{fechaCambioEstadoFin}
+			</if>
+		</where>
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTotalOTToCambioEstadoByFilter" parameterType="FilterOT" resultType="Integer">
+		select
+			count(ot.id_ot)
+		from sstt_ordenes_trabajo ot
+			left join sstt_bitacoras_internas bi on bi.id_ot = ot.id_ot and bi.d_fecha_termino is null
+		<where>
+			ot.s_vigente = 'S'
+			and ot.s_cerrada = 'N'
+			and ot.s_cambio_autorizado = 'N'
+			and ot.s_modificado ='N'
+			<if test="idEstado==null or idEstado.equals('')">
+				and (bi.id_estado = 100010200
+					or (bi.id_estado = 100010100 and ot.s_excluye_ccalidad is null and s_ccalidad_aprueba is null)
+					or bi.id_estado = 100010300
+					or (exists(select 1 from sstt_recepciones r
+				    				inner join sstt_ubicaciones u on u.id_ubicacion = r.id_ubicacion and u.s_tipo = 'CD'
+							  where r.id_ot = ot.id_ot
+								and r.d_fecha_recepcion is not null
+								and r.i_nmro_guia is not null
+								and r.id_estado in (60001000, 60002000,60003000))
+				 		and exists (select 1 from sstt_guias g
+				                        inner join sstt_ubicaciones u on u.id_ubicacion = g.id_origen and u.s_tipo = 'CD'
+									where g.id_destino = ot.id_stecnico
+										and g.id_ot = ot.id_ot
+										and g.id_estado in (50002000,50003000,50005000)
+										and g.d_fecha_emision is not null
+										and g.s_vigente = 'S')
+						and ot.id_estado in (10005000,10006000,10007000)
+		  		))
+			</if>
+			<if test="idEstado!=null and idEstado == 1">
+			
+			</if>
+			<if test="idEstado!=null and idEstado == 2">
+				and exists (select 1 from sstt_recepciones r
+							inner join sstt_ubicaciones u on u.id_ubicacion = r.id_ubicacion and u.s_tipo = 'CD'
+						where r.id_ot = ot.id_ot
+							and r.d_fecha_recepcion is not null
+							and r.i_nmro_guia is not null
+							and r.id_estado in (60001000, 60002000,60003000))
+				and exists (select 1 from sstt_guias g
+								inner join sstt_ubicaciones u on u.id_ubicacion = g.id_origen and u.s_tipo = 'CD'
+							where g.id_destino = ot.id_stecnico
+								and g.id_ot = ot.id_ot
+								and g.id_estado in (50002000,50003000,50005000)
+								and g.d_fecha_emision is not null
+								and g.s_vigente = 'S')
+				and ot.id_estado in (10005000,10006000,10007000)
+			</if>
+			<if test="idEstado!=null and idEstado == 3">
+				and bi.id_estado = 100010100 
+				and ot.s_excluye_ccalidad is null 
+				and s_ccalidad_aprueba is null
+			</if>
+			<if test="idEstado!=null and idEstado == 4">
+				and bi.id_estado = 100010200
+			</if>
+			<if test="idEstado!=null and idEstado == 5">
+				and bi.id_estado = 100010300
+			</if>
+			<if test="idOT!=null">
+				and ot.id_ot = #{idOT}
+			</if>
+			<if test="fechaCambioEstadoInicio!=null and !fechaCambioEstadoInicio.equals('')">
+				and d_fecha_modificacion_estado &gt;=#{fechaCambioEstadoInicio}
+			</if>
+			<if test="fechaCambioEstadoFin!=null and !fechaCambioEstadoFin.equals('')">
+				and d_fecha_modificacion_estado &lt;=#{fechaCambioEstadoFin}
+			</if>
+		</where>
+	</select>
+	
+	<select id="ListAllCheckOTToCambioEstadoByFilter" parameterType="FilterOT" resultType="CheckForFlexigrid">
+		select
+			ot.id_ot as "id"
+            ,'S' as "check"
+		from sstt_ordenes_trabajo ot
+			left join sstt_bitacoras_internas bi on bi.id_ot = ot.id_ot and bi.d_fecha_termino is null
+			left join owv_productos pro on pro.id_producto = ot.id_producto
+			left join owv_marcas ma on ma.id_marca = pro.id_marca
+		<where>
+			ot.s_vigente = 'S'
+			and ot.s_cerrada = 'N'
+			and ot.s_cambio_autorizado = 'N'
+			and ot.s_modificado ='N'
+			<if test="idEstado==null">
+				and (bi.id_estado = 100010200
+					or (bi.id_estado = 100010100 and ot.s_excluye_ccalidad is null and s_ccalidad_aprueba is null)
+					or bi.id_estado = 100010300
+					or (exists(select 1 from sstt_recepciones r
+				    				inner join sstt_ubicaciones u on u.id_ubicacion = r.id_ubicacion and u.s_tipo = 'CD'
+							  where r.id_ot = ot.id_ot
+								and r.d_fecha_recepcion is not null
+								and r.i_nmro_guia is not null
+								and r.id_estado in (60001000, 60002000,60003000))
+				 		and exists (select 1 from sstt_guias g
+				                        inner join sstt_ubicaciones u on u.id_ubicacion = g.id_origen and u.s_tipo = 'CD'
+									where g.id_destino = ot.id_stecnico
+										and g.id_ot = ot.id_ot
+										and g.id_estado in (50002000,50003000,50005000)
+										and g.d_fecha_emision is not null
+										and g.s_vigente = 'S')
+						and ot.id_estado in (10005000,10006000,10007000)
+		  		))
+			</if>
+			<if test="idEstado!=null and idEstado == 1">
+			
+			</if>
+			<if test="idEstado!=null and idEstado == 2">
+				and exists (select 1 from sstt_recepciones r
+							inner join sstt_ubicaciones u on u.id_ubicacion = r.id_ubicacion and u.s_tipo = 'CD'
+						where r.id_ot = ot.id_ot
+							and r.d_fecha_recepcion is not null
+							and r.i_nmro_guia is not null
+							and r.id_estado in (60001000, 60002000,60003000))
+				and exists (select 1 from sstt_guias g
+								inner join sstt_ubicaciones u on u.id_ubicacion = g.id_origen and u.s_tipo = 'CD'
+							where g.id_destino = ot.id_stecnico
+								and g.id_ot = ot.id_ot
+								and g.id_estado in (50002000,50003000,50005000)
+								and g.d_fecha_emision is not null
+								and g.s_vigente = 'S')
+				and ot.id_estado in (10005000,10006000,10007000)
+			</if>
+			<if test="idEstado!=null and idEstado == 3">
+				and bi.id_estado = 100010100 
+				and ot.s_excluye_ccalidad is null 
+				and s_ccalidad_aprueba is null
+			</if>
+			<if test="idEstado!=null and idEstado == 4">
+				and bi.id_estado = 100010200
+			</if>
+			<if test="idEstado!=null and idEstado == 5">
+				and bi.id_estado = 100010300
+			</if>
+			<if test="idOT!=null">
+				and ot.id_ot = #{idOT}
+			</if>
+			<if test="fechaCambioEstadoInicio!=null and !fechaCambioEstadoInicio.equals('')">
+				and d_fecha_modificacion_estado &gt;=#{fechaCambioEstadoInicio}
+			</if>
+			<if test="fechaCambioEstadoFin!=null and !fechaCambioEstadoFin.equals('')">
+				and d_fecha_modificacion_estado &lt;=#{fechaCambioEstadoFin}
+			</if>
+		</where>
+	</select>
+	
+	<resultMap type="OrdenTrabajo" id="estadosOT">
+		<result property="id"                column="id_ot"/>
+		<result property="estado.id"         column="id_estado"/>
+		<result property="ultimoEstado.id"   column="id_estado_ultimo"/>
+		<result property="procesadoOW"       column="s_procesado_ow"/>
+		<result property="excluyeCCalidad"   column="s_excluye_ccalidad"/>
+		<result property="cCalidadAprueba"   column="s_ccalidad_aprueba"/>
+	</resultMap>
+	
+	<select id="getEstadosOT" parameterType="Long" resultMap="estadosOT">
+		select 
+			ot.id_ot
+			,ot.id_estado
+			,ot.id_estado_ultimo
+			,ot.s_procesado_ow
+			,ot.s_excluye_ccalidad
+			,ot.s_ccalidad_aprueba
+		from sstt_ordenes_trabajo ot
+  			left join sstt_estados e on e.id_estado = ot.id_estado
+		where ot.id_ot = #{idOT}
+	</select>
+	
+	<select id="listOtByDespachoAndEstado" parameterType="FilterDespachoInternoDetalle" resultMap="otSingle">
+		select
+		    ot.id_ot
+		    ,to_date(ot.d_fecha_creacion) as d_fecha_creacion
+		    ,ot.id_estado
+		    ,e.s_descripcion as s_descripcion
+		    ,ot.id_producto
+		    ,p.s_descripcion as s_descripcion_producto
+		    ,m.s_nombre as s_nombre_marca
+		from 
+		    sstt_despacho_interno_detalles di 
+		    inner join sstt_ordenes_trabajo ot on ot.id_ot = di.id_ot
+		    inner join sstt_estados e on e.id_estado = ot.id_estado  
+		    left join owv_productos p on p.id_producto = ot.id_producto
+		    left join owv_marcas m on m.id_marca = p.id_marca
+		<where>
+			id_despacho_interno = #{idDespacho}
+			and ot.id_ot in (select did1.ID_OT 
+                        from sstt_despacho_interno_detalles did1
+                        where
+                         did1.id_despacho_interno =  #{idDespacho}
+                        and did1.id_estado != 90004000)
+			<if test="idEstado != 0">
+				and ot.id_estado = #{idEstado}
+			</if>
+			<if test="idEstado == 0">
+				and ot.id_estado not in (100008000,100008100,100010500,100008200,100010600,100010700)
+			</if>
+		</where>
+	</select>
+	
+	<resultMap type="OrdenTrabajo" id="OTDespachoSucursal">
+		<result property="id"                         column="id_ot"/>
+		<result property="codigoBarra"                column="i_cod_barra"/>
+		<result property="sucursal.glosa"             column="s_nombre_sucursal"/>
+		<result property="codigoCorto"                column="id_producto"/>
+		<result property="producto.descripcion"       column="s_descripcion"/>
+		<result property="producto.marca.nombre"      column="s_nombre_marca"/>
+	</resultMap>
+	
+	<select id="listOTListasParaDespachoSucursal" resultMap="OTDespachoSucursal">
+		select 
+  			ot.id_ot
+  			,ot.i_cod_barra
+  			,sc.s_nombre as s_nombre_sucursal
+  			,p.id_producto
+  			,p.s_descripcion
+  			,m.s_nombre as s_nombre_marca
+		from sstt_ordenes_trabajo ot
+  			left join sstt_ubicaciones sc on sc.id_ubicacion = ot.id_sucursal and sc.s_tipo='SC'
+  			left join sstt_bitacoras_internas bi on bi.id_ot = ot.id_ot and bi.d_fecha_termino is null
+  			left join owv_productos p on p.id_producto = ot.id_producto
+  			left join owv_marcas m on m.id_marca = p.id_marca
+		where
+  			bi.id_estado = 100010300
+  		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTotalOTListasParaDespachoSucursal" resultType="Integer" parameterType="FilterOT">
+		select 
+  			count(1)
+		from sstt_ordenes_trabajo ot
+  			left join sstt_bitacoras_internas bi on bi.id_ot = ot.id_ot and bi.d_fecha_termino is null
+		where
+  			bi.id_estado = 100010300
+  		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+</mapper>

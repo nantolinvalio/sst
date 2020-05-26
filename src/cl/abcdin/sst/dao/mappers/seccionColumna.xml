@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="seccionColumna">
+
+	<resultMap type="SeccionColumna" id="seccionColumna">
+		<result property="id"            column="id_seccion_columna"/>
+		<result property="seccion.id"    column="id_seccion"/>
+		<result property="columna.id"    column="id_columna"/>
+		<result property="usuario.id"    column="id_usuario"/>
+		<result property="columna.orden" column="i_orden"/>
+	</resultMap>
+
+	<select id="getSeccionColumnaBySeccionColumna" parameterType="SeccionColumna" resultMap="seccionColumna">
+		select
+			id_seccion_columna			
+			,id_seccion			
+			,id_columna			
+			,id_usuario			
+			,i_orden			
+		from 
+			sstt_secciones_columnas
+		where 
+			id_seccion = #{seccion.id} 
+			and id_usuario = #{usuario.id}
+			and id_columna = #{columna.id}
+	</select>
+
+	<select id="listSeccionColumnaBySeccionColumna" parameterType="SeccionColumna" resultMap="seccionColumna">
+		select
+			id_seccion_columna			
+			,id_seccion			
+			,id_columna			
+			,id_usuario			
+			,i_orden			
+		from 
+			sstt_secciones_columnas
+		<trim prefix="where" prefixOverrides="and">
+			<if test="seccion != null and seccion.id != null">
+				and	id_seccion = #{seccion.id}
+			</if>
+			<if test="usuario != null and usuario.id != null">
+				and id_usuario = #{usuario.id}
+			</if>
+			<if test="columna != null and columna.id != null">
+				and id_columna = #{columna.id}
+			</if>
+			<if test="columna != null and columna.orden!= null">
+				and i_orden = #{columna.orden}
+			</if>
+			<if test="rol != null and rol.id != null">
+				and id_rol = #{rol.id}
+			</if>
+			<if test="indicador != null and indicador.id != null">
+				and id_indicador = #{indicador.id}
+			</if>
+		</trim>
+	</select>
+	
+	
+	<insert id="save" parameterType="Zona" keyProperty="id" keyColumn="id_zona">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_zonas.nextval from dual
+		</selectKey>
+	</insert>
+	
+	<insert id="saveSeccionColumna" parameterType="SeccionColumna" keyProperty="id" keyColumn="id_seccion_columna">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_secciones_columnas.nextval from dual
+		</selectKey>
+		insert into sstt_secciones_columnas (
+			id_seccion_columna
+			,id_seccion
+			,id_columna
+			,id_usuario		
+			,i_orden				
+		) values (
+			#{id}
+			,#{seccion.id}
+			,#{columna.id}
+			,#{usuario.rut, typeHandler=RunTypeHandler}		
+			,#{columna.orden}
+		)
+	</insert>
+	
+	<insert id="saveSeccionColumnaIndicador" parameterType="SeccionColumna" keyProperty="id" keyColumn="id_seccion_columna">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_secciones_columnas.nextval from dual
+		</selectKey>
+		insert into sstt_secciones_columnas (
+			id_seccion_columna
+			,id_seccion
+			,id_columna
+			,id_usuario	
+			,id_rol
+			,id_indicador	
+			,i_orden				
+		) values (
+			#{id}
+			,#{seccion.id}
+			,#{columna.id}
+			,#{usuario.rut, typeHandler=RunTypeHandler}
+			,#{rol.id}
+			,#{indicador.id}		
+			,#{columna.orden}
+		)
+	</insert>
+	
+	<delete id="deleteSeccionColumna" parameterType="SeccionColumna">
+		delete sstt_secciones_columnas 
+		where id_seccion = #{seccion.id} 
+		and id_usuario = #{usuario.id}
+		and id_columna = #{columna.id}
+	</delete>
+	<delete id="deleteSeccionColumnaByIndicadorRol" parameterType="SeccionColumna">
+		 delete from sstt_secciones_columnas t 
+         where t.id_rol = #{rol.id} 
+         and t.id_indicador = #{indicador.id} 
+	</delete>
+	<update id="updateOrdenSeccionColumna" parameterType="SeccionColumna">
+		update sstt_secciones_columnas
+		set i_orden = #{columna.orden}
+		where id_seccion = #{seccion.id} 
+		and id_usuario = #{usuario.id}
+		and id_columna = #{columna.id}
+	</update>
+	
+	<update id="desplazaDerechaOrdenSeccionColumna" parameterType="SeccionColumna">
+		update sstt_secciones_columnas
+		set i_orden = i_orden + 1
+		where id_seccion = #{seccion.id} 
+		and id_usuario = #{usuario.id}
+		and i_orden >= #{columna.orden}
+	</update>
+	
+	<update id="desplazaIzquierdaOrdenSeccionColumna" parameterType="SeccionColumna">
+		update sstt_secciones_columnas
+		set i_orden = i_orden - 1
+		where id_seccion = #{seccion.id} 
+		and id_usuario = #{usuario.id}
+		and i_orden >= #{columna.orden}
+	</update>
+
+</mapper>

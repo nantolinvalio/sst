@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="inventarioMobile">
+	<resultMap type="InventarioMobile" id="inventarioMobile">
+		<result property="id"                    column="id_inventario_ubicacion"/>
+		<result property="nombre"                column="s_nombre"/>
+	</resultMap>
+
+	<select id="list" resultMap="inventarioMobile">
+		select 
+			iu.id_inventario_ubicacion
+			,ubi.s_nombre
+		from sstt_inventarios i
+			left join sstt_inventario_ubicaciones iu on iu.id_inventario = i.id_inventario
+			left join sstt_ubicaciones_internas ubi on ubi.id_ubicacion_interna = iu.id_ubicacion_interna
+		where
+			i.s_vigente = 'S'
+	</select>
+			
+	<select id="existOTOnIventario" parameterType="FilterInventario" resultType="Integer">
+		select
+			count(ip.id_ot)
+		from sstt_inventarios i
+			left join sstt_inventario_ubicaciones iu on iu.id_inventario=i.id_inventario
+			left join sstt_inventario_productos ip on ip.id_inventario_ubicacion = iu.id_inventario_ubicacion
+		<where>
+			i.s_vigente = 'S'
+			<if test="idOT!=null">
+				and ip.id_ot = #{idOT}
+			</if>
+			<if test="idInventarioUbicacion">
+				and iu.id_inventario_ubicacion = #{idInventarioUbicacion}
+			</if>
+		</where>
+	</select>
+	
+	<update id="updateInventariado" parameterType="Map">
+		update sstt_inventario_productos
+			set s_inventariado = 'S'
+				,d_fecha_inventario = sysdate
+				,id_usuario_inventario = #{usuario.id}
+		where id_inventario_ubicacion = #{idInventarioUbicacion}
+			and id_ot = #{idOT}
+	</update>
+	
+	<select id="getIdInventarioByIdInventarioUbicacion" resultType="Long" parameterType="Long">
+		select id_inventario
+		from sstt_inventario_ubicaciones
+		where id_inventario_ubicacion = #{idInventarioUbicacion}
+	</select>
+</mapper>

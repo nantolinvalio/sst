@@ -1,0 +1,572 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="despachoInterno">
+
+    <resultMap type="DespachoInterno" id="despachoInterno">
+        <result property="id"                              column="id_despacho_interno" />
+        <result property="estado.id"                       column="id_estado" />
+        <result property="fechaCreacion"                   column="d_fecha_creacion" />
+        <result property="fechaCierre"                     column="d_fecha_cierre" />
+        <result property="usuarioCreacion.id"              column="id_usuario_creacion" />
+        <result property="usuarioCreacion.nombreCompleto"  column="s_nombre_completo" />
+        <result property="usuarioCierre.id"                column="id_usuario_cierre" />
+        <result property="usuarioCierre.nombreCompleto"    column="usu_cierre_nombre_completo" />
+        <result property="origen.id"                       column="id_origen" />
+        <result property="origen.nombre"                   column="s_nombre_origen" />
+        <result property="origen.direccion"                column="s_direccion_origen" />
+        <result property="destino.id"                      column="id_destino" />
+        <result property="destino.nombre"                  column="s_nombre_destino" />
+        <result property="destino.direccion"               column="s_direccion_destino" />
+        <result property="estado.glosa"                    column="s_descripcion_estado" />
+        <result property="cantidadOTLeidas"                column="cantidad_leidos" />
+        <result property="cantidadOT"                      column="i_cant_ot" />
+        <result property="proveedor.id"                    column="id_proveedor"/>
+        <result property="proveedor.nombre"                column="s_nombre_proveedor"/>
+        <result property="familia.id"                      column="id_familia"/>
+        <result property="familia.nombre"                  column="s_nombre_familia"/>
+    </resultMap>
+    
+    <select id="getDespachoById" parameterType="Long" resultMap="despachoInterno">
+        select
+            di.id_despacho_interno
+            ,di.id_estado
+            ,di.d_fecha_creacion
+            ,di.d_fecha_cierre
+            ,di.id_usuario_creacion
+            ,di.id_usuario_cierre
+            ,di.id_origen
+            ,di.id_destino
+            ,es.s_descripcion as s_descripcion_estado
+            ,us.s_nombre||' '||us.s_apellido_paterno as s_nombre_completo
+            ,us1.s_nombre||' '||us1.s_apellido_paterno as usu_cierre_nombre_completo
+            ,ubi.s_direccion as s_direccion_origen
+            ,ubi.s_nombre as s_nombre_origen
+            ,ubi1.s_direccion as s_direccion_destino
+            ,ubi1.s_nombre as s_nombre_destino
+        from
+            sstt_despachos_internos di
+            inner join sstt_estados es on es.id_estado = di.id_estado
+            inner join sstt_usuarios us on us.id_usuario = di.id_usuario_creacion
+            inner join sstt_ubicaciones ubi on ubi.id_ubicacion = di.id_origen
+            left join sstt_usuarios us1 on us1.id_usuario = di.id_usuario_cierre
+            left join sstt_ubicaciones ubi1 on ubi1.id_ubicacion = di.id_destino
+        where
+            id_despacho_interno = #{idDespacho}
+    </select>
+    
+    <insert id="save" parameterType="despachoInterno" keyColumn="id_despacho_interno" keyProperty="id">
+        <selectKey resultType="Long" keyProperty="id" order="BEFORE">
+            select ssts_despachos.nextval from dual
+        </selectKey>
+        insert into sstt_despachos_internos(
+            id_despacho_interno,
+            id_estado,
+            <if test="fechaCierre!=null and !fechaCierre.equals('')">
+                d_fecha_cierre,
+            </if>
+            id_usuario_creacion,
+            <if test="usuarioCierre!=null and usuarioCierre.id!=null">
+                id_usuario_cierre,
+            </if>
+            <if test="familia!=null and familia.id!=null and !familia.id.equals('')">
+                id_familia,
+            </if>
+            <if test="proveedor!=null and proveedor.id!=null">
+                id_proveedor,
+            </if>
+            <if test="origen!=null and origen.id!=null">
+                id_origen,
+            </if>
+            <if test="destino!=null and destino.id!=null">
+                id_destino,
+            </if>
+            <if test="destinoInterno!=null and destinoInterno.id!=null">
+                id_destino_interno,
+            </if>
+            d_fecha_creacion
+            )
+        values(
+            #{id},
+            #{estado.id},
+            <if test="fechaCierre!=null and !fechaCierre.equals('')">
+                #{fechaCierre},
+            </if>
+            #{usuarioCreacion.id},
+            <if test="usuarioCierre!=null and usuarioCierre.id!=null">
+                #{usuarioCierre.id},
+            </if>
+            <if test="familia!=null and familia.id!=null and !familia.id.equals('')">
+                #{familia.id},
+            </if>
+            <if test="proveedor!=null and proveedor.id!=null">
+                #{proveedor.id},
+            </if>
+            <if test="origen!=null and origen.id!=null">
+                #{origen.id},
+            </if>
+            <if test="destino!=null and destino.id!=null">
+                #{destino.id},
+            </if>
+            <if test="destinoInterno!=null and destinoInterno.id!=null">
+                #{destinoInterno.id},
+            </if>
+            SYSDATE
+        )
+    </insert>
+    
+    <select id="listDespachosToFallaFabricacionByFilter" parameterType="FilterOT" resultMap="despachoInterno">
+        select
+            
+            di.id_despacho_interno,
+            es.S_DESCRIPCION as s_descripcion_estado,
+            di.d_fecha_creacion,
+            (usu.s_nombre || ' ' || usu.s_apellido_paterno)  as s_nombre_completo,
+            sum(case when did.id_estado = 90005000 then 1
+            else 0 end)
+            as cantidad_leidos,
+            sum(case when did.id_estado != 90004000 then 1
+            else 0 end) as i_cant_ot
+        from
+            sstt_despachos_internos di
+            inner join sstt_despacho_interno_detalles did on di.id_despacho_interno = did.id_despacho_interno
+            inner join sstt_ordenes_trabajo ot on ot.id_ot= did.id_ot
+            inner join sstt_estados es on es.id_estado = di.id_estado
+            inner join sstt_usuarios usu on usu.id_usuario = di.id_usuario_creacion 
+            left join owv_productos p on p.id_producto = ot.id_producto
+            left join owv_familias f on f.id_familia = p.id_familia
+            left join owv_lineas l on l.id_linea = f.id_linea
+            left join sstt_parametros pa on pa.s_nombre = ot.s_tipo_cambio
+        <where>
+            di.id_origen = #{idSucursal}
+            and di.id_destino = 10012
+            and id_estado != 90002000
+            <if test="idLinea != null and !idLinea.equals('')">
+                and l.id_linea = #{idLinea}
+            </if>
+            <if test="idEstado != null and !idEstado.equals('')">
+                and es.id_estado = #{idEstado}
+            </if>
+            <if test="idFamilia != null and !idFamilia.equals('')">
+                and f.id_familia = #{idFamilia}
+            </if>
+            <if test="codigoCorto != null">
+                and p.id_producto = #{codigoCorto}
+            </if>
+            <if test="tipoCambio != null and !tipoCambio.equals('')">
+                and ot.s_tipo_cambio = #{tipoCambio}
+            </if>
+            <if test="fechaCreacion != null">
+                and trunc(di.d_fecha_creacion) &gt;= #{fechaCreacion}
+            </if>
+            <if test="fechaCreacionFin != null">
+                and trunc(di.d_fecha_creacion) &lt;= #{fechaCreacionFin} 
+            </if>
+        </where>    
+        group by
+            di.id_despacho_interno,
+            es.id_estado,
+            es.S_DESCRIPCION,
+            di.d_fecha_creacion,
+            usu.s_nombre,
+            usu.s_apellido_paterno
+        <if test="orderBy != null and !orderBy.equals('')">
+            order by ${orderBy}
+            <if test="sortOrder != null and !sortOrder.equals('')">
+                ${sortOrder}
+            </if>    
+        </if>
+    </select>
+
+
+    <select id="getDespachosToFallaFabricacionByFilter" parameterType="FilterOT" resultType="Integer" >
+        select   count(distinct di.id_despacho_interno)
+        from
+            sstt_despachos_internos di
+            inner join sstt_despacho_interno_detalles did on di.id_despacho_interno = did.id_despacho_interno
+            inner join sstt_ordenes_trabajo ot on ot.id_ot= did.id_ot
+            inner join sstt_estados es on es.id_estado = di.id_estado
+            inner join sstt_usuarios usu on usu.id_usuario = di.id_usuario_creacion 
+            left join owv_productos p on p.id_producto = ot.id_producto
+            left join owv_familias f on f.id_familia = p.id_familia
+            left join owv_lineas l on l.id_linea = f.id_linea
+            left join sstt_parametros pa on pa.s_nombre = ot.s_tipo_cambio
+        <where>
+           di.id_origen = #{idSucursal}
+            and di.id_destino = 10012
+            and id_estado != 90002000
+            <if test="idLinea != null and !idLinea.equals('')">
+                and l.id_linea = #{idLinea}
+            </if>
+            <if test="idEstado != null and !idEstado.equals('')">
+                and es.id_estado = #{idEstado}
+            </if>
+            <if test="idFamilia != null and !idFamilia.equals('')">
+                and f.id_familia = #{idFamilia}
+            </if>
+            <if test="codigoCorto != null">
+                and p.id_producto = #{codigoCorto}
+            </if>
+            <if test="tipoCambio != null and !tipoCambio.equals('')">
+                and ot.s_tipo_cambio = #{tipoCambio}
+            </if>
+            <if test="fechaCreacion != null">
+                and trunc(di.d_fecha_creacion) &gt;= #{fechaCreacion}
+            </if>
+            <if test="fechaCreacionFin != null">
+                and trunc(di.d_fecha_creacion) &lt;= #{fechaCreacionFin} 
+            </if>
+        </where>    
+    </select>
+    
+    <select id="ListRevisionesByFilter" parameterType="FilterDespachoInterno" resultMap="despachoInterno">
+        select
+            di.id_despacho_interno
+            ,di.d_fecha_creacion
+            ,pr.id_proveedor
+            ,pr.s_nombre as s_nombre_proveedor
+            ,f.id_familia
+            ,f.s_nombre as s_nombre_familia
+            ,e.id_estado
+            ,e.s_descripcion as s_descripcion_estado
+            ,(select count(id_ot)
+              from sstt_despacho_interno_detalles did
+              where did.id_despacho_interno = di.id_despacho_interno
+              		and did.id_estado != 90004000) as i_cant_ot
+        from sstt_despachos_internos di
+            left join owv_proveedores pr on pr.id_proveedor = di.id_proveedor
+            left join owv_familias f on f.id_familia = di.id_familia
+            left join sstt_estados e on e.id_estado = di.id_estado
+        <where>
+            di.d_fecha_cierre is null
+            and di.id_origen = 10012
+            and di.id_destino_interno = 1001200001
+             <if test="idDespacho!=null">
+               and di.id_despacho_interno = #{idDespacho}
+            </if>
+            <if test="idProveedor!=null">
+                and di.id_proveedor = #{idProveedor}
+            </if>
+            <if test="fechaCreacionDesde!=null and !fechaCreacionDesde.equals('')">
+                and di.d_fecha_creacion &gt; #{fechaCreacionDesde}
+            </if>
+            <if test="fechaCreacionHasta!=null and !fechaCreacionHasta.equals('')">
+                and di.d_fecha_creacion &lt; #{fechaCreacionHasta}
+            </if>
+            <if test="idFamilia!=null and !idFamilia.equals('')">
+                and di.id_familia = #{idFamilia}
+            </if>
+            <if test="idEstado!=null">
+                and di.id_estado=#{idEstado}
+            </if>
+        </where>
+        <if test="orderBy == null or orderBy.equals('')">
+			order by di.id_estado asc
+        </if>
+        <if test="orderBy != null and !orderBy.equals('')">
+            order by ${orderBy}
+            <if test="sortOrder != null and !sortOrder.equals('')">
+                ${sortOrder}
+            </if>    
+        </if>
+    </select>
+    
+    <select id="getTotalRevisionesByFilter" resultType="Integer" parameterType="FilterDespachoInterno">
+        select count(1)
+        from sstt_despachos_internos di
+            left join owv_proveedores pr on pr.id_proveedor = di.id_proveedor
+            left join owv_familias f on f.id_familia = di.id_familia
+            left join sstt_estados e on e.id_estado = di.id_estado
+        <where>
+            di.d_fecha_cierre is null
+            and di.id_origen = 10012
+            and di.id_destino_interno = 1001200001
+             <if test="idDespacho!=null">
+               and di.id_despacho_interno = #{idDespacho}
+            </if>
+            <if test="idProveedor!=null">
+                and di.id_proveedor = #{idProveedor}
+            </if>
+            <if test="fechaCreacionDesde!=null and !fechaCreacionDesde.equals('')">
+                and di.d_fecha_creacion &gt; #{fechaCreacionDesde}
+            </if>
+            <if test="fechaCreacionHasta!=null and !fechaCreacionHasta.equals('')">
+                and di.d_fecha_creacion &lt; #{fechaCreacionHasta}
+            </if>
+            <if test="idFamilia!=null and !idFamilia.equals('')">
+                and di.id_familia = #{idFamilia}
+            </if>
+            <if test="idOrigen!=null">
+                and di.id_origen = #{idOrigen}
+            </if>
+            <if test="idEstado!=null">
+                and di.id_estado=#{idEstado}
+            </if>
+        </where>
+    </select>
+    
+    <update id="updateEstadoFromDespachoToNextEstado" parameterType="DespachoInterno">
+        update sstt_despachos_internos  
+        set id_estado = (select id_estado_siguiente 
+                                                 from sstt_despachos_internos di
+                                                     inner join sstt_estados es on es.id_estado = di.id_estado 
+                                                 where di.id_despacho_interno = #{id})
+        where id_despacho_interno = #{id}
+    </update>
+    
+    <update id="updateEstadoByDespachoInterno" parameterType="DespachoInterno">
+        update sstt_despachos_internos
+            set 
+            	id_estado = #{estado.id}
+            <if test="fechaCierre != null">
+            	,d_fecha_cierre = #{fechaCierre}
+            </if>
+        where id_despacho_interno = #{id}
+    </update>
+    
+    <resultMap type="DespachoInterno" id="despachosToSP">
+        <result property="id"                  column="id_despacho_interno"/>
+        <result property="proveedor.id"        column="id_proveedor"/>
+        <result property="proveedor.nombre"    column="s_nombre_proveedor"/>
+        <result property="familia.id"          column="id_familia"/>
+        <result property="familia.nombre"      column="s_nombre_familia"/>
+        <result property="fechaCreacion"       column="d_fecha_creacion"/>
+        <result property="estado.id"           column="id_estado"/>
+        <result property="estado.nombre"       column="s_descripcion_estado"/>
+        <result property="cantidadOT"          column="i_cant_ot"/>
+        <result property="cantidadOTRecibidas" column="i_cant_ot_recibidas"/>
+    </resultMap>
+    
+    <select id="listDespachosInternosOnTraladoToSP" resultMap="despachosToSP">
+        select
+            di.id_despacho_interno
+            ,di.id_proveedor
+            ,prv.s_nombre as s_nombre_proveedor
+            ,di.id_familia
+            ,fa.s_nombre as s_nombre_familia
+            ,di.d_fecha_creacion
+            ,di.id_estado
+            ,e.s_descripcion as s_descripcion_estado
+            ,sum(case when did.id_estado = 90005000 then 1
+             else 0 end) as i_cant_ot
+            ,sum(case when bi.id_estado = 100003000 or bi.id_estado= 100004000 then 1
+             else 0 end) as i_cant_ot_recibidas
+        from sstt_despachos_internos di
+            left join owv_proveedores prv on prv.id_proveedor = di.id_proveedor
+            left join owv_familias fa on fa.id_familia = di.id_familia
+            left join sstt_despacho_interno_detalles did on did.id_despacho_interno = di.id_despacho_interno
+            left join sstt_bitacoras_internas bi on bi.id_ot = did.id_ot and bi.d_fecha_termino is null
+            left join sstt_estados e on e.id_estado = di.id_estado
+        where di.id_destino = 10012
+            and di.id_destino_interno = 1001200001
+            and di.id_estado = 90006001
+        group by
+            di.id_despacho_interno
+            ,di.id_proveedor
+            ,prv.s_nombre
+            ,di.id_familia
+            ,fa.s_nombre
+            ,di.d_fecha_creacion
+            ,di.id_estado
+            ,e.s_descripcion
+    </select>
+    
+    <select id="getTotalDespachosInternosOnTraladoToSP" resultType="Integer">
+        select count(1)
+        from sstt_despachos_internos di
+        where di.id_destino = 10012
+            and di.id_destino_interno = 1001200001
+            and di.id_estado = 90006001
+    </select>
+    
+    <select id="getCantidadesDespachoByDespachoInterno" parameterType="DespachoInterno" resultMap="despachosToSP">
+        select
+            di.id_despacho_interno
+            ,sum(case when did.id_estado = 90005000 then 1
+            else 0 end) as i_cant_ot
+            ,sum(case when bi.id_estado = 100003000 or bi.id_estado=100004000 then 1
+            else 0 end) as i_cant_ot_recibidas
+        from sstt_despachos_internos di
+            left join sstt_despacho_interno_detalles did on did.id_despacho_interno = di.id_despacho_interno
+            left join sstt_bitacoras_internas bi on bi.id_ot = did.id_ot and bi.d_fecha_termino is null
+        where di.id_despacho_interno = #{id}
+        group by di.id_despacho_interno
+    </select>
+    
+    <select id="getDespachoByIdOT" parameterType="Long" resultMap="despachoInterno">
+    	select
+            di.id_despacho_interno
+            ,di.id_estado
+            ,di.d_fecha_creacion
+            ,di.d_fecha_cierre
+            ,di.id_usuario_creacion
+            ,di.id_usuario_cierre
+            ,di.id_origen
+            ,di.id_destino
+            ,es.s_descripcion as s_descripcion_estado
+            ,us.s_nombre||' '||us.s_apellido_paterno as s_nombre_completo
+            ,us1.s_nombre||' '||us1.s_apellido_paterno as usu_cierre_nombre_completo
+            ,ubi.s_direccion as s_direccion_origen
+            ,ubi.s_nombre as s_nombre_origen
+            ,ubi1.s_direccion as s_direccion_destino
+            ,ubi1.s_nombre as s_nombre_destino
+        from
+            sstt_despachos_internos di
+            inner join sstt_despacho_interno_detalles did on did.id_despacho_interno = di.id_despacho_interno and did.id_estado = 90005000
+            inner join sstt_estados es on es.id_estado = di.id_estado
+            inner join sstt_usuarios us on us.id_usuario = di.id_usuario_creacion
+            inner join sstt_ubicaciones ubi on ubi.id_ubicacion = di.id_origen
+            left join sstt_usuarios us1 on us1.id_usuario = di.id_usuario_cierre
+            left join sstt_ubicaciones ubi1 on ubi1.id_ubicacion = di.id_destino
+        where
+            	did.id_ot = #{idOT}
+			and di.d_fecha_cierre is null
+			and di.id_estado = 90006001
+    </select>
+    
+    <select id="listDespachosDesdeFFByFilter" parameterType="FilterOT" resultMap="despachoInterno">
+        select
+            di.id_despacho_interno,
+            es.S_DESCRIPCION as s_descripcion_estado,
+            di.d_fecha_creacion,
+            (usu.s_nombre || ' ' || usu.s_apellido_paterno)  as s_nombre_completo,
+            sum(case when did.id_estado = 90005000 then 1
+            else 0 end)
+            as cantidad_leidos,
+            count(1) as i_cant_ot
+        from
+            sstt_despachos_internos di
+            inner join sstt_despacho_interno_detalles did on di.id_despacho_interno = did.id_despacho_interno
+            inner join sstt_ordenes_trabajo ot on ot.id_ot= did.id_ot
+            inner join sstt_estados es on es.id_estado = di.id_estado
+            inner join sstt_usuarios usu on usu.id_usuario = di.id_usuario_creacion 
+            left join owv_productos p on p.id_producto = ot.id_producto
+            left join owv_familias f on f.id_familia = p.id_familia
+            left join owv_lineas l on l.id_linea = f.id_linea
+            left join sstt_parametros pa on pa.s_nombre = ot.s_tipo_cambio and s_string1 = 'TICA'
+        <where>
+            di.id_origen = #{idSucursal}
+            and exists (select 1 
+                        from sstt_despacho_interno_detalles did1
+                        where
+                        did1.id_despacho_interno = di.id_despacho_interno 
+                        and did.id_estado != 90004000)
+			and ot.id_estado not in (100008000,100008100,100010700,100010600,100008200)
+			and not exists(select 
+                                * 
+                            from 
+                                sstt_guias g
+                                inner join sstt_bitacoras b on b.id_guia = g.id_guia
+                            where 
+                                b.id_ot = ot.id_ot 
+                                and g.id_destino = 10000 
+                                and g.id_estado = 50002000)
+             <if test="idDespacho != null">
+            	and di.id_despacho_interno = #{idDespacho}
+            </if>
+            <if test="tipoUbicacion.equals('')">
+            	and di.id_destino != #{idSucursal}
+            	and di.id_destino_interno is null
+            </if>
+             <if test="tipoUbicacion != null and !tipoUbicacion.equals('')">
+            	and di.id_destino = #{idDestino}
+            </if>
+            <if test="idLinea != null and !idLinea.equals('')">
+                and l.id_linea = #{idLinea}
+            </if>
+            <if test="idFamilia != null and !idFamilia.equals('')">
+                and f.id_familia = #{idFamilia}
+            </if>
+            <if test="codigoCorto != null">
+                and p.id_producto = #{codigoCorto}
+            </if>
+            <if test="fechaCreacion != null">
+                and trunc(di.d_fecha_creacion) &gt;= #{fechaCreacion}
+            </if>
+            <if test="fechaCreacionFin != null">
+                and trunc(di.d_fecha_creacion) &lt;= #{fechaCreacionFin} 
+            </if>
+            <if test="idEstado != null and !idEstado.equals('')">
+					and di.id_estado =  #{idEstado}				
+            </if>
+        </where>    
+        group by
+            di.id_despacho_interno,
+            es.id_estado,
+            es.S_DESCRIPCION,
+            di.d_fecha_creacion,
+            usu.s_nombre,
+            usu.s_apellido_paterno
+        <if test="orderBy == null or orderBy.equals('')">
+        	order by es.id_estado asc 
+        </if>
+        <if test="orderBy != null and !orderBy.equals('')">
+            order by ${orderBy}
+            <if test="sortOrder != null and !sortOrder.equals('')">
+                ${sortOrder}
+            </if>    
+        </if>
+    </select>
+    
+     <select id="getDespachosDesdeFFByFilter" parameterType="FilterOT" resultType="Integer" >
+        select   count(distinct di.id_despacho_interno)
+        from
+            sstt_despachos_internos di
+            inner join sstt_despacho_interno_detalles did on di.id_despacho_interno = did.id_despacho_interno
+            inner join sstt_ordenes_trabajo ot on ot.id_ot= did.id_ot
+            inner join sstt_estados es on es.id_estado = di.id_estado
+            inner join sstt_usuarios usu on usu.id_usuario = di.id_usuario_creacion 
+            left join owv_productos p on p.id_producto = ot.id_producto
+            left join owv_familias f on f.id_familia = p.id_familia
+            left join owv_lineas l on l.id_linea = f.id_linea
+            left join sstt_parametros pa on pa.s_nombre = ot.s_tipo_cambio and s_string1 = 'TICA'
+        <where>
+            di.id_origen = #{idSucursal}
+            and exists (select 1 
+                        from sstt_despacho_interno_detalles did1
+                        where
+                        did1.id_despacho_interno = di.id_despacho_interno 
+                        and did.id_estado != 90004000)
+            and ot.id_estado not in (100008000,100008100,100010700,100010600,100008200)
+            and not exists(select 
+                                * 
+                            from 
+                                sstt_guias g
+                                inner join sstt_bitacoras b on b.id_guia = g.id_guia
+                            where 
+                                b.id_ot = ot.id_ot 
+                                and g.id_destino = 10000 
+                                and g.id_estado = 50002000)
+            <if test="idDespacho != null">
+            	and di.id_despacho_interno = #{idDespacho}
+            </if>
+            <if test="tipoUbicacion.equals('')">
+            	and di.id_destino != #{idSucursal}
+            	and di.id_destino_interno is null
+            </if>
+             <if test="tipoUbicacion != null and !tipoUbicacion.equals('')">
+            	and di.id_destino = #{idDestino}
+            </if>
+            <if test="idLinea != null and !idLinea.equals('')">
+                and l.id_linea = #{idLinea}
+            </if>
+            <if test="idFamilia != null and !idFamilia.equals('')">
+                and f.id_familia = #{idFamilia}
+            </if>
+            <if test="codigoCorto != null">
+                and p.id_producto = #{codigoCorto}
+            </if>
+            <if test="fechaCreacion != null">
+                and trunc(di.d_fecha_creacion) &gt;= #{fechaCreacion}
+            </if>
+            <if test="fechaCreacionFin != null">
+                and trunc(di.d_fecha_creacion) &lt;= #{fechaCreacionFin} 
+            </if>
+			<if test="idEstado != null and !idEstado.equals('')">
+					and di.id_estado =  #{idEstado}				
+            </if>
+        </where>     
+    </select>
+</mapper>

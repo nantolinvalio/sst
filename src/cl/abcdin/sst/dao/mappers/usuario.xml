@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="usuario">
+
+	<resultMap type="Usuario" id="usuario">
+		<result property="id" 				     column="id_usuario"          />
+		<result property="rut" 				     column="id_usuario"          typeHandler="RunTypeHandler"/>
+		<result property="nombre" 			     column="s_nombre"            />
+		<result property="apellidoPaterno" 	     column="s_apellido_paterno"  />
+		<result property="apellidoMaterno" 	     column="s_apellido_materno"  />
+		<result property="nombreCompleto" 	     column="nombre_Completo"  	 />
+		<result property="celular" 			     column="s_celular"           />
+		<result property="anexo" 			     column="s_interno"           />
+		<result property="email" 			     column="s_email"             />
+		<result property="vigente" 			     column="s_vigente"           />
+		<result property="cantidadUbicaciones"   column="i_ubicaciones"       />
+	</resultMap>
+
+	<select id="get" parameterType="Long" resultMap="usuario">
+		select 
+			id_usuario,
+			s_nombre,
+			s_apellido_paterno,
+			s_apellido_materno,
+			(s_nombre || ' ' || s_apellido_paterno || ' ' || s_apellido_materno) as nombre_Completo, 
+			s_celular,
+			s_interno,
+			s_email,
+			s_vigente
+		from 
+		    sstt_usuarios
+		where
+            id_usuario = #{id}
+	</select>
+	
+	<select id="listEjecutivasMarca" resultMap="usuario">
+	    select 
+			u.id_usuario,
+			u.s_nombre,
+			u.s_apellido_paterno,
+			u.s_apellido_materno,
+			(u.s_nombre || ' ' || u.s_apellido_paterno || ' ' || u.s_apellido_materno) as nombre_Completo,
+			u.s_celular,
+			u.s_interno,
+			u.s_email,
+			u.s_vigente 
+	    from 
+	        sstv_ejecutivas_marca em
+	        inner join sstt_usuarios u on em.id_usuario = u.id_usuario
+	    order by
+	        u.s_nombre asc
+	</select>
+	
+	<select id="listUsuarios" parameterType="FilterUsuario" resultMap="usuario">
+		select   
+		    u.id_usuario, 
+		    u.s_nombre, 
+		    u.s_apellido_paterno,
+		    u.s_apellido_materno,
+		    (u.s_nombre || ' ' || u.s_apellido_paterno || ' ' || u.s_apellido_materno) as nombre_Completo, 
+		    u.s_vigente,
+		    count(1) i_ubicaciones
+		from 
+		    sstt_usuarios u
+		    inner join sstt_usuarios_ubicaciones uub on u.id_usuario = uub.id_usuario
+		<where>
+			<if test="run != null and !run.equals('')">
+				and u.id_usuario = #{run,typeHandler=RunTypeHandler}
+			</if>
+			<if test="idUbicacion != null">
+				and exists (select 1 from sstt_ubicaciones ub where ub.id_ubicacion = uub.id_ubicacion and ub.id_ubicacion = #{idUbicacion})
+			</if>
+		</where>
+		group by
+		    u.id_usuario, 
+		    u.s_nombre, 
+		    u.s_apellido_paterno,
+		    u.s_apellido_materno,
+		    u.s_vigente
+		<if test="orderBy == null or orderBy.equals('')">
+			order by u.s_vigente desc, u.s_nombre asc
+		</if>
+   		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+
+	<select id="getTotalUsuarios" parameterType="FilterUsuario" resultType="Integer">
+		select   
+		    count(distinct u.id_usuario) 
+		from 
+		    sstt_usuarios u
+		    inner join sstt_usuarios_ubicaciones uub on u.id_usuario = uub.id_usuario
+		<where>
+			<if test="run != null and !run.equals('')">
+				and u.id_usuario = #{run,typeHandler=RunTypeHandler}
+			</if>
+			<if test="idUbicacion != null">
+				and exists (select 1 from sstt_ubicaciones ub where ub.id_ubicacion = uub.id_ubicacion and ub.id_ubicacion = #{idUbicacion})
+			</if>
+		</where>
+	</select>
+	
+	<update id="updateEstadoUsuario" parameterType="Usuario">
+		update sstt_usuarios 
+		set s_vigente = #{vigente} 
+		where id_usuario = #{id} 
+	</update>
+	
+	<insert id="save" parameterType="Usuario">
+		insert into sstt_usuarios (
+			id_usuario, 
+			s_login, 
+			s_nombre, 
+			s_apellido_paterno, 
+			s_apellido_materno, 
+			s_email, 
+			s_interno, 
+			s_celular, 
+			s_cookie, 
+			s_vigente
+		) values (
+			#{id}, 
+			#{id}, 
+			#{nombre}, 
+			#{apellidoPaterno}, 
+			#{apellidoMaterno}, 
+			#{email},
+			#{anexo}, 
+			#{celular}, 
+			#{cookie}, 
+			#{vigente}
+		)
+	</insert>
+	
+	<update id="update" parameterType="Usuario">
+		update sstt_usuarios set
+			s_nombre           = #{nombre}
+			,s_login            = #{id}
+			,s_apellido_paterno = #{apellidoPaterno}
+			,s_apellido_materno = #{apellidoMaterno}
+			,s_celular          = #{celular}
+			,s_interno          = #{anexo}
+			,s_email            = #{email}
+		where
+			id_usuario = #{id}
+	</update>
+</mapper>

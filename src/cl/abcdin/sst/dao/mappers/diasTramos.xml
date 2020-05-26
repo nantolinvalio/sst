@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="diasTramos">
+
+	<select id="getDiasTramos" resultType="DiasTramos">
+		select nvl(t.i_integer1, 7)  as primerTramo
+              ,nvl(t.i_integer2, 30) as segundoTramo
+              ,nvl(t.i_integer4, 17) as primerTramoExigencia
+              ,nvl(t.i_integer5, 30) as segundoTramoExigencia
+              ,nvl(t.i_integer3, 28) as tercerTramoExigencia
+          from sstt_parametros t
+         where t.id_parametro = 60001000
+	</select>
+
+</mapper>

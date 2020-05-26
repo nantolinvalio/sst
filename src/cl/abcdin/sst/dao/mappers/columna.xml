@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="columna">
+
+	<resultMap type="Columna" id="columna">
+		<result property="id"          column="id_columna"/>
+		<result property="nombre"      column="s_nombre"/>
+		<result property="descripcion" column="s_descripcion"/>
+		<result property="alinear"     column="s_alinear"/>
+		<result property="ancho"       column="i_ancho"/>
+		<result property="orden"       column="i_orden"/>
+		<result property="propiedad"   column="s_propiedad"/>
+		<result property="columna"     column="s_columna"/>
+		<result property="formato"     column="s_formato"/>
+	</resultMap>
+	
+	<select id="getCantidadColumnasByFilter" parameterType="FilterColumna" resultType="Integer">
+		select count(*)
+			from sstt_secciones_columnas sc
+		<where>
+			<if test="usuario != null and usuario.rut != null and !usuario.rut.equals('')">
+				and sc.id_usuario = #{usuario.rut, typeHandler=RunTypeHandler}
+			</if>
+			<if test="idSeccion != null and idSeccion != 0">
+				and sc.id_seccion = #{idSeccion}
+			</if>
+			<if test="idRol != null and idRol != 0">
+				and sc.id_rol = #{idRol}			
+			</if>
+			<if test="idIndicador != null and idIndicador != 0">
+				and sc.id_indicador = #{idIndicador}			
+			</if>
+			<if test="tipo != null and !tipo.equals('')">
+				and exists (select 1 from sstt_columnas c where c.id_columna = sc.id_columna and c.s_tipo = #{tipo})
+			</if>
+		</where>
+	</select>
+	
+	<select id="listColumnasIndicador" parameterType="FilterColumna" resultMap="columna">
+		select 
+		    c.id_columna
+		    ,c.s_nombre
+		    ,c.s_descripcion
+		    ,nvl((select avg(sc.i_orden)
+		            from sstt_secciones_columnas sc 
+		            where sc.id_columna = c.id_columna 
+		            and sc.id_indicador = #{idIndicador} 
+		            and sc.id_rol = #{idRol}),0) as i_orden
+		from 
+		    sstt_columnas c 
+		where
+		        c.s_tipo = #{tipo}
+		    and exists (select 1 
+		                from sstt_secciones_columnas sc 
+		                where sc.id_columna = c.id_columna 
+		                and sc.id_indicador = #{idIndicador}
+		                and sc.id_rol = #{idRol})
+		ORDER BY i_orden ASC, s_nombre ASC
+	</select>
+	
+	<select id="listColumnasNotInIndicador" parameterType="FilterColumna" resultMap="columna">
+		select 
+		    c.id_columna
+		    ,c.s_nombre
+		    ,c.s_descripcion
+		from 
+		    sstt_columnas c 
+		where
+		        c.s_tipo = #{tipo}
+		    and not exists (select 1 
+		                from sstt_secciones_columnas sc 
+		                where sc.id_columna = c.id_columna 
+		                and sc.id_indicador = #{idIndicador} 
+		                and sc.id_rol = #{idRol})
+	</select>
+	
+	<select id="getidColumnasById" parameterType="FilterColumna" resultMap="columna">
+	    select 
+	    	id_columna 
+    	from sstt_secciones_columnas 
+    	where 
+   			id_indicador = #{idIndicador}
+	</select>
+	
+	
+	<select id="listColumnasByFilter" parameterType="FilterColumna" resultMap="columna">
+		select
+		    c.id_columna    
+		    ,c.s_nombre
+		    ,c.s_descripcion
+		    ,c.s_alinear
+		    ,c.i_ancho
+		    ,sc.i_orden
+		    ,c.s_propiedad
+		    ,c.s_columna
+		    ,c.s_formato
+		from
+		    sstt_columnas c 
+		    left join sstt_secciones_columnas sc on  c.id_columna = sc.id_columna
+				<if test="usuario != null and usuario.rut != null and !usuario.rut.equals('')">
+					and sc.id_usuario = #{usuario.rut, typeHandler=RunTypeHandler}
+				</if>
+				<if test="idSeccion != null and idSeccion != 0">
+					and sc.id_seccion = #{idSeccion}
+				</if>
+			    <if test="idRol != null and idRol != 0">
+					and sc.id_rol = #{idRol}			
+				</if>
+				<if test="idIndicador != null and idIndicador != 0">
+					and sc.id_indicador = #{idIndicador}			
+				</if>
+		<where>
+			<if test="tipo != null and !tipo.equals('')">
+				and c.s_tipo = #{tipo}
+			</if>
+		</where>
+		order by 
+		    sc.i_orden, c.s_descripcion asc
+	</select>
+
+	<select id="listColumnasDefaultByFilter" parameterType="FilterColumna" resultMap="columna">
+		select
+		    c.id_columna    
+		    ,c.s_nombre
+		    ,c.s_descripcion
+		    ,c.s_alinear
+		    ,c.i_ancho
+		    ,0
+		    ,c.s_propiedad
+		from
+		    sstt_columnas c 
+		where 
+				c.s_por_defecto = 'S'
+			and c.s_tipo = #{tipo}
+		order by 
+		    c.id_columna asc
+	</select>
+
+</mapper>

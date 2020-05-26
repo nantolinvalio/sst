@@ -1,0 +1,830 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="producto">
+
+	<select id="listByFilter" parameterType="FilterProducto" resultType="Producto">
+			select 
+				id_producto id, 
+				s_descripcion descripcion
+			from owv_productos
+		<where>
+			<if test="idFamilia != null and !idFamilia.equals('')">
+				and id_familia = #{idFamilia}
+			</if>
+		</where>
+		order by id asc
+	</select>
+	
+	<resultMap type="Producto" id="producto">
+		<result property="id" column="id_producto"/>
+		<result property="descripcion" column="s_descripcion"/>
+		<result property="cantidadServiciosTecnicos" column="i_cantidad_stecnicos"/>
+		<result property="configurar" column="configurar"/>
+		<result property="marca.nombre" column="s_marca"/>
+		<result property="familia.nombre" column="s_familia"/>
+		<result property="familia.linea.glosa" column="s_linea"/>
+		<result property="proveedor.nombre" column="s_proveedor"/>
+	</resultMap>
+	
+	<select id="listProductosByFilter" parameterType="FilterProducto" resultMap="producto" >
+		select
+		    p.id_producto
+		    ,p.s_descripcion
+		    ,m.s_nombre as s_marca
+		    ,f.s_nombre as s_familia
+		    ,l.s_nombre as s_linea
+		    ,pv.id_proveedor
+		    ,pv.s_nombre as s_proveedor
+		    ,count(stp.id_stecnico) as i_cantidad_stecnicos
+		from
+		    owv_productos p
+		    left join owv_familias f on f.id_familia = p.id_familia
+		    left join owv_proveedores pv ON pv.id_proveedor = p.id_proveedor
+		    left join owv_marcas m on m.id_marca = p.id_marca
+		    left join owv_lineas l on l.id_linea = f.id_linea
+		    left join sstt_stecnicos_productos stp on stp.id_producto = p.id_producto and stp.s_vigente = 'S'
+		<where>
+			<if test="idFamilia != null and !idFamilia.equals('')">
+				and p.id_familia = #{idFamilia}
+			</if>
+			<if test="marca != null and !marca.equals('')">
+				and p.id_marca = #{marca}
+			</if>
+			<if test="idLinea != null and !idLinea.equals('')">
+				and f.id_linea = #{idLinea}
+			</if>
+			<if test="idProducto != null">
+				and p.id_producto = #{idProducto}
+			</if>
+			<if test="idProveedor != null">
+				and p.id_proveedor = #{idProveedor}
+			</if>
+			<if test="descripcion != null and !descripcion.equals('')">
+				and upper(p.s_descripcion) like '%'||upper(#{descripcion})||'%'  
+			</if>
+			<if test="conServicioTecnico != null and conServicioTecnico.equals(true)">
+				and exists (select 1 from sstt_stecnicos_productos stp where stp.id_producto = p.id_producto and stp.s_vigente = 'S')
+			</if>
+			<if test="conServicioTecnico != null and conServicioTecnico.equals(false)">
+				and not exists (select 1 from sstt_stecnicos_productos stp where stp.id_producto = p.id_producto and stp.s_vigente = 'S')
+			</if>
+		</where>
+		group by
+		    p.id_producto
+		    ,p.s_descripcion
+		    ,m.s_nombre
+		    ,l.s_nombre
+		    ,f.s_nombre
+		    ,pv.id_proveedor
+		    ,pv.s_nombre
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTotalProductosByFilter" parameterType="FilterProducto" resultType="Integer" >
+		select
+	    	count(distinct p.id_producto)
+		from
+		    owv_productos p
+		    left join owv_familias f on f.id_familia = p.id_familia
+		    left join owv_proveedores pv ON pv.id_proveedor = p.id_proveedor
+		    left join owv_marcas m on m.id_marca = p.id_marca
+		<where>
+			<if test="idFamilia != null and !idFamilia.equals('')">
+				and p.id_familia = #{idFamilia}
+			</if>
+			<if test="marca != null and !marca.equals('')">
+				and p.id_marca = #{marca}
+			</if>
+			<if test="idLinea != null and !idLinea.equals('')">
+				and f.id_linea = #{idLinea}
+			</if>
+			<if test="idProducto != null">
+				and p.id_producto = #{idProducto}
+			</if>
+			<if test="idProveedor != null">
+				and p.id_proveedor = #{idProveedor}
+			</if>
+			<if test="descripcion != null and !descripcion.equals('')">
+				and upper(p.s_descripcion) like '%'||upper(#{descripcion})||'%'  
+			</if>
+			<if test="conServicioTecnico != null and conServicioTecnico.equals(true)">
+				and exists (select 1 from sstt_stecnicos_productos stp where stp.id_producto = p.id_producto and stp.s_vigente = 'S')
+			</if>
+			<if test="conServicioTecnico != null and conServicioTecnico.equals(false)">
+				and not exists (select 1 from sstt_stecnicos_productos stp where stp.id_producto = p.id_producto and stp.s_vigente = 'S')
+			</if>
+		</where>
+	</select>
+			
+	<select id="listByFilterAsTreeView" parameterType="FilterProducto" resultType="TreeView">
+			select 
+	            to_char(id_producto) id,
+	            to_char(id_producto) "metadata.id",
+	            'PRODUCTO' "metadata.tipo",
+		    	id_producto || ' ' || s_descripcion data
+			from owv_productos
+		<where>
+			<if test="idFamilia != null and !idFamilia.equals('')">
+				and id_familia = #{idFamilia}
+			</if>
+		</where>
+	</select>
+
+	<select id="listByFilterReglaAsTreeView" parameterType="FilterRegla" resultType="TreeView">
+		select 
+            to_char(p.id_producto) id,
+            to_char(p.id_producto) "metadata.id",
+            'FAMILIA' "metadata.tipo",
+	    	p.id_producto || ' ' || p.s_descripcion data,
+               case when re.id_regla_comercial is not null then 
+                   'checked'
+               end as checked
+		from 
+               owv_productos p
+               left join sstt_regla_entidad re 
+                   on re.id_producto = p.id_producto
+                  and re.id_regla_comercial = #{idRegla}
+                  and re.s_entidad = 'P'
+		where
+		     p.id_familia = #{idFamilia}
+	</select>
+	
+
+	<select id="listHistoricosByFilterReglaAsTreeView" parameterType="FilterRegla" resultType="TreeView">
+		select 
+            to_char(p.id_producto) id,
+            to_char(p.id_producto) "metadata.id",
+            'FAMILIA' "metadata.tipo",
+	    	p.id_producto || ' ' || p.s_descripcion data,
+               case when re.id_regla_comercial is not null then 
+                   'checked'
+               end as checked
+		from 
+               owv_productos p
+               left join sstt_regla_entidad_hist re 
+                   on re.id_producto = p.id_producto
+                  and re.id_regla_comercial_hist = #{idReglaHistorica}
+                  and re.s_entidad = 'P'
+		where
+		     p.id_familia = #{idFamilia}
+	</select>
+	
+
+	<select id="getCountProductosFamiliaByFilter" parameterType="FilterRegla" resultType="Integer">
+		select 
+			count(1)
+		from 
+			owv_productos p
+			inner join sstt_regla_entidad re 
+                  on re.id_producto = p.id_producto
+                 and re.id_regla_comercial = #{idRegla}
+                 and re.s_entidad = 'P'
+		where
+		     p.id_familia = #{idFamilia}
+	</select>
+
+	<select id="getCountProductosHistoricosFamiliaByFilter" parameterType="FilterRegla" resultType="Integer">
+		select 
+			count(1)
+		from 
+			owv_productos p
+			inner join sstt_regla_entidad_hist re 
+                  on re.id_producto = p.id_producto
+                 and re.id_regla_comercial_hist = #{idReglaHistorica}
+                 and re.s_entidad = 'P'
+		where
+		     p.id_familia = #{idFamilia}
+	</select>
+	
+	<select id="getCountProductosLineaByFilter" parameterType="FilterRegla" resultType="Integer">
+        select 
+	        count(1)
+		from 
+			owv_productos p
+            inner join owv_familias f on f.id_familia = p.id_familia
+			inner join sstt_regla_entidad re 
+                  on re.id_producto = p.id_producto
+                 and re.id_regla_comercial = #{idRegla}
+                 and re.s_entidad = 'P'
+		where
+		     f.id_linea = #{idLinea}
+	</select>
+	
+	<select id="getCountProductosHistoricosLineaByFilter" parameterType="FilterRegla" resultType="Integer">
+        select 
+	        count(1)
+		from 
+			owv_productos p
+            inner join owv_familias f on f.id_familia = p.id_familia
+			inner join sstt_regla_entidad_hist re 
+                  on re.id_producto = p.id_producto
+                 and re.id_regla_comercial_hist = #{idReglaHistorica}
+                 and re.s_entidad = 'P'
+		where
+		     f.id_linea = #{idLinea}
+	</select>
+	
+	<resultMap type="Producto" id="productoInfoAdicional">
+		<result property="id" column="id_producto"/>
+		<result property="descripcion" column="s_descripcion"/>
+		<result property="cantidadServiciosTecnicos" column="i_cantidad_stecnicos"/>
+		<result property="configurar" column="configurar"/>
+		<result property="marca.nombre" column="s_marca"/>
+		<result property="familia.nombre" column="s_familia"/>
+		<result property="familia.linea.glosa" column="s_linea"/>
+		<result property="proveedor.nombre" column="s_proveedor"/>	
+	</resultMap>
+	
+	
+	
+	
+	
+	
+	
+	<resultMap type="Producto" id="productoOT">
+		<result property="id"			        column="id_producto"/>
+		<result property="descripcion"			column="s_descripcion"/>
+		<result property="marca.nombre"			column="s_marca"/>
+		<result property="marca.codigo" 		column="id_marca"/>
+		<result property="familia.id"			column="id_familia"/>
+		<result property="familia.nombre"		column="s_familia"/>
+		<result property="familia.linea.id"		column="id_linea"/>
+		<result property="familia.linea.glosa"	column="s_linea"/>
+		<result property="duracionGarantia" 	column="i_duracion_garantia"/>
+		<result property="bigTicket"        	column="s_big_ticket"/>
+	</resultMap>
+	
+	
+	
+	<select id="getProductoById" parameterType="Long" resultMap="productoOT">
+			 select p.id_producto
+                ,p.id_marca
+                ,p.id_familia
+                ,p.s_descripcion
+                ,p.s_big_ticket
+                ,p.id_proveedor
+                ,nvl(m.s_nombre,'Sin marca') as s_marca
+                ,l.id_linea
+                ,l.s_nombre as s_linea
+                ,f.s_nombre as s_familia
+                ,TRIM(i_duracion_garantia) as i_duracion_garantia
+            from 
+               owv_productos p 
+               left join owv_marcas m on m.id_marca = p.id_marca
+               left join owv_familias f on f.id_familia = p.id_familia
+               left join owv_lineas l on l.id_linea = f.id_linea 
+            where p.id_producto = #{idProducto}
+	</select>
+	
+	<resultMap type="Producto" id="productoByTipoDocumentoAndIdDocumento">
+		<result property="id"			column="id_producto"/>
+		<result property="descripcion"	column="s_descripcion"/>
+		<result property="marca.nombre"	column="s_marca"/>
+		<result property="cantidad"		column="i_cantidad"/>
+		<result property="precioVenta"	column="i_precio_venta"/>
+		<result property="fechaEntrega"	column="d_fecha_entrega"/>
+	</resultMap>
+	
+
+	
+	<select id="listProductoByTipoDocumentoAndIdDocumento" parameterType="Map" statementType="CALLABLE">
+		{call servicio_tecnico.P_GET_DETALLE_DOCUMENTO(#{id, mode=IN, jdbcType=INTEGER}, #{tipo, mode=IN, jdbcType=VARCHAR}, #{cursor, jdbcType=CURSOR, mode=OUT, resultMap=productoByTipoDocumentoAndIdDocumento})}
+	</select>
+	
+<!-- 	<select id="listProductoByTipoDocumentoAndIdDocumento" parameterType="Documento" resultMap="productoByTipoDocumentoAndIdDocumento"> -->
+<!-- 		select dp.id_producto -->
+<!--      	    ,p.s_descripcion -->
+<!--             ,m.s_nombre as s_marca -->
+<!--             ,SUM(dp.i_cantidad) AS i_cantidad -->
+<!--             ,dp.i_precio_venta -->
+<!--             ,to_date(to_char(dp.d_fecha_entrega+1900000),'YYYYDDD') as d_fecha_entrega -->
+<!--         from owv_documentos_productos dp -->
+<!--             left outer join owv_productos p ON p.id_producto = dp.id_producto -->
+<!--             left outer join owv_marcas m ON m.id_marca = p.id_marca -->
+<!--         where dp.s_tipo_documento = #{tipo} -->
+<!--             and dp.id_documento =  #{id} -->
+<!--         group by dp.id_producto -->
+<!--             ,p.s_descripcion -->
+<!--             ,m.s_nombre -->
+<!--             ,dp.i_precio_venta -->
+<!--             ,d_fecha_entrega -->
+<!--         order by p.s_descripcion asc -->
+<!-- 	</select> -->
+	
+	<resultMap type="OrdenTrabajo" id="productoOT2">
+		<result property="producto.id"				 column="id_producto"/>
+		<result property="producto.descripcion"		 column="s_descripcion"/>
+		<result property="producto.marca.nombre"	 column="s_marca"/>
+		<result property="numeroSerie"			 	 column="s_nmro_serie"/>
+		<result property="descripcionFisica" 		 column="s_descripcion_fisica"/>
+		<result property="descripcionFalla"	 		 column="s_descripcion_falla"/>
+		<result property="descripcionEstado" 		 column="s_descripcion_estado"/>
+		<result property="numeroTelefono"          	 column="s_nmro_telefono"/>
+		<result property="codigoBarra"               column="i_cod_barra" typeHandler="CodigoBarrasTypeHandler"/>
+	</resultMap>
+	
+	<select id="getProductoOTById" parameterType="Long" resultMap="productoOT2">
+			select ot.id_producto				
+                ,p.s_descripcion
+                ,nvl(m.s_nombre, 'Sin marca') as s_marca
+				,ot.s_nmro_serie
+                ,ot.s_descripcion_fisica
+                ,ot.s_descripcion_falla
+                ,ot.s_descripcion_estado
+                ,ot.s_nmro_telefono
+                ,ot.i_cod_barra
+            from 
+                sstt_ordenes_trabajo ot
+                left join owv_productos p on p.id_producto = ot.id_producto
+                left join owv_marcas m on m.id_marca = p.id_marca
+            where ot.id_ot = #{idOT}
+	</select>
+	
+	<select id="getTotalEnDocumentoByFilter" parameterType="Map" statementType="CALLABLE">
+		{call servicio_tecnico.P_GET_TOTAL_PROD_DOCUMENTO(#{idDocumento,mode=IN,jdbcType=INTEGER},#{tipoDocumento,mode=IN,jdbcType=VARCHAR},#{idProducto,mode=IN,jdbcType=INTEGER},#{total,mode=OUT,jdbcType=INTEGER})}
+	</select>
+	
+	<select id="getTotalSumEnDocumentoByFilter" parameterType="Map" statementType="CALLABLE">
+		{call servicio_tecnico.P_GET_TOTAL_PROD_DOCUMENTO_SUM(#{idDocumento,mode=IN,jdbcType=INTEGER},#{tipoDocumento,mode=IN,jdbcType=VARCHAR},#{idProducto,mode=IN,jdbcType=INTEGER},#{total,mode=OUT,jdbcType=INTEGER})}
+	</select>
+	
+<!-- 	<select id="getTotalEnDocumentoByFilter" parameterType="FilterProducto" resultType="Integer"> -->
+<!-- 		select nvl(sum(dp.i_cantidad),0) -->
+<!-- 		from owv_documentos_productos dp -->
+<!-- 		where dp.s_tipo_documento = #{tipoDocumento} -->
+<!-- 			and dp.id_documento = #{idDocumento} -->
+<!-- 			and dp.id_producto = #{idProducto} -->
+<!-- 	</select> -->
+	
+	<select id="listProductosByDespacho" parameterType="despachoInterno" resultMap="productoByTipoDocumentoAndIdDocumento">
+		select 
+            ot.id_producto
+            ,p.s_descripcion
+            ,p.id_marca
+            ,m.s_nombre
+            ,p.i_costo
+            ,count(*) as i_cantidad
+            ,p.i_costo * count(*) as precio_total
+        from
+            sstt_ordenes_trabajo ot
+            inner join sstt_bitacoras b on b.id_ot = ot.id_ot 
+                                                   and b.d_fecha_salida is null
+            inner join sstt_ubicaciones u on u.id_ubicacion = b.id_ubicacion
+            inner join sstt_despacho_interno_detalles did on did.id_ot = ot.id_ot
+            inner join sstt_estados es on es.id_estado = did.id_estado
+            inner join sstt_despachos_internos di on di.id_despacho_interno = did.id_despacho_interno
+            inner join owv_productos p on p.id_producto = ot.id_producto
+            left join owv_familias f on f.id_familia = p.id_familia
+            left join owv_marcas m on m.id_marca = p.id_marca
+            left join owv_lineas l on l.id_linea = f.id_linea    
+        where
+            ot.id_ot in (	select 
+                            	ot.id_ot
+	                        from
+	                            sstt_ordenes_trabajo ot
+	                            inner join sstt_bitacoras b on b.id_ot = ot.id_ot 
+	                                                                   and b.d_fecha_salida is null
+	                            inner join sstt_ubicaciones u on u.id_ubicacion = b.id_ubicacion
+	                            inner join sstt_despacho_interno_detalles did on did.id_ot = ot.id_ot
+	                            inner join sstt_estados es on es.id_estado = did.id_estado
+	                            inner join sstt_despachos_internos di on di.id_despacho_interno = did.id_despacho_interno
+	                            inner join owv_productos p on p.id_producto = ot.id_producto
+	                            left join owv_familias f on f.id_familia = p.id_familia
+	                            left join owv_marcas m on m.id_marca = p.id_marca
+	                            left join owv_lineas l on l.id_linea = f.id_linea    
+	                        where
+	                            di.id_despacho_interno = #{id})
+           and  did.id_estado = 90005000 
+		group by  ot.id_producto, p.s_descripcion,p.id_marca,p.i_costo,p.i_costo,m.s_nombre
+	</select>
+	
+	<resultMap type="ServicioTecnicoProducto" id="ProductoStec">
+		<result property="id"                                  column="id_stecnico_producto"/> 
+		<result property="producto.id"                         column="id_producto"/> 
+		<result property="producto.descripcion"                column="s_descripcion"/>
+		<result property="producto.marca.nombre"               column="s_marca"/>
+		<result property="producto.familia.nombre"             column="s_familia"/>
+		<result property="producto.proveedor.rut"              column="id_proveedor" typeHandler="RunTypeHandler"/>
+		<result property="producto.proveedor.nombre"           column="s_proveedor"/>
+		<result property="tipoGarantia"                        column="s_garantia"/>
+		<result property="producto.cantidadServiciosTecnicos"  column="i_cantidad_stecnicos"/>
+	</resultMap>
+	
+	<select id="listAllProductosServicioTecnicoCheck" parameterType="FilterProducto" resultType="CheckForFlexigrid"> 
+		select   
+            stp.id_stecnico_producto as "id",
+           	'N' as "check"
+		from 
+		    sstt_stecnicos_productos stp 
+		where 
+		     stp.s_vigente = 'S' 
+		     and stp.id_stecnico = #{idSTecnico}
+	</select>
+	
+	<select id="listProductosByServicioTecnico" parameterType="FilterProducto" resultMap="ProductoStec"> 
+		select   
+			stp.id_stecnico_producto, 
+            stp.id_producto, 
+            p.s_descripcion,
+            id_marca,
+            id_familia,
+            m.s_nombre as s_marca,
+            f.s_nombre as s_familia, 
+            p.id_proveedor,
+            pv.s_nombre AS s_proveedor,
+            count (stp1.id_stecnico) AS i_cantidad_stecnicos,
+            stp.s_vigente, 
+            stp.id_stecnico,
+            par.s_descripcion as s_garantia
+        from 
+            sstt_stecnicos_productos stp 
+            inner join owv_productos p on p.id_producto = stp.id_producto
+            left join owv_proveedores pv on pv.id_proveedor = p.id_proveedor
+            left join sstt_stecnicos_productos stp1 on stp1.id_producto = stp.id_producto and stp1.s_vigente = 'S'
+            left join owv_marcas m on p.id_marca = m.id_marca
+            left join owv_familias f on p.id_familia = f.id_familia
+            left join sstt_parametros par on par.s_nombre = stp.s_garantia and s_string1 = 'TIOT' 
+        where 
+             stp.s_vigente = 'S' 
+		     and stp.id_stecnico = #{idSTecnico}
+        group by 
+            stp.id_stecnico_producto,
+            stp.id_producto,
+            p.s_descripcion,
+            m.id_marca,
+            m.s_nombre,
+            f.id_familia,
+            f.s_nombre,
+            p.id_proveedor,
+            pv.s_nombre,
+            par.s_descripcion,
+            stp.s_vigente,
+            stp.id_stecnico
+		<if test="orderBy == null or orderBy.equals('')">
+		order by 
+		    stp.s_vigente desc,
+		    f.id_familia asc,
+		    m.id_marca asc,
+		    p.s_descripcion asc
+		</if>
+   		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTotalSTecnicoP" resultType="Integer" parameterType="FilterProducto">
+		select   
+		    count(1)
+		from 
+		    sstt_stecnicos_productos stp 
+		    inner join owv_productos p on p.id_producto = stp.id_producto
+		where 
+		     stp.s_vigente = 'S' 
+		and stp.id_stecnico = #{idSTecnico}
+	</select>
+	
+	<select id="listAllProductosByFilterCheck" parameterType="FilterProducto" resultType="CheckForFlexigrid"> 
+		select 
+            p.id_producto as "id",
+           	'N' as "check"
+		from 
+			owv_productos p
+            left join owv_marcas m on p.id_marca = m.id_marca
+            left join owv_familias f on p.id_familia = f.id_familia
+            left join owv_proveedores pv on pv.id_proveedor = p.id_proveedor
+		<where>
+			<if test="idFamilia != null and !idFamilia.equals('')">
+				and p.id_familia = #{idFamilia}
+			</if>
+			<if test="marca != null and !marca.equals('')">
+				and p.id_marca = #{marca}
+			</if>
+			<if test="idLinea != null and !idLinea.equals('')">
+				and f.id_linea = #{idLinea}
+			</if>
+			<if test="idProducto != null">
+				and p.id_producto = #{idProducto}
+			</if>
+			<if test="idProveedor != null">
+				and p.id_proveedor = #{idProveedor}
+			</if>
+			<if test="descripcion != null and !descripcion.equals('')">
+				and upper(p.s_descripcion) like '%'||upper(#{descripcion})||'%'  
+			</if>
+			<if test="conServicioTecnico != null and conServicioTecnico.equals(true)">
+				and exists (select 1 from sstt_stecnicos_productos stp where stp.id_producto = p.id_producto and stp.s_vigente = 'S')
+			</if>
+			<if test="conServicioTecnico != null and conServicioTecnico.equals(false)">
+				and not exists (select 1 from sstt_stecnicos_productos stp where stp.id_producto = p.id_producto and stp.s_vigente = 'S')
+			</if>
+		</where>
+	</select>
+	
+	<select id="listAllProductosAsignarCheck" parameterType="FilterProducto" resultType="CheckForFlexigrid"> 
+        select 
+            p.id_producto as "id",
+               'N' as "check"
+        from 
+            owv_productos p
+            left join owv_marcas m on p.id_marca = m.id_marca
+            left join owv_familias f on p.id_familia = f.id_familia
+            left join owv_proveedores pv on pv.id_proveedor = p.id_proveedor
+        <where>
+            <if test= "idProducto != null">
+                and p.id_producto = #{id}
+            </if>
+            <if test= "idFamilia != null and idFamilia.equals('')">
+                and f.id_familia = #{idFamilia}
+            </if>
+            <if test= "marca != null and !marca.equals('')">
+                and m.id_marca = #{marca}
+            </if>
+            <if test= "idProveedor != null and !idProveedor.equals('')">
+                and pv.id_proveedor = #{idProveedor}
+            </if>
+        </where>
+        group by
+            p.id_producto , 
+            p.s_descripcion ,
+            m.s_nombre,
+            f.s_nombre,
+            pv.s_nombre
+        <if test="conServicioTecnico != null and conServicioTecnico.equals(true)">
+            having count(stp.id_stecnico_producto) > 0
+        </if>
+        <if test="conServicioTecnico != null and conServicioTecnico.equals(false)">
+            having count(stp.id_stecnico_producto) = 0
+        </if>
+    </select>
+    
+    <select id="getTotalSTecnicoAsignar" resultType="Integer" parameterType="FilterProducto">
+        select 
+            count(distinct id_producto)
+        from (
+            select 
+                p.id_producto
+            from 
+                owv_productos p
+                left join owv_marcas m on p.id_marca = m.id_marca
+                left join owv_familias f on p.id_familia = f.id_familia
+                left join owv_proveedores pv on pv.id_proveedor = p.id_proveedor
+                left join sstt_stecnicos_productos stp on stp.id_producto = p.id_producto and stp.s_vigente = 'S'
+            <where>
+                <if test= "idProducto != null">
+                    and p.id_producto = #{id}
+                </if>
+                <if test= "idFamilia != null and idFamilia.equals('')">
+                    and f.id_familia = #{idFamilia}
+                </if>
+                <if test= "marca != null and !marca.equals('')">
+                    and m.id_marca = #{marca}
+                </if>
+                <if test= "idProveedor != null and !idProveedor.equals('')">
+                    and pv.id_proveedor = #{idProveedor}
+                </if>
+            </where>
+            group by
+                p.id_producto , 
+                p.s_descripcion ,
+                m.s_nombre,
+                f.s_nombre,
+                pv.s_nombre
+            <if test="conServicioTecnico != null and conServicioTecnico.equals(true)">
+                having count(stp.id_stecnico_producto) > 0
+            </if>
+            <if test="conServicioTecnico != null and conServicioTecnico.equals(false)">
+                having count(stp.id_stecnico_producto) = 0
+            </if>
+        )
+    </select>
+    
+    <resultMap type="ProductoExcluido" id="productoExcluido">
+    	<result property="id"                                column="id_producto"/>
+        <result property="descripcion"                       column="s_descripcion"/>
+        <result property="marca.nombre"                      column="s_nombre_marca"/>
+        <result property="usuarioExclusion.nombreCompleto"   column="s_nombre_usuario"/>
+        <result property="fechaCreacion"                     column="d_fecha_creacion"/>
+    </resultMap>
+    
+    <select id="listProductosExcluidosCCByFilter" parameterType="FilterProducto" resultMap="productoExcluido">
+    	select
+            p.id_producto
+            ,trim(p.s_descripcion) as s_descripcion
+            ,trim(m.s_nombre) as s_nombre_marca
+            ,trim(u.s_nombre)||' '||trim(u.s_apellido_paterno)||' '||trim(u.s_apellido_materno) as s_nombre_usuario
+            ,pec.d_fecha_creacion
+        from sstt_productos_excluidos_cc pec
+        	left join owv_productos p on p.id_producto = pec.id_producto 
+        	left join owv_marcas m on m.id_marca = p.id_marca
+        	left join sstt_usuarios u on u.id_usuario = pec.id_usuario
+        <where>
+        	<if test="idFamilia!=null and !idFamilia.equals('')">
+        		and p.id_familia = #{idFamilia} 
+        	</if>
+        </where>
+	</select>
+	
+	<select id="getProductoExcluidoCCByIdProducto" parameterType="Integer" resultMap="productoExcluido">
+		select
+		    p.id_producto
+            ,trim(p.s_descripcion) as s_descripcion
+            ,trim(m.s_nombre) as s_nombre_marca
+            ,trim(u.s_nombre)||' '||trim(u.s_apellido_paterno)||' '||trim(u.s_apellido_materno) as s_nombre_usuario
+            ,pec.d_fecha_creacion
+		from owv_productos p
+            left join owv_marcas m on m.id_marca = p.id_marca
+            inner join sstt_productos_excluidos_cc pec on pec.id_producto = p.id_producto
+            left join sstt_usuarios u on u.id_usuario = pec.id_usuario
+		where
+			p.id_Producto = #{idProducto}			
+	</select>
+	
+	<select id="isProductoInUbicacionInternaCD" parameterType="FilterProducto" resultType="Integer">
+		select count(1)
+		from sstt_ubicacion_interna_det
+		where id_producto = #{idProducto}
+			and id_ubicacion_interna=#{idUbicacionInterna}
+	</select>
+	
+	<select id="listProductosParaExcluirCCByFilter" parameterType="FilterProducto" resultMap="productoExcluido">
+        select
+            p.id_producto
+            ,trim(p.s_descripcion) as s_descripcion
+            ,trim(m.s_nombre) as s_nombre_marca
+            ,trim(u.s_nombre)||' '||trim(u.s_apellido_paterno)||' '||trim(u.s_apellido_materno) as s_nombre_usuario
+            ,pec.d_fecha_creacion
+        from owv_productos p
+            left join owv_marcas m on m.id_marca = p.id_marca
+            left join sstt_productos_excluidos_cc pec on pec.id_producto = p.id_producto
+            left join sstt_usuarios u on u.id_usuario = pec.id_usuario
+        <where>
+            <if test="idFamilia!=null and !idFamilia.equals('')">
+                and p.id_familia = #{idFamilia}
+            </if>
+            <if test="marca!=null and !marca.equals('')">
+                and p.id_marca = #{marca}
+            </if>
+            <if test="id!=null">
+            	and p.id_producto = #{id}
+            </if>
+            <if test="descripcion!=null and !descripcion.equals('')">
+            	and p.s_descripcion = #{descripcion}
+            </if>
+        </where>
+        <if test="orderBy != null and !orderBy.equals('')">
+		    order by ${orderBy}
+		    <if test="sortOrder != null and !sortOrder.equals('')">
+			    ${sortOrder}
+		    </if>	
+		</if>
+    </select>
+    
+    <select id="getTotalProductosParaExcluirCCByFilter" parameterType="FilterProducto" resultType="Integer">
+        select
+           count(1)
+        from owv_productos p
+        <where>
+            <if test="idFamilia!=null and !idFamilia.equals('')">
+                and p.id_familia = #{idFamilia}
+            </if>
+            <if test="marca!=null and !marca.equals('')">
+                and p.id_marca = #{marca}
+            </if>
+            <if test="id!=null">
+            	and p.id_producto = #{id}
+            </if>
+            <if test="descripcion!=null and !descripcion.equals('')">
+            	and p.s_descripcion = #{descripcion}
+            </if>
+        </where>
+    </select>
+    
+    <select id="listAllProductosCCCheck" resultType="CheckForFlexigrid" parameterType="FilterProducto">
+	    select
+		    p.id_producto as "id"
+		    ,CASE WHEN p.id_producto in (select id_producto from sstt_productos_excluidos_cc) THEN 
+		       'S' 
+	         ELSE 
+	           'N' 
+	     	 END as "check"
+	    from owv_productos p
+	    <where>
+            <if test="idFamilia!=null and !idFamilia.equals('')">
+                and p.id_familia = #{idFamilia}
+            </if>
+            <if test="marca!=null and !marca.equals('')">
+                and p.id_marca = #{marca}
+            </if>
+            <if test="id!=null">
+            	and p.id_producto = #{id}
+            </if>
+            <if test="descripcion!=null and !descripcion.equals('')">
+            	and p.s_descripcion = #{descripcion}
+            </if>
+        </where>
+	</select>
+	
+	<insert id="saveProductoExcluidoCC" parameterType="ProductoExcluido" keyColumn="id_producto_excluido_cc">
+		<selectKey resultType="Long" keyProperty="idProductoExcluido" order="BEFORE">
+			select ssts_productos_excluidos_cc.nextval from dual
+		</selectKey> 
+		insert into sstt_productos_excluidos_cc (
+			id_producto_excluido_cc
+			,id_producto
+			,id_usuario
+			,d_fecha_creacion
+			)
+		values(
+			#{idProductoExcluido}
+			,#{id}
+			,#{usuarioExclusion.id}
+			,SYSDATE
+		)
+	</insert>
+	
+	<delete id="deleteProductoExcluidoCC" parameterType="java.util.List">
+		delete from sstt_productos_excluidos_cc
+		where id_producto in
+		<foreach collection="list" item="idProducto" open="(" separator="," close=")">
+			#{idProducto}
+		</foreach>
+	</delete>
+	
+	<delete id="deleteAllProductoExcluidoCC">
+		delete from sstt_productos_excluidos_cc
+	</delete>
+	
+	
+	
+	<select id="listProductosLessCodigoUbicacion" parameterType="String" resultType="Producto">
+		select 
+			id_producto id, 
+			s_descripcion descripcion
+		from owv_productos
+		where id_producto not in (select ubid.id_producto
+								from sstt_ubicacion_interna_det ubid
+									left join sstt_ubicaciones_internas ubi on ubi.id_ubicacion_interna = ubid.id_ubicacion_interna
+								where ubi.s_codigo=#{codigo} and ubid.id_producto is not null)
+		order by id asc
+	</select>
+	
+	<select id="getTotalProductoLessCodigoUbicacion" parameterType="String" resultType="Integer">
+		select 
+			count(1)
+		from owv_productos
+		where id_producto not in (select ubid.id_producto
+								from sstt_ubicacion_interna_det ubid
+									left join sstt_ubicaciones_internas ubi on ubi.id_ubicacion_interna = ubid.id_ubicacion_interna
+								where ubi.s_codigo=#{codigo} and ubid.id_producto is not null)
+		order by id asc
+	</select>
+	
+	<select id="listAllProductosLessCodigoUbicacion" parameterType="String" resultType="CheckForFlexigrid">
+		select 
+			id_producto as "id", 
+			'N' as "check"
+		from owv_productos
+		where id_producto not in (select ubid.id_producto
+								from sstt_ubicacion_interna_det ubid
+									left join sstt_ubicaciones_internas ubi on ubi.id_ubicacion_interna = ubid.id_ubicacion_interna
+								where ubi.s_codigo=#{codigo} and ubid.id_producto is not null)
+	</select>
+	
+	<select id="listProductosByIdUbicacionInterna" parameterType="Integer" resultMap="producto">
+        select
+            p.id_producto, 
+			p.s_descripcion,
+			m.s_nombre as s_marca
+        from owv_productos p
+            inner join SSTT_UBICACION_INTERNA_DET ubid on ubid.id_producto = p.id_producto
+            left join owv_marcas m on m.id_marca = p.id_marca
+        where ubid.id_ubicacion_interna = #{idUbicacionInterna}
+        order by p.s_descripcion
+	</select>
+	
+	<select id="getTotalProductosByIdUbicacionInterna" parameterType="Integer" resultType="Integer">
+        select
+            count(1)
+        from owv_productos p
+            inner join SSTT_UBICACION_INTERNA_DET ubid on ubid.id_producto = p.id_producto
+        where ubid.id_ubicacion_interna = #{idUbicacionInterna}
+	</select>
+	
+	<select id="isProductoExcuidoByIdProducto" parameterType="Integer" resultType="Integer">
+		select count(1)
+		from sstt_productos_excluidos_cc
+		where id_producto = #{idProducto}
+	</select>
+	
+</mapper>

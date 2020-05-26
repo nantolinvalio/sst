@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="GuiaDetalleReport" pageWidth="622" pageHeight="575" columnWidth="582" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="f6b0ad32-2ae1-46a9-93ad-50c7b4680e71">
+	<property name="ireport.zoom" value="1.7715610000000086"/>
+	<property name="ireport.x" value="83"/>
+	<property name="ireport.y" value="233"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[".\\"]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[]]>
+	</queryString>
+	<field name="descripcion_producto" class="java.lang.String">
+		<fieldDescription><![CDATA[ordenTrabajoGeneral.productoReport.descripcion]]></fieldDescription>
+	</field>
+	<field name="id_producto" class="java.lang.Integer">
+		<fieldDescription><![CDATA[ordenTrabajoGeneral.productoReport.id]]></fieldDescription>
+	</field>
+	<field name="id_ot" class="java.lang.Long">
+		<fieldDescription><![CDATA[ordenTrabajoGeneral.id]]></fieldDescription>
+	</field>
+	<field name="numero_guia" class="java.lang.Long">
+		<fieldDescription><![CDATA[guia.numero]]></fieldDescription>
+	</field>
+	<field name="numeroSerie" class="java.lang.String">
+		<fieldDescription><![CDATA[ordenTrabajoGeneral.numeroSerie]]></fieldDescription>
+	</field>
+	<field name="nombre_marca" class="java.lang.String">
+		<fieldDescription><![CDATA[ordenTrabajoGeneral.productoReport.marca.nombre]]></fieldDescription>
+	</field>
+	<field name="accesoriosListReport" class="java.util.List">
+		<fieldDescription><![CDATA[ordenTrabajoGeneral.accesoriosListReport]]></fieldDescription>
+	</field>
+	<field name="partesListReport" class="java.util.List">
+		<fieldDescription><![CDATA[ordenTrabajoGeneral.partesListReport]]></fieldDescription>
+	</field>
+	<field name="descripcionEstado" class="java.lang.String">
+		<fieldDescription><![CDATA[ordenTrabajoGeneral.descripcionEstado]]></fieldDescription>
+	</field>
+	<field name="id_destino" class="java.lang.Long">
+		<fieldDescription><![CDATA[guia.destino.id]]></fieldDescription>
+	</field>
+	<field name="direccion" class="java.lang.String">
+		<fieldDescription><![CDATA[guia.destino.direccion]]></fieldDescription>
+	</field>
+	<field name="giro_destino" class="java.lang.String">
+		<fieldDescription><![CDATA[guia.destino.giro]]></fieldDescription>
+	</field>
+	<field name="rut_destino" class="java.lang.String">
+		<fieldDescription><![CDATA[guia.destino.rut]]></fieldDescription>
+	</field>
+	<field name="comuna_destino" class="java.lang.String">
+		<fieldDescription><![CDATA[guia.destino.comuna.glosa]]></fieldDescription>
+	</field>
+	<field name="ciudad_destino" class="java.lang.String">
+		<fieldDescription><![CDATA[guia.destino.comuna.ciudad]]></fieldDescription>
+	</field>
+	<field name="fechaEmision" class="java.util.Date">
+		<fieldDescription><![CDATA[guia.fechaEmision]]></fieldDescription>
+	</field>
+	<field name="id_origen" class="java.lang.Long">
+		<fieldDescription><![CDATA[guia.origen.id]]></fieldDescription>
+	</field>
+	<field name="nombre" class="java.lang.String">
+		<fieldDescription><![CDATA[guia.destino.nombre]]></fieldDescription>
+	</field>
+	<field name="codigo_tipo_ot" class="java.lang.String">
+		<fieldDescription><![CDATA[ordenTrabajoGeneral.tipo.codigo]]></fieldDescription>
+	</field>
+	<field name="codigo_tipo_cambio" class="java.lang.String">
+		<fieldDescription><![CDATA[ordenTrabajoGeneral.tipoCambio.codigo]]></fieldDescription>
+	</field>
+	<field name="descripcionFisica" class="java.lang.String">
+		<fieldDescription><![CDATA[ordenTrabajoGeneral.descripcionEstado]]></fieldDescription>
+	</field>
+	<field name="tipoGuia" class="java.lang.String">
+		<fieldDescription><![CDATA[guia.tipoGuia]]></fieldDescription>
+	</field>
+	<title>
+		<band height="119"/>
+	</title>
+	<columnHeader>
+		<band height="123" splitType="Stretch">
+			<textField isBlankWhenNull="true">
+				<reportElement x="138" y="69" width="255" height="23" isRemoveLineWhenBlank="true" uuid="bed15645-d31b-479b-a248-e832fbab8bd5"/>
+				<textElement verticalAlignment="Top">
+					<font size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{direccion}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="497" y="44" width="98" height="23" isRemoveLineWhenBlank="true" uuid="43ecbae6-9b9e-488a-b9ec-2377187bcb90"/>
+				<textElement>
+					<font size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{comuna_destino}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="497" y="69" width="98" height="23" isRemoveLineWhenBlank="true" uuid="6a23936d-5b36-4cae-a48c-285ddb95b84a"/>
+				<textElement>
+					<font size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{giro_destino}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="393" y="69" width="102" height="23" isRemoveLineWhenBlank="true" uuid="0c3c6771-3eb1-401c-a3c8-8d09084e5482"/>
+				<textElement>
+					<font size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{ciudad_destino}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="138" y="44" width="255" height="23" isRemoveLineWhenBlank="true" uuid="0be18d23-8ea9-4b35-a4cd-530af42b2d9d"/>
+				<textElement>
+					<font size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($F{id_destino}==10?"":$F{id_destino}+" ")+ $F{nombre}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="393" y="44" width="102" height="23" isRemoveLineWhenBlank="true" uuid="64416af3-ac33-455f-b950-b5ffcbaebd9e"/>
+				<textElement>
+					<font size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{rut_destino}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="138" y="10" width="255" height="20" isRemoveLineWhenBlank="true" uuid="1597deef-779b-4b32-bb13-dde27ba94908"/>
+				<textElement>
+					<font size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{id_origen}+"  "+(new SimpleDateFormat("dd/MM/yyyy")).format($F{fechaEmision})]]></textFieldExpression>
+			</textField>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="54">
+			<textField isBlankWhenNull="true">
+				<reportElement x="221" y="0" width="201" height="14" isRemoveLineWhenBlank="true" uuid="19dbc246-f72a-4f5d-904e-e052b78e0789"/>
+				<textElement>
+					<font size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{descripcion_producto}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="138" y="0" width="83" height="13" isRemoveLineWhenBlank="true" uuid="280cd502-00aa-4cd1-a4b9-ff056fd23c92"/>
+				<textElement>
+					<font size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{id_producto}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="445" y="0" width="42" height="14" isRemoveLineWhenBlank="true" uuid="d75b72d8-991e-4a72-b921-44e51c3ec61a"/>
+				<textElement textAlignment="Right">
+					<font size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[1]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="487" y="0" width="83" height="14" isRemoveLineWhenBlank="true" uuid="518dbc50-2f50-475e-9d00-6d1917c79896"/>
+				<textElement textAlignment="Right">
+					<font size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[1]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="138" y="14" width="83" height="13" isRemoveLineWhenBlank="true" uuid="41281e53-2c68-45bd-80bf-e2d08c3f54ac"/>
+				<textElement>
+					<font size="10"/>
+				</textElement>
+				<text><![CDATA[N° OT]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="221" y="14" width="80" height="13" isRemoveLineWhenBlank="true" uuid="8ddb406a-3542-415f-a133-005b51968336"/>
+				<textElement>
+					<font size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{id_ot}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="301" y="14" width="60" height="13" isRemoveLineWhenBlank="true" uuid="81eb462f-f3e1-465b-bdff-f97621e63b7d"/>
+				<textElement>
+					<font size="10"/>
+				</textElement>
+				<text><![CDATA[N° GUÍA]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="361" y="14" width="61" height="13" isRemoveLineWhenBlank="true" uuid="5cb07ae8-5c48-4676-a657-e8ba790cdcf0"/>
+				<textElement>
+					<font size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{numero_guia}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="138" y="27" width="83" height="13" isRemoveLineWhenBlank="true" uuid="284a37f4-a702-4bff-a7ea-81966b5629ba"/>
+				<textElement>
+					<font size="10"/>
+				</textElement>
+				<text><![CDATA[MARCA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="301" y="27" width="60" height="14" isRemoveLineWhenBlank="true" uuid="1aa21bd4-6baf-429a-9854-d6155c2df97b"/>
+				<textElement>
+					<font size="10"/>
+				</textElement>
+				<text><![CDATA[N° SERIE]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="361" y="27" width="234" height="14" isRemoveLineWhenBlank="true" uuid="f1740cae-c7b2-4d8b-ab18-f27ea5d69070"/>
+				<textElement>
+					<font size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{numeroSerie}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="222" y="27" width="79" height="13" isRemoveLineWhenBlank="true" uuid="51bb1c43-e74b-421b-92ba-96ffde51fdfc"/>
+				<textElement>
+					<font size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{nombre_marca}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="138" y="41" width="99" height="13" isRemoveLineWhenBlank="true" uuid="2edfc6dc-cc4f-48a6-b39c-a38139624e7a"/>
+				<textElement>
+					<font size="10"/>
+				</textElement>
+				<text><![CDATA[ACCESORIOS]]></text>
+			</staticText>
+			<subreport>
+				<reportElement x="237" y="41" width="309" height="12" uuid="c90f8fc6-5179-4a5d-9410-ee576e3ed509"/>
+				<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($F{accesoriosListReport})]]></dataSourceExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "GuiaDetalleReport_accesorios.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+		<band height="13">
+			<staticText>
+				<reportElement x="138" y="0" width="99" height="13" isRemoveLineWhenBlank="true" uuid="2fac63d0-6511-41f0-8ac4-46feb2b96be0"/>
+				<textElement>
+					<font size="10"/>
+				</textElement>
+				<text><![CDATA[REVISIÓN PARTES]]></text>
+			</staticText>
+			<subreport>
+				<reportElement x="237" y="0" width="309" height="12" uuid="5e3973e7-43a5-429f-90a3-5e9beba46af7"/>
+				<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($F{partesListReport})]]></dataSourceExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "GuiaDetalleReport_partes.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+		<band height="61">
+			<staticText>
+				<reportElement x="138" y="0" width="99" height="26" isRemoveLineWhenBlank="true" uuid="1354e740-9cd5-4249-b6fd-6e1e6db10884"/>
+				<textElement>
+					<font size="10"/>
+				</textElement>
+				<text><![CDATA[DESCRIPCIÓN ESTADO]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="237" y="0" width="345" height="26" uuid="5686d59d-7873-412c-8157-525395ff6882"/>
+				<textElement>
+					<font size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{descripcionEstado}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<textField pattern="" isBlankWhenNull="true">
+				<reportElement mode="Transparent" x="237" y="26" width="345" height="22" forecolor="#000000" backcolor="#FFFFFF" uuid="414c4994-4d50-4fa2-a6a8-50581c2e1471"/>
+				<textElement textAlignment="Left" verticalAlignment="Top" rotation="None" markup="none">
+					<font fontName="SansSerif" size="14" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<textFieldExpression><![CDATA[(($F{codigo_tipo_ot}.equals("GP") || $F{codigo_tipo_ot}.equals("GPC")) && $F{codigo_tipo_cambio}.equals("FF") ? "CERTIFICACIÓN DE FALLA" : "")]]></textFieldExpression>
+			</textField>
+			<textField pattern="" isBlankWhenNull="true">
+				<reportElement mode="Transparent" x="237" y="48" width="345" height="13" forecolor="#000000" backcolor="#FFFFFF" uuid="414c4994-4d50-4fa2-a6a8-50581c2e1471"/>
+				<textElement textAlignment="Left" verticalAlignment="Top" rotation="None" markup="none">
+					<font fontName="SansSerif" size="10" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($F{tipoGuia}.equals("GACC")? "GUIA DE ACCESORIO" : "")]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

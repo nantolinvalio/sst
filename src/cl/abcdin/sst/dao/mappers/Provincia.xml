@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<mapper namespace="provincia">
+	
+	<resultMap type="Provincia" id="provinciaByRegion">
+		<result property="id"        column="id_provincia"/>
+		<result property="nombre"    column="s_nombre"/>
+	</resultMap>
+	<select id="listProvinciaByIdRegion" parameterType="Integer" resultMap="provinciaByRegion">
+		select 
+			id_provincia
+			,s_nombre
+		from sstt_provincias
+		where id_region = #{idRegion}
+		order by s_nombre asc
+	</select>
+</mapper>

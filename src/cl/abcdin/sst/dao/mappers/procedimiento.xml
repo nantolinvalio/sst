@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="procedimiento">
+
+	<resultMap type="Procedimiento" id="productoProcedimiento">
+	    <result property="id" 									column="id_procedimiento_stecnico"/>
+		<result property="producto.id" 						    column="id_producto"/>
+		<result property="descripcion" 							column="s_descripcion"/>
+		<result property="procedimiento" 						column="s_procedimiento"/>
+		<result property="marca.codigo"     					column="id_marca"/>
+		<result property="marca.nombre"     					column="s_marca"/>
+		<result property="linea.codigo"  	        			column="id_linea"/>
+		<result property="linea.glosa" 	           	 			column="s_linea"/>
+		<result property="familia.nombre" 	           	 		column="s_familia"/>  
+		<result property="fechaCreacion" 						column="d_fecha_creacion"/>
+		<result property="fechaModificacion"					column="d_fecha_modificacion"/>
+		<result property="usuarioModificacion.nombreCompleto" 	column="s_usuario_modificacion"/>
+		<result property="usuarioCreacion.nombreCompleto"       column="s_usuario_creacion"/>
+		<result property="vigente" 								column="s_vigente"/>
+		<result property="usuario.apellidoPaterno"              column="s_apellido"/>
+		
+	</resultMap>
+	
+	<select id="listProcedimientosProductosByFilter" parameterType="FilterProcedimiento" resultMap="productoProcedimiento" >
+		select
+		     m.s_nombre as s_marca
+            ,m.id_marca as id_marca
+            ,l.s_nombre as s_linea
+            ,l.id_linea as id_linea
+            ,p.s_descripcion as s_descripcion
+            ,p.id_producto as id_producto
+            ,pr.s_vigente
+            ,pr.d_fecha_modificacion
+            ,pr.d_fecha_creacion
+            ,u.s_nombre || ' ' || u.s_apellido_paterno || ' ' || u.s_apellido_materno as s_usuario_creacion
+            ,um.s_nombre || ' ' || um.s_apellido_paterno || ' ' || um.s_apellido_materno as s_usuario_modificacion
+            ,pr.id_procedimiento_stecnico as id_procedimiento_stecnico
+            ,pr.s_procedimiento    
+		from
+		    sstt_procedimientos_stecnicos pr                                  
+		    left join owv_marcas m on m.id_marca = pr.id_marca
+		    left join owv_lineas l on l.id_linea = pr.id_linea
+            left join owv_productos p on p.id_producto = pr.id_producto
+            left join sstt_usuarios u on u.id_usuario = pr.id_usuario_creacion
+            left join sstt_usuarios um on um.id_usuario = pr.id_usuario_modificacion
+            left join owv_familias f on f.id_familia = p.id_familia  
+		<where>
+			<if test="vigente != null">
+				and pr.s_vigente = #{vigente}
+			</if>
+			<if test="marca != null and !marca.equals('')"> 
+ 				and pr.id_marca = #{marca} 
+ 			</if>
+			<if test="linea != null and !linea.equals('')"> 
+ 				and pr.id_linea = #{linea} 
+ 			</if>
+			<if test="producto != null"> 
+ 				and pr.id_producto = #{producto}
+ 			</if>
+		</where>
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="get" parameterType="Long" resultMap="productoProcedimiento">
+		select
+		     m.s_nombre as s_marca
+            ,m.id_marca as id_marca
+            ,l.s_nombre as s_linea
+            ,l.id_linea as id_linea
+            ,p.s_descripcion as s_descripcion
+            ,p.id_producto as id_producto
+            ,pr.s_vigente
+            ,pr.d_fecha_modificacion
+            ,pr.d_fecha_creacion
+            ,u.s_nombre || ' ' || u.s_apellido_paterno || ' ' || u.s_apellido_materno as s_usuario_creacion
+            ,um.s_nombre || ' ' || um.s_apellido_paterno || ' ' || um.s_apellido_materno as s_usuario_modificacion
+            ,pr.id_procedimiento_stecnico as id_procedimiento_stecnico
+            ,pr.s_procedimiento    
+		from
+		    sstt_procedimientos_stecnicos pr                                  
+		    left join owv_marcas m on m.id_marca = pr.id_marca
+		    left join owv_lineas l on l.id_linea = pr.id_linea
+            left join owv_productos p on p.id_producto = pr.id_producto
+            left join sstt_usuarios u on u.id_usuario = pr.id_usuario_creacion
+            left join sstt_usuarios um on um.id_usuario = pr.id_usuario_modificacion
+            left join owv_familias f on f.id_familia = p.id_familia
+    	where
+   		    pr.id_procedimiento_stecnico = #{id}
+	</select>
+	
+	<select id="getTotalProcedimientosProductosByFilter" parameterType="FilterProcedimiento" resultType="Integer" >
+		select
+		     count(*)   
+		from
+		    sstt_procedimientos_stecnicos pr                                  
+		    left join owv_marcas m on m.id_marca = pr.id_marca
+		    left join owv_lineas l on l.id_linea = pr.id_linea
+            left join owv_productos p on p.id_producto = pr.id_producto
+            left join sstt_usuarios u on u.id_usuario = pr.id_usuario_creacion 
+            left join owv_familias f on f.id_familia = p.id_familia   
+		<where>
+			<if test="vigente!=null">
+				and pr.s_vigente = #{vigente}
+			</if>
+			<if test="marca != null and !marca.equals('')"> 
+ 				and pr.id_marca = #{marca} 
+ 			</if>
+			<if test="linea != null and !linea.equals('')"> 
+ 				and pr.id_linea = #{linea} 
+ 			</if>
+			<if test="producto != null"> 
+ 				and pr.id_producto = #{producto}
+ 			</if>
+		</where>		
+	</select>
+	
+	
+	<insert id="saveProcedimientos" parameterType="FilterProcedimiento" keyColumn="id_procedimiento_stecnico" keyProperty="id">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_procedimientos_stecnicos.nextval from dual
+		</selectKey> 
+            insert into sstt_procedimientos_stecnicos (
+             id_procedimiento_stecnico
+            ,id_producto
+            ,id_marca
+            ,id_linea
+            ,id_usuario_creacion
+            ,id_usuario_modificacion
+            ,d_fecha_creacion
+            ,s_vigente
+            ,s_procedimiento
+           ) values(
+           	 #{id}
+           	,#{producto.id} 
+           	,#{marca.codigo}
+            ,#{linea.codigo}
+            ,#{usuarioCreacion.id}
+            ,#{usuarioModificacion.id}
+            ,SYSDATE
+            ,#{vigente}
+            ,#{procedimiento}     
+            )       
+   	</insert>
+   	
+   	<update id="updateEstadoProcedimiento" parameterType="Procedimiento">
+ 		update sstt_procedimientos_stecnicos set 
+        	s_vigente = #{vigente}
+        	,id_usuario_modificacion = #{usuarioModificacion.id}
+        	,d_fecha_modificacion = sysdate
+		where 
+	    	id_procedimiento_stecnico = #{id}
+   	</update>
+   	
+   	<update id="updateProcedimientoProducto" parameterType="Procedimiento">
+        update sstt_procedimientos_stecnicos
+        	set s_procedimiento  = #{procedimiento}
+        	,id_usuario_modificacion = #{usuarioModificacion.id}
+        	,d_fecha_modificacion = sysdate
+        where 
+        	id_procedimiento_stecnico = #{id}   
+	</update>        
+   	
+</mapper>

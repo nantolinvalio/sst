@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="envioSucursalMobile">
+
+	<select id="listDespachos" resultType="DespachoMobile">
+		select
+			es.id_envio_sucursal as "id"
+			,su.s_nombre as "nombre"
+		from sstt_envios_sucursales es
+			left join sstt_ubicaciones su on su.id_ubicacion = es.id_sucursal
+		where d_fecha_cierre is null
+	</select>
+	
+	<select id="getIdUsuarioCargaByIdDespacho" parameterType="Long" resultType="Integer">
+		select 
+			id_usuario_carga
+		from sstt_envios_sucursales
+			where id_envio_sucursal = #{idEnvio}
+	</select>
+	
+	<update id="updateUsuarioCarga" parameterType="Map">
+		update sstt_envios_sucursales
+			set id_usuario_carga = #{idUsuarioCarga}
+		where id_envio_sucursal = #{idEnvio}
+	</update>
+	
+	<update id="cerrarEnvioSucursalByEnvioSucursal"  parameterType="Map">
+		update sstt_envios_sucursales
+			set d_fecha_cierre = sysdate
+				,id_usuario_cierre = #{usuarioTermino.id}
+		where id_envio_sucursal = #{id}
+	</update>
+</mapper>

@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="GuiaAgrupadaReport" pageWidth="1200" pageHeight="575" columnWidth="1160" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="b39555d1-6ce7-48cb-9a51-223616a70aaa">
+	<property name="ireport.zoom" value="1.3310000000000028"/>
+	<property name="ireport.x" value="658"/>
+	<property name="ireport.y" value="116"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[".\\"]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[]]>
+	</queryString>
+	<field name="id_destino" class="java.lang.Long">
+		<fieldDescription><![CDATA[guia.destino.id]]></fieldDescription>
+	</field>
+	<field name="direccion" class="java.lang.String">
+		<fieldDescription><![CDATA[guia.destino.direccion]]></fieldDescription>
+	</field>
+	<field name="giro_destino" class="java.lang.String">
+		<fieldDescription><![CDATA[guia.destino.giro]]></fieldDescription>
+	</field>
+	<field name="rut_destino" class="java.lang.String">
+		<fieldDescription><![CDATA[guia.destino.rut]]></fieldDescription>
+	</field>
+	<field name="comuna_destino" class="java.lang.String">
+		<fieldDescription><![CDATA[guia.destino.comuna.glosa]]></fieldDescription>
+	</field>
+	<field name="ciudad_destino" class="java.lang.String">
+		<fieldDescription><![CDATA[guia.destino.comuna.ciudad]]></fieldDescription>
+	</field>
+	<field name="fechaEmision" class="java.util.Date">
+		<fieldDescription><![CDATA[guia.fechaEmision]]></fieldDescription>
+	</field>
+	<field name="id_origen" class="java.lang.Long">
+		<fieldDescription><![CDATA[guia.origen.id]]></fieldDescription>
+	</field>
+	<field name="nombre" class="java.lang.String">
+		<fieldDescription><![CDATA[guia.destino.nombre]]></fieldDescription>
+	</field>
+	<field name="prodcutosReport" class="java.util.List">
+		<fieldDescription><![CDATA[prodcutosReport]]></fieldDescription>
+	</field>
+	<title>
+		<band height="161" splitType="Stretch"/>
+	</title>
+	<columnHeader>
+		<band height="123">
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="43ecbae6-9b9e-488a-b9ec-2377187bcb90" x="958" y="51" width="162" height="23" isRemoveLineWhenBlank="true"/>
+				<textElement>
+					<font fontName="Arial" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{comuna_destino}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="1597deef-779b-4b32-bb13-dde27ba94908" x="271" y="17" width="328" height="20" isRemoveLineWhenBlank="true"/>
+				<textElement>
+					<font fontName="Arial" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{id_origen}+"     "+(new SimpleDateFormat("dd/MM/yyyy")).format($F{fechaEmision})]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="0c3c6771-3eb1-401c-a3c8-8d09084e5482" x="779" y="76" width="168" height="23" isRemoveLineWhenBlank="true"/>
+				<textElement>
+					<font fontName="Arial" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{ciudad_destino}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="64416af3-ac33-455f-b950-b5ffcbaebd9e" x="779" y="51" width="168" height="23" isRemoveLineWhenBlank="true"/>
+				<textElement>
+					<font fontName="Arial" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{rut_destino}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="bed15645-d31b-479b-a248-e832fbab8bd5" x="271" y="76" width="328" height="23" isRemoveLineWhenBlank="true"/>
+				<textElement verticalAlignment="Top">
+					<font fontName="Arial" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{direccion}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="6a23936d-5b36-4cae-a48c-285ddb95b84a" x="958" y="76" width="162" height="23" isRemoveLineWhenBlank="true"/>
+				<textElement>
+					<font fontName="Arial" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{giro_destino}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="5406b0e4-909c-4aea-969c-f75ab8d3b0da" x="271" y="51" width="328" height="23" isRemoveLineWhenBlank="true"/>
+				<textElement>
+					<font fontName="Arial" size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($F{id_destino}!=null?$F{id_destino}:"")+" "+$F{nombre}.toUpperCase()]]></textFieldExpression>
+			</textField>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="24" splitType="Stretch">
+			<subreport>
+				<reportElement uuid="eb6cb4ee-d829-4cf4-9b09-e251f81be375" x="271" y="0" width="827" height="24"/>
+				<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($F{prodcutosReport})]]></dataSourceExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "GuiaAgrupadaReport_Productos.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</detail>
+</jasperReport>

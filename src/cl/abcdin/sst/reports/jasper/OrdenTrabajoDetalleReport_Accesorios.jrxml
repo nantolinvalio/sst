@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="OrdenTrabajoDetalleReport_Accesorios" columnCount="2" printOrder="Horizontal" pageWidth="493" pageHeight="572" orientation="Landscape" columnWidth="246" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="bc723586-931b-41b2-8282-cba36471ec4d">
+	<property name="ireport.zoom" value="2.5937424601000023"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<queryString>
+		<![CDATA[]]>
+	</queryString>
+	<field name="descripcion" class="java.lang.String">
+		<fieldDescription><![CDATA[descripcion]]></fieldDescription>
+	</field>
+	<field name="ubicacion" class="java.lang.String">
+		<fieldDescription><![CDATA[ubicacion.nombre]]></fieldDescription>
+	</field>
+	<field name="idUbicacion" class="java.lang.Long">
+		<fieldDescription><![CDATA[ubicacion.id]]></fieldDescription>
+	</field>
+	<field name="tipoUbicacion" class="java.lang.String">
+		<fieldDescription><![CDATA[ubicacion.tipo]]></fieldDescription>
+	</field>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<detail>
+		<band height="12" splitType="Stretch">
+			<textField>
+				<reportElement uuid="7db75fef-53b3-4261-b935-6a1a0077ef51" x="0" y="0" width="130" height="12"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{descripcion}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="7db75fef-53b3-4261-b935-6a1a0077ef51" x="130" y="0" width="115" height="12"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($F{tipoUbicacion}.equals("SC") || $F{tipoUbicacion}.equals("BR") ? $F{idUbicacion} : "") + " " + $F{ubicacion}.toUpperCase()]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

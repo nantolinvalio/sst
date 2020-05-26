@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="inventario">
+
+    <resultMap type="Inventario" id="inventario">
+   		<result property="id"                                    column="id_ot"/>
+	    <result property="codigoBarra"               			 column="i_cod_barra" typeHandler="CodigoBarrasTypeHandler"/>
+		<result property="producto"                              column="s_descripcion"/>
+		<result property="inventariado"                          column="s_inventariado"/>
+		<result property="fecha.Inventario"                      column="d_fecha_inventario"/>
+        <result property="id"                                    column="id_inventario"/>
+        <result property="vigente"                               column="s_vigente"/>
+        <result property="usuarioCreacion.id"                    column="id_usuario_creacion"/>
+        <result property="usuarioCreacion.nombreCompleto"        column="s_usuario_creacion"/>
+        <result property="fechaCreacion"                         column="d_fecha_creacion"/>
+        <result property="usuarioCierre.id"                      column="id_usuario_cierre"/>
+        <result property="usuarioCierre.nombreCompleto"          column="s_usuario_cierre"/>
+        <result property="fechaCierre"                           column="d_fecha_cierre"/>
+        <result property="estado.id"                             column="id_estado"/>
+        <result property="estado.nombre"                         column="s_nombre_estado"/>
+    </resultMap>
+    
+    <select id="getById" parameterType="Long" resultMap="inventario">
+    	select 
+            i.id_inventario
+            ,i.s_vigente
+            ,us1.id_usuario id_usuario_creacion
+            ,trim(us1.s_nombre)||' '||trim(us1.s_apellido_paterno)||' '||trim(us1.s_apellido_materno) as s_usuario_creacion
+            ,i.d_fecha_creacion
+            ,us3.id_usuario as id_usuario_cierre
+            ,trim(us3.s_nombre)||' '||trim(us3.s_apellido_paterno)||' '||trim(us3.s_apellido_materno) as s_usuario_cierre
+            ,i.d_fecha_cierre
+        from sstt_inventarios i
+            left join sstt_usuarios us1 on us1.id_usuario = i.id_usuario_creacion
+            left join sstt_usuarios us3 on us3.id_usuario = i.id_usuario_cierre
+        where id_inventario = #{id}
+    </select>
+    
+    <select id="list" resultMap="inventario" parameterType="FilterInventario">
+        select 
+            i.id_inventario
+            ,i.s_vigente
+            ,us1.id_usuario id_usuario_creacion
+            ,trim(us1.s_nombre)||' '||trim(us1.s_apellido_paterno)||' '||trim(us1.s_apellido_materno) as s_usuario_creacion
+            ,i.d_fecha_creacion
+            ,us3.id_usuario as id_usuario_cierre
+            ,trim(us3.s_nombre)||' '||trim(us3.s_apellido_paterno)||' '||trim(us3.s_apellido_materno) as s_usuario_cierre
+            ,i.d_fecha_cierre
+        from sstt_inventarios i
+            left join sstt_usuarios us1 on us1.id_usuario = i.id_usuario_creacion
+            left join sstt_usuarios us3 on us3.id_usuario = i.id_usuario_cierre
+        <where>
+            <if test="idUbicacionInterna!=null">
+            	and i.id_inventario in (select id_inventario 
+            	                        from SSTT_INVENTARIO_UBICACIONES
+            	                        where id_ubicacion_interna = #{idUbicacionInterna})
+            </if>
+            <if test="fechaCreacionDesde!=null">
+            	and i.d_fecha_creacion &gt;= #{fechaCreacionDesde} 
+            </if>
+            <if test="fechaCreacionHasta!=null">
+            	and i.d_fecha_creacion &lt;= #{fechaCreacionHasta}
+            </if>
+            <if test="fechaCierreDesde!=null">
+            	and i.d_fecha_cierre &gt;= #{fechaCierreDesde}
+            </if>
+            <if test="fechaCierreHasta!=null">
+            	and i.d_fecha_cierre &lt;= #{fechaCierreHasta}
+            </if>
+            <if test="vigente!=null and !vigente.equals('')">
+            	and i.s_vigente = #{vigente}
+            </if>
+        </where>
+        <if test="orderBy != null and !orderBy.equals('')">
+            order by ${orderBy}
+            <if test="sortOrder != null and !sortOrder.equals('')">
+                ${sortOrder}
+            </if>    
+        </if>
+    </select>
+    <select id="getTotalInventarios" resultType="Integer" parameterType="FilterInventario">
+        select count(1)
+        from sstt_inventarios i
+        <where>
+            <if test="idUbicacionInterna!=null">
+            	and i.id_inventario in (select id_inventario 
+            	                        from SSTT_INVENTARIO_UBICACIONES
+            	                        where id_ubicacion_interna = #{idUbicacionInterna})
+            </if>
+            <if test="fechaCreacionDesde!=null">
+            	and i.d_fecha_creacion &gt;= #{fechaCreacionDesde} 
+            </if>
+            <if test="fechaCreacionHasta!=null">
+            	and i.d_fecha_creacion &lt;= #{fechaCreacionHasta}
+            </if>
+            <if test="fechaCierreDesde!=null">
+            	and i.d_fecha_cierre &gt;= #{fechaCierreDesde}
+            </if>
+            <if test="fechaCierreHasta!=null">
+            	and i.d_fecha_cierre &lt;= #{fechaCierreHasta}
+            </if>
+            <if test="vigente!=null and !vigente.equals('')">
+            	and i.s_vigente = #{vigente}
+            </if>
+        </where>
+    </select>
+    
+    <insert id="save" parameterType="Inventario" keyColumn="id_inventario" keyProperty="id">
+    	<selectKey resultType="Integer" keyProperty="id" order="BEFORE">
+    		select ssts_inventarios.nextval from dual
+    	</selectKey>
+    	insert into sstt_inventarios(
+    		id_inventario
+    		,id_usuario_creacion
+    		,d_fecha_creacion
+    		,s_vigente
+    		,id_ubicacion
+    	) values (
+    		#{id}
+    		,#{usuarioCreacion.id}
+    		,sysdate
+    		,#{vigente}
+    		,#{ubicacion.id}
+    	)
+    </insert>
+    
+    <update id="abrirCerrarInventario" parameterType="Inventario">
+    	update sstt_inventarios
+    		set s_vigente = #{vigente}
+    		<if test="usuarioCierre!=null">
+    			,id_usuario_cierre = #{usuarioCierre.id}
+    			,d_fecha_cierre = sysdate
+    		</if>
+    	where id_inventario = #{id}
+    </update>
+     
+     <resultMap type="Inventariado" id="inventariado">
+   		<result property="inventarioProducto.ordenTrabajo.id"    				column="id_ot"/>
+	    <result property="inventarioProducto.ordenTrabajo.codigoBarra"         	column="i_cod_barra" typeHandler="CodigoBarrasTypeHandler"/>
+		<result property="inventarioProducto.ordenTrabajo.producto.descripcion"              column="s_descripcion"/>
+		<result property="inventarioProducto.inventariado"                      column="s_inventariado"/>
+		<result property="inventarioProducto.fechaInventario"                   column="d_fecha_inventario"/>
+        <result property="id"                                    				column="id_inventario"/>
+        <result property="vigente"                               				column="s_vigente"/>
+        <result property="usuarioCreacion.id"                    				column="id_usuario_creacion"/>
+        <result property="usuarioCreacion.nombreCompleto"        				column="s_usuario_creacion"/>
+        <result property="inventario.fechaCreacion"              				column="d_fecha_creacion"/>
+        <result property="usuarioCierre.id"                     				column="id_usuario_cierre"/>
+        <result property="usuarioCierre.nombreCompleto"          				column="s_usuario_cierre"/>
+        <result property="fechaCierre"                           				column="d_fecha_cierre"/>
+        <result property="estado.id"                             				column="id_estado"/>
+        <result property="estado.nombre"                         				column="s_nombre_estado"/>
+    </resultMap>
+     
+    <select id="selectInventarioResumen" parameterType="Long" resultMap="inventariado">
+   		select
+     		inp.id_ot
+    		,ot.i_cod_barra
+		    ,inv.d_fecha_creacion 
+		    ,p.s_descripcion 
+		    ,inp.s_inventariado 
+		    ,inp.d_fecha_inventario
+		    ,inu.i_productos_preparados 
+		from sstt_inventario_productos inp
+		    left join sstt_ordenes_trabajo ot on ot.id_ot = inp.id_ot
+		    left join sstt_inventario_ubicaciones inu on inu.id_inventario_ubicacion = inp.id_inventario_ubicacion
+		    left join owv_productos p  on p.id_producto = ot.id_producto
+		    left join sstt_inventarios inv on inv.id_inventario = inu.id_inventario 
+		where inp.id_inventario_ubicacion = #{ubicacion.id}
+    </select>
+    
+    <select id="getInventarioResumen" resultType="Integer">
+   		select
+     		count(*)
+		from sstt_inventario_productos inp
+		    left join sstt_ordenes_trabajo ot on ot.id_ot = inp.id_ot
+		    left join sstt_inventario_ubicaciones inu on inu.id_inventario_ubicacion = inp.id_inventario_ubicacion
+		    left join owv_productos p  on p.id_producto = ot.id_producto
+		    left join sstt_inventarios inv on inv.id_inventario = inu.id_inventario 
+		where inp.id_inventario_ubicacion = #{ubicacion.id}
+    </select>
+    
+    <update id="updateEstadisticas" parameterType="Inventario">
+    	update sstt_inventarios
+    		set i_brecha = #{brecha}
+    			,i_productos_preparados = #{productosPreparados}
+    			,i_productos_sobrantes =#{productosSobrantes}
+    			,i_productos_Faltantes = #{productosFaltantes}
+    			,i_productos_contados = #{productosContados}
+    			,i_sin_diferencia = #{sinDiferencia}
+    	where id_inventario = #{id}
+    </update>
+    
+    <resultMap type="Inventario" id="estadisticas">
+    	<result property="id"                    column="id_inventario"/>
+    	<result property="productosPreparados"   column="i_productos_preparados"/>
+    	<result property="productosSobrantes"    column="i_productos_sobrantes"/>
+    	<result property="productosFaltantes"    column="i_productos_faltantes"/>
+    	<result property="productosContados"     column="i_productos_contados"/>
+    	<result property="sinDiferencia"         column="i_sin_diferencia"/>
+    	<result property="brecha"                column="i_brecha"/>
+    	<result property="fechaCreacion"         column="d_fecha_creacion"/>
+    	<result property="fechaCierre"           column="d_fecha_cierre"/> 
+    </resultMap>
+    
+    <select id="getEstadisticasInventarioByIdInventario" resultMap="estadisticas" parameterType="Integer">
+    	select
+    		id_inventario
+    		,i_productos_preparados
+    		,i_productos_sobrantes
+    		,i_productos_faltantes
+    		,i_productos_contados
+    		,i_sin_diferencia
+    		,i_brecha
+    		,d_fecha_creacion
+    		,d_fecha_cierre
+    	from sstt_inventarios
+    	where id_inventario = #{idInventario}
+    </select>
+</mapper>

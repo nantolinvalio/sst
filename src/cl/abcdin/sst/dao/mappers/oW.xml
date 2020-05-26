@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="oW">
+
+	<select id="validaStock" statementType="CALLABLE" parameterType="Map" >
+		{call servicio_tecnico.P_CONSULTA_SALDO(#{producto,mode=IN,jdbcType=INTEGER},#{centro_costo,mode=IN,jdbcType=VARCHAR},#{ubicacion,mode=IN,jdbcType=VARCHAR},#{cantidad,mode=IN,jdbcType=INTEGER},#{existe, mode=OUT, jdbcType=VARCHAR, typeHandler=VarcharToBooleanTypeHandler})}
+	</select>
+
+	<select id="createXN" statementType="CALLABLE" parameterType="OWCall">
+		{call servicio_tecnico.PR_CreaXN(#{idEntrada,mode=IN,jdbcType=INTEGER},#{estado,mode=OUT,jdbcType=INTEGER},#{salida,mode=OUT,jdbcType=VARCHAR},#{idSalida,mode=OUT,jdbcType=INTEGER})}
+	</select>
+	
+	<select id="createXN_CC" statementType="CALLABLE" parameterType="OWCall">
+		{call servicio_tecnico.PR_CreaXN_mcu(#{idEntrada,mode=IN,jdbcType=INTEGER},#{estado,mode=OUT,jdbcType=INTEGER},#{salida,mode=OUT,jdbcType=VARCHAR},#{idSalida,mode=OUT,jdbcType=INTEGER},#{mcu,mode=IN,jdbcType=VARCHAR})}
+	</select>
+	
+	<select id="createTSTO" statementType="CALLABLE" parameterType="OWCall">
+		{call servicio_tecnico.pr_creats_to(#{idEntrada,mode=IN,jdbcType=INTEGER},#{estado,mode=OUT,jdbcType=INTEGER},#{salida,mode=OUT,jdbcType=VARCHAR},#{idSalida,mode=OUT,jdbcType=INTEGER})}
+	</select>
+	
+	<select id="receiveTO" statementType="CALLABLE" parameterType="OWCall">
+		{call servicio_tecnico.PR_RecepcionaTO(#{idEntrada,mode=IN,jdbcType=INTEGER},#{usuario,mode=IN,jdbcType=VARCHAR},#{estado,mode=OUT,jdbcType=INTEGER},#{salida,mode=OUT,jdbcType=VARCHAR},#{idSalida,mode=OUT,jdbcType=INTEGER})}
+	</select>
+	
+	<select id="receiveMultiTO" statementType="CALLABLE" parameterType="OWCall">
+		{call servicio_tecnico.pr_recepcionamulubicto (#{idEntrada,mode=IN,jdbcType=INTEGER},#{usuario,mode=IN,jdbcType=VARCHAR},#{estado,mode=OUT,jdbcType=INTEGER},#{salida,mode=OUT,jdbcType=VARCHAR},#{idSalida,mode=OUT,jdbcType=INTEGER})}
+	</select>
+	
+	<select id="moveIT" statementType="CALLABLE">
+		{call servicio_tecnico.pr_creait(#{idEntrada,mode=IN,jdbcType=INTEGER},#{estado,mode=OUT,jdbcType=INTEGER},#{salida,mode=OUT,jdbcType=VARCHAR},#{idSalida,mode=OUT,jdbcType=INTEGER})}
+	</select>
+	
+	<select id="moveSC" statementType="CALLABLE">
+		{call servicio_tecnico.pr_creasc(#{idEntrada,mode=IN,jdbcType=INTEGER},#{estado,mode=OUT,jdbcType=INTEGER},#{salida,mode=OUT,jdbcType=VARCHAR},#{idSalida,mode=OUT,jdbcType=INTEGER})}
+	</select>
+	
+	<select id="moveDM" statementType="CALLABLE">
+		{call servicio_tecnico.pr_creadm(#{idEntrada,mode=IN,jdbcType=INTEGER},#{estado,mode=OUT,jdbcType=INTEGER},#{salida,mode=OUT,jdbcType=VARCHAR},#{idSalida,mode=OUT,jdbcType=INTEGER})}
+	</select>
+	
+	<insert id="saveCabecera" parameterType="OWCabecera" keyColumn="ILDOCO" keyProperty="id">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select s_tecnico.nextval from dual
+		</selectKey>
+		insert into F56INTSTC (
+		    ILDOCO,
+		    ILMCU,
+		    ILAN8,
+		    ILFLOC,
+		    ILTLOC,
+		    ILDOC,
+		    ILEXA,
+		    ILUSER,
+		    ILDCT,
+		    ILDL02
+		) values (
+			#{id},
+			#{origenCC},
+			#{destinoCC},
+			#{origenUB},
+			#{destinoUB},
+			#{numeroDocumento},
+			#{observacion},
+			#{usuario},
+			#{tipoDocumento},
+			#{tipo}
+		)
+	</insert>
+	
+	<insert id="saveDetalle" parameterType="OWDetalle" keyColumn="ILDOCO">
+		insert into F56INTSTD (
+		    ILDOCO,
+		    ILITM,
+		    ILTRQT,
+		    ILPCT1,
+		    ILEMCU,
+		    ILCLOC
+		) values (
+			#{id},
+			#{producto},
+			#{cantidad},
+			#{porcentaje},
+			#{destinoCC},
+			#{ubicacionTO}
+		)
+	</insert>
+</mapper>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="peticionDocumento">
+	
+	<insert id="save" parameterType="PeticionDocumento" keyColumn="id_peticion_documento" keyProperty="id">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_peticion_documentos.nextval from dual
+		</selectKey>
+		insert into sstt_peticion_documentos(
+			id_peticion_documento
+			,i_numero
+			,s_tipo
+			,id_facturar
+			,s_vigente
+		) values (
+			#{id}
+			,#{numero}
+			,#{tipo}
+			,#{facturar}
+			,#{vigente}
+		)
+	</insert>
+	<update id="update" parameterType="PeticionDocumento">
+		update sstt_peticion_documentos set 
+			s_vigente = #{vigente}
+			,i_numero = #{numero}
+		where id_peticion_documento = #{id}		
+	</update>
+	
+	<resultMap type="PeticionDocumento" id="peticionDocumento">
+		<result property="id"     column="id_peticion_documento"/>
+		<result property="numero" column="i_numero"/>
+		<result property="tipo"   column="s_tipo"/>
+		<result property="facturar" column="id_facturar"/>
+	</resultMap>
+	
+	<select id="listPeticionDocumentoByDespachoIterno" parameterType="FilterOT" resultMap="peticionDocumento">
+		select distinct
+		    pdoc.id_peticion_documento
+		    ,pdoc.i_numero
+		    ,pdoc.s_tipo
+		    ,pdoc.id_facturar
+		from 
+		    sstt_despacho_interno_detalles did
+		    inner join sstt_peticion_detalles pd on pd.id_ot = did.id_ot
+		    inner join sstt_ordenes_trabajo ot on ot.id_ot = pd.id_ot
+		    inner join sstt_peticion_documentos pdoc on pdoc.id_peticion_documento = pd.id_peticion_documento 
+	    where 
+	    	did.id_despacho_interno = #{idDespacho}
+	        and ot.id_estado = #{idEstado}
+	</select>
+	
+	<select id="getPeticionDocumentoByDespachoIterno" parameterType="FilterOT" resultType="Integer">
+		select count (distinct pdoc.id_peticion_documento)
+		from 
+		    sstt_despacho_interno_detalles did
+		    inner join sstt_peticion_detalles pd on pd.id_ot = did.id_ot
+		    inner join sstt_ordenes_trabajo ot on ot.id_ot = pd.id_ot
+		    inner join sstt_peticion_documentos pdoc on pdoc.id_peticion_documento = pd.id_peticion_documento 
+	    where 
+	    	did.id_despacho_interno = #{idDespacho}
+	        and ot.id_estado = #{idEstado}
+	</select>
+</mapper>

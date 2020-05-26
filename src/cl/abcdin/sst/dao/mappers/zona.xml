@@ -1,0 +1,495 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="zona">
+
+	<resultMap type="Zona" id="zona">
+	    <result property="id"                                 column="id_zona"                />
+	    <result property="codigo"                             column="s_cod_zona"             />
+	    <result property="nombre"                             column="s_nombre"               />
+	    <result property="vigente"                            column="s_vigente"              />
+	    <result property="fechaCreacion"                      column="d_fecha_creacion"       />
+	    <result property="usuarioCreacion.nombreCompleto"     column="s_usuario_creacion"     />
+	    <result property="fechaModificacion"                  column="d_fecha_modificacion"   />
+	    <result property="usuarioModificacion.nombreCompleto" column="s_usuario_modificacion" />
+	</resultMap>
+
+	<resultMap type="TiendaZona" id="tiendaZona">
+		<result property="tienda.id"                   column="id_ubicacion"/>
+		<result property="tienda.comuna.id"            column="id_comuna"/>
+		<result property="tienda.nombre"               column="s_nombre"/>
+		<result property="tienda.direccion"            column="s_direccion"/>
+		<result property="tienda.rut"                  column="i_rut" typeHandler="RunTypeHandler"/>
+		<result property="tienda.giro"                 column="s_giro"/>
+		<result property="tienda.telefono"             column="s_telefono"/>
+		<result property="tienda.tipo"                 column="s_tipo"/>
+		<result property="tienda.vigente"              column="s_vigente"/>
+	    <result property="zona.id"                     column="id_zona"/>
+	    <result property="zona.codigo"                 column="s_cod_zona"/>
+	    <result property="zona.nombre"                 column="s_zona_nombre"/>
+	    <result property="zona.vigente"                column="s_zona_vigente"/>
+	</resultMap>
+
+	<resultMap type="TiendaZona" id="tiendaZonaUsuario" extends="tiendaZona">
+	    <result property="fechaCreacion"               column="d_fecha_creacion"/>
+	    <result property="usuario.nombreCompleto"      column="s_usuario_creacion"/>
+	</resultMap>
+
+	<select id="get" parameterType="Long" resultMap="zona">
+		select
+		    z.id_zona,
+		    z.s_cod_zona,
+		    z.s_nombre,
+		    z.s_vigente,
+		    z.d_fecha_creacion,
+		    uc.s_nombre || ' ' || uc.s_apellido_paterno || ' ' || uc.s_apellido_materno s_usuario_creacion,
+		    z.d_fecha_modificacion,
+		    um.s_nombre || ' ' || um.s_apellido_paterno || ' ' || um.s_apellido_materno s_usuario_modificacion
+		from
+		    sstt_zonas z
+		    left join sstt_usuarios uc on uc.id_usuario = z.id_usuario_creacion
+		    left join sstt_usuarios um on um.id_usuario = z.id_usuario_creacion
+		where
+			z.id_zona = #{id}
+	</select>
+
+	<select id="getByIdUbicacion" parameterType="Long" resultMap="zona">
+		select
+		    z.id_zona,
+		    z.s_cod_zona,
+		    z.s_nombre,
+		    z.s_vigente,
+		    z.d_fecha_creacion,
+		    uc.s_nombre || ' ' || uc.s_apellido_paterno || ' ' || uc.s_apellido_materno s_usuario_creacion,
+		    z.d_fecha_modificacion,
+		    um.s_nombre || ' ' || um.s_apellido_paterno || ' ' || um.s_apellido_materno s_usuario_modificacion
+		from
+		    sstt_zonas z
+		    left join sstt_usuarios uc on uc.id_usuario = z.id_usuario_creacion
+		    left join sstt_usuarios um on um.id_usuario = z.id_usuario_creacion
+        where exists (select 1 from sstt_ubicaciones_zonas uz where uz.id_zona = z.id_zona and uz.id_ubicacion = #{idUbicacion} )
+	</select>
+
+	<select id="getByCodigo" parameterType="String" resultMap="zona">
+		select
+		    z.id_zona,
+		    z.s_cod_zona,
+		    z.s_nombre,
+		    z.s_vigente,
+		    z.d_fecha_creacion,
+		    uc.s_nombre || ' ' || uc.s_apellido_paterno || ' ' || uc.s_apellido_materno s_usuario_creacion,
+		    z.d_fecha_modificacion,
+		    um.s_nombre || ' ' || um.s_apellido_paterno || ' ' || um.s_apellido_materno s_usuario_modificacion
+		from
+		    sstt_zonas z
+		    left join sstt_usuarios uc on uc.id_usuario = z.id_usuario_creacion
+		    left join sstt_usuarios um on um.id_usuario = z.id_usuario_creacion
+		where
+			z.s_cod_zona = #{codigo}
+	</select>
+	
+	<select id="list" parameterType="GridControl" resultMap="zona">
+		select
+		    z.id_zona,
+		    z.s_cod_zona,
+		    z.s_nombre,
+		    z.s_vigente,
+		    z.d_fecha_creacion,
+		    uc.s_nombre || ' ' || uc.s_apellido_paterno || ' ' || uc.s_apellido_materno s_usuario_creacion,
+		    z.d_fecha_modificacion,
+		    um.s_nombre || ' ' || um.s_apellido_paterno || ' ' || um.s_apellido_materno s_usuario_modificacion
+		from
+		    sstt_zonas z
+		    left join sstt_usuarios uc on uc.id_usuario = z.id_usuario_creacion
+		    left join sstt_usuarios um on um.id_usuario = z.id_usuario_creacion
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="listAll" resultMap="zona">
+		select
+		    z.id_zona,
+		    z.s_cod_zona,
+		    z.s_nombre,
+		    z.s_vigente,
+		    z.d_fecha_creacion,
+		    uc.s_nombre || ' ' || uc.s_apellido_paterno || ' ' || uc.s_apellido_materno s_usuario_creacion,
+		    z.d_fecha_modificacion,
+		    um.s_nombre || ' ' || um.s_apellido_paterno || ' ' || um.s_apellido_materno s_usuario_modificacion
+		from
+		    sstt_zonas z
+		    left join sstt_usuarios uc on uc.id_usuario = z.id_usuario_creacion
+		    left join sstt_usuarios um on um.id_usuario = z.id_usuario_creacion
+		order by z.s_nombre asc
+	</select>
+	
+	<select id="listAllAsTreeView" resultType="TreeView">
+        select
+            to_char(z.id_zona) id,
+            to_char(z.id_zona) "metadata.id",
+            'ZONA' "metadata.tipo",
+            z.s_cod_zona || ' ' || z.s_nombre data
+        from
+            sstt_zonas z
+        where
+            z.s_vigente = 'S'
+        order by z.s_nombre asc
+	</select>
+	
+	<select id="listSucursalesByZonaAsTreeView" parameterType="Long" resultType="TreeView">
+		select 
+            to_char(u.id_ubicacion) id,
+            to_char(u.id_ubicacion) "metadata.id",
+            'TIENDA' "metadata.tipo",
+		    u.id_ubicacion || ' ' || u.s_nombre data
+		from 
+		    sstt_ubicaciones u
+		    inner join sstt_ubicaciones_zonas uz on u.id_ubicacion = uz.id_ubicacion
+		    inner join sstt_zonas z on uz.id_zona = z.id_zona
+		where 
+		    u.s_tipo = 'SC' 
+		    and u.s_vigente = 'S'
+		    and uz.id_zona = #{id}
+		order by
+			u.s_nombre asc
+	</select>
+	
+	<select id="listSucursalesByFilterAsTreeView" parameterType="FilterRegla" resultType="TreeView">
+		select 
+            to_char(u.id_ubicacion) id,
+            to_char(u.id_ubicacion) "metadata.id",
+            'TIENDA' "metadata.tipo",
+		    u.id_ubicacion || ' ' || u.s_nombre data,
+            case when re.id_regla_comercial is not null then 
+                'checked' 
+            end as checked
+		from 
+		    sstt_ubicaciones u
+		    inner join sstt_ubicaciones_zonas uz 
+                on u.id_ubicacion = uz.id_ubicacion
+		    inner join sstt_zonas z 
+                on uz.id_zona = z.id_zona
+            left join sstt_regla_entidad re 
+                on re.id_tienda = u.id_ubicacion 
+               and re.id_regla_comercial = #{idRegla}
+               and re.s_entidad = 'T'
+		where 
+		    u.s_tipo = 'SC' 
+		    and u.s_vigente = 'S'
+		    and uz.id_zona = #{idZona}
+		order by
+			u.s_nombre asc
+	</select>
+	
+	<select id="listSucursalesHistoricasByFilterAsTreeView" parameterType="FilterRegla" resultType="TreeView">
+		select 
+            to_char(u.id_ubicacion) id,
+            to_char(u.id_ubicacion) "metadata.id",
+            'TIENDA' "metadata.tipo",
+		    u.id_ubicacion || ' ' || u.s_nombre data,
+            case when re.id_regla_comercial is not null then 
+                'checked' 
+            end as checked
+		from 
+		    sstt_ubicaciones u
+		    inner join sstt_ubicaciones_zonas uz 
+                on u.id_ubicacion = uz.id_ubicacion
+		    inner join sstt_zonas z 
+                on uz.id_zona = z.id_zona
+            left join sstt_regla_entidad_hist re 
+                on re.id_tienda = u.id_ubicacion 
+               and re.id_regla_comercial_hist = #{idReglaHistorica}
+               and re.s_entidad = 'T'
+		where 
+		    u.s_tipo = 'SC' 
+		    and uz.id_zona = #{idZona}
+		order by
+			u.s_nombre asc
+	</select>
+	
+	<select id="listZonasHistoricasAsTreeViewByFilter" parameterType="FilterRegla" resultType="TreeView">
+		select
+            to_char(z.id_zona) id,
+            to_char(z.id_zona) "metadata.id",
+            'ZONA' "metadata.tipo",
+            z.s_cod_zona || ' ' || z.s_nombre data,
+            case when re.id_regla_comercial is not null then 
+                'checked'
+            end as checked
+        from
+            sstt_zonas z
+            left join sstt_regla_entidad_hist re 
+                on re.id_zona = z.id_zona 
+               and re.id_regla_comercial_hist = #{idReglaHistorica}
+               and re.s_entidad = 'Z'
+        order by z.s_nombre asc
+	</select>
+	
+	<select id="listZonasAsTreeViewByFilter" parameterType="FilterRegla" resultType="TreeView">
+		select
+            to_char(z.id_zona) id,
+            to_char(z.id_zona) "metadata.id",
+            'ZONA' "metadata.tipo",
+            z.s_cod_zona || ' ' || z.s_nombre data,
+            case when re.id_regla_comercial is not null then 
+                'checked'
+            end as checked
+        from
+            sstt_zonas z
+            left join sstt_regla_entidad re 
+                on re.id_zona = z.id_zona 
+               and re.id_regla_comercial = #{idRegla}
+               and re.s_entidad = 'Z'
+        where
+            z.s_vigente = 'S'
+        order by z.s_nombre asc
+	</select>
+	
+	<select id="getCountSucursalesByFilter" parameterType="FilterRegla" resultType="Integer">
+        select 
+            count(1)
+        from 
+            sstt_ubicaciones u
+            inner join sstt_ubicaciones_zonas uz 
+                on u.id_ubicacion = uz.id_ubicacion
+            inner join sstt_zonas z 
+                on uz.id_zona = z.id_zona
+            inner join sstt_regla_entidad re 
+                on re.id_tienda = u.id_ubicacion 
+               and re.id_regla_comercial = #{idRegla}
+               and re.s_entidad = 'T'
+        where 
+            u.s_tipo = 'SC' 
+            and u.s_vigente = 'S'
+            and uz.id_zona = #{idZona}
+        order by
+            u.s_nombre asc
+	</select>
+	
+	<select id="getCountSucursalesHistoricasByFilter" parameterType="FilterRegla" resultType="Integer">
+        select 
+            count(1)
+        from 
+            sstt_ubicaciones u
+            inner join sstt_ubicaciones_zonas uz 
+                on u.id_ubicacion = uz.id_ubicacion
+            inner join sstt_zonas z 
+                on uz.id_zona = z.id_zona
+            inner join sstt_regla_entidad_hist re 
+                on re.id_tienda = u.id_ubicacion 
+               and re.id_regla_comercial_hist = #{idReglaHistorica}
+               and re.s_entidad = 'T'
+        where 
+            u.s_tipo = 'SC' 
+            and uz.id_zona = #{idZona}
+        order by
+            u.s_nombre asc
+	</select>
+	
+	<select id="listSucursalesWithoutZonaAsTreeView" resultType="TreeView">
+        select 
+            to_char(u.id_ubicacion) id,
+            to_char(u.id_ubicacion) "metadata.id",
+            'TIENDA' "metadata.tipo",
+		    u.id_ubicacion || ' ' || u.s_nombre data
+        from 
+            sstt_ubicaciones u
+        where 
+            u.s_tipo = 'SC' 
+		    and u.s_vigente = 'S'
+            and not exists (select 1 from sstt_ubicaciones_zonas uz where u.id_ubicacion = uz.id_ubicacion)
+        order by
+            u.s_nombre asc
+	</select>
+	
+	<select id="getTotal" resultType="Integer">
+		select
+			count(1)
+		from
+		    sstt_zonas z
+	</select>
+	
+	<update id="update" parameterType="Zona">
+		update sstt_zonas set
+		    s_cod_zona              = upper(#{codigo}),
+		    s_nombre                = upper(#{nombre}),
+		    s_vigente               = #{vigente},
+		    d_fecha_modificacion    = sysdate,
+		    id_usuario_modificacion = #{usuarioModificacion.id}			
+		where
+			id_zona = #{id}
+	</update>
+	
+	<insert id="save" parameterType="Zona" keyProperty="id" keyColumn="id_zona">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_zonas.nextval from dual
+		</selectKey>
+		insert into sstt_zonas (
+			id_zona,
+		    s_cod_zona,
+		    s_nombre,
+		    s_vigente,
+		    d_fecha_creacion,
+		    id_usuario_creacion
+		) values (
+			#{id},
+		    upper(#{codigo}),
+		    upper(#{nombre}),
+		    #{vigente},
+		    sysdate,
+		    #{usuarioCreacion.id}
+		)
+	</insert>
+	
+	<select id="listSucursalesNotInZonaByZona" parameterType="Long" resultMap="tiendaZona">
+		select 
+		    u.id_ubicacion,
+		    u.id_comuna,
+		    u.s_nombre,
+		    u.s_direccion,
+		    u.i_rut,
+		    u.s_giro,
+		    u.s_telefono,
+		    u.s_tipo,
+		    u.s_vigente,
+		    z.id_zona,
+		    z.s_cod_zona,
+		    z.s_nombre s_zona_nombre,
+		    z.s_vigente s_zona_vigente
+		from 
+		    sstt_ubicaciones u
+		    left join sstt_ubicaciones_zonas uz on u.id_ubicacion = uz.id_ubicacion
+		    left join sstt_zonas z on uz.id_zona = z.id_zona
+		where 
+		    u.s_tipo = 'SC' 
+		    and not exists (select 1 from sstt_ubicaciones_zonas uz
+		                    where u.id_ubicacion = uz.id_ubicacion
+		                    and uz.id_zona = #{id})
+		order by
+			u.s_nombre asc
+	</select>
+	
+	<select id="listSucursalesByZona" parameterType="Long" resultMap="tiendaZona">
+		select 
+		    u.id_ubicacion,
+		    u.id_comuna,
+		    u.s_nombre,
+		    u.s_direccion,
+		    u.i_rut,
+		    u.s_giro,
+		    u.s_telefono,
+		    u.s_tipo,
+		    u.s_vigente,
+		    z.id_zona,
+		    z.s_cod_zona,
+		    z.s_nombre s_zona_nombre,
+		    z.s_vigente s_zona_vigente
+		from 
+		    sstt_ubicaciones u
+		    inner join sstt_ubicaciones_zonas uz on u.id_ubicacion = uz.id_ubicacion
+		    inner join sstt_zonas z on uz.id_zona = z.id_zona
+		where 
+		    u.s_tipo = 'SC' 
+		    and uz.id_zona = #{id}
+		order by
+			u.s_nombre asc
+	</select>
+	
+	<select id="listSucursalesWithoutZona" resultMap="tiendaZona">
+        select 
+            u.id_ubicacion,
+            u.id_comuna,
+            u.s_nombre,
+            u.s_direccion,
+            u.i_rut,
+            u.s_giro,
+            u.s_telefono,
+            u.s_tipo,
+            u.s_vigente,
+            0  id_zona,
+            '' s_cod_zona,
+            '' s_zona_nombre,
+            'N' s_zona_vigente
+        from 
+            sstt_ubicaciones u
+        where 
+            u.s_tipo = 'SC' 
+            and not exists (select 1 from sstt_ubicaciones_zonas uz where u.id_ubicacion = uz.id_ubicacion)
+        order by
+            u.s_nombre asc
+	</select>
+	
+	<select id="listSucursalesByFilter" parameterType="FilterZona" resultMap="tiendaZonaUsuario">
+        select 
+            u.id_ubicacion,
+            u.id_comuna,
+            u.s_nombre,
+            u.s_direccion,
+            u.i_rut,
+            u.s_giro,
+            u.s_telefono,
+            u.s_tipo,
+            u.s_vigente,
+            z.id_zona,
+            z.s_cod_zona,
+            z.s_nombre s_zona_nombre,
+            z.s_vigente s_zona_vigente,
+		    uz.d_fecha_creacion,
+		    us.s_nombre || ' ' || us.s_apellido_paterno || ' ' || us.s_apellido_materno s_usuario_creacion
+        from 
+            sstt_ubicaciones u
+            left join sstt_ubicaciones_zonas uz on u.id_ubicacion = uz.id_ubicacion
+            left join sstt_zonas z on uz.id_zona = z.id_zona
+            left join sstt_usuarios us on us.id_usuario = uz.id_usuario
+		where 
+		    u.s_tipo = 'SC' 
+		    <if test="idUbicacion != null and idUbicacion != 0">
+		    and u.id_ubicacion =  #{idUbicacion}
+	   		</if>
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTotalSucursalesByFilter" parameterType="FilterZona" resultType="Integer">
+		select 
+		    count(1)
+		from 
+		    sstt_ubicaciones u
+		where 
+		    u.s_tipo = 'SC' 
+		    <if test="idUbicacion != null and idUbicacion != 0">
+		    and u.id_ubicacion =  #{idUbicacion}
+	   		</if>
+	</select>
+	
+	<delete id="deleteSucursalZonaByZona" parameterType="Zona">
+		delete sstt_ubicaciones_zonas where id_zona = #{id}
+	</delete>
+	
+	<delete id="deleteSucursalZonaByUbicacion" parameterType="Ubicacion">
+		delete sstt_ubicaciones_zonas where id_ubicacion = #{id}
+	</delete>
+	
+	<insert id="saveSucursalZona" parameterType="Map" keyProperty="id" keyColumn="id_ubicacion_zona">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_ubicaciones_zonas.nextval from dual
+		</selectKey>
+		insert into sstt_ubicaciones_zonas 
+		(id_ubicacion_zona, id_ubicacion,id_zona,d_fecha_creacion,id_usuario) 
+		values 
+		(#{id},#{idSucursal},#{idZona}, sysdate, #{idUsuario})
+	</insert>
+
+</mapper>
+
+	

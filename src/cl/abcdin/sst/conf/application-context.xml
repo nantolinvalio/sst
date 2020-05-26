@@ -1,0 +1,649 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans   
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" 
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/tx
+	http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
+	http://www.springframework.org/schema/aop
+	http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+	http://www.springframework.org/schema/mvc
+	http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd">
+
+	<bean id="springApplicationContext" class="cl.abcdin.sst.service.SpringApplicationContext"/>
+	         
+	<bean id="localVariableTableParameterNameDiscoverer" class="org.springframework.core.LocalVariableTableParameterNameDiscoverer"/>
+	      
+	<bean id="dataSource" class="org.springframework.jndi.JndiObjectFactoryBean">
+<!-- 		<property name="jndiName" value="java:/comp/env/jdbc/oracle_sst" /> -->  
+ 		<property name="jndiName" value="jdbc/oracle_sst" />
+	</bean>
+	
+	<bean id="dataSourceLogin" class="org.springframework.jndi.JndiObjectFactoryBean">
+<!--  		<property name="jndiName" value="java:/comp/env/jdbc/oracle_accesoweb" /> -->     
+ 		<property name="jndiName" value="jdbc/oracle_accesoweb" />
+	</bean>
+
+	<bean class="org.mybatis.spring.SqlSessionFactoryBean" id="sqlSessionFactory">
+		<property name="configLocation"      value="classpath:cl/abcdin/sst/conf/mybatis-config.xml"/>
+		<property name="mapperLocations"     value="classpath*:cl/abcdin/sst/dao/mappers/*.xml" />
+		<property name="typeHandlersPackage" value="cl.abcdin.sst.dao.mappers.typeHadlers"/>
+		<property name="typeAliasesPackage"  value="cl.abcdin.sst.model,cl.abcdin.sst.dao.mappers.typeHadlers,cl.abcdin.sst.model.vo"/>
+		<property name="dataSource"          ref="dataSource"/>
+	</bean>
+
+	<bean class="org.mybatis.spring.SqlSessionFactoryBean" id="sqlSessionFactoryLogin">
+		<property name="configLocation"  value="classpath:cl/abcdin/sst/conf/mybatis-config.xml"/>
+		<property name="mapperLocations" value="classpath*:cl/abcdin/sst/login/dao/mappers/*.xml" />
+		<property name="typeHandlersPackage" value="cl.abcdin.sst.dao.mappers.typeHadlers"/>
+		<property name="typeAliasesPackage"  value="cl.abcdin.sst.login.model"/>
+		<property name="dataSource"      ref="dataSourceLogin"/>
+	</bean>
+	
+	<bean class="org.mybatis.spring.SqlSessionTemplate" id="sqlSessionTemplateLogin">
+		<constructor-arg name="sqlSessionFactory" ref="sqlSessionFactoryLogin"/>
+	</bean>
+	
+	<bean class="org.mybatis.spring.SqlSessionTemplate" id="sqlSessionTemplate">
+		<constructor-arg name="sqlSessionFactory" ref="sqlSessionFactory"/>
+	</bean>
+	
+	<bean id="loginDAO" class="cl.abcdin.sst.login.dao.LoginDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplateLogin"/>
+	</bean>
+	
+	<bean id="accesorioDAO" class="cl.abcdin.sst.dao.AccesorioDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="guiaDAO" class="cl.abcdin.sst.dao.GuiaDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="guiaAgrupadaDAO" class="cl.abcdin.sst.dao.GuiaAgrupadaDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="guiaRemateDAO" class="cl.abcdin.sst.dao.GuiaRemateDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="utilDAO" class="cl.abcdin.sst.dao.UtilDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+
+	<bean id="reglaComercialDAO" class="cl.abcdin.sst.dao.ReglaComercialDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+
+	<bean id="zonaDAO" class="cl.abcdin.sst.dao.ZonaDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+
+	<bean id="productoDAO" class="cl.abcdin.sst.dao.ProductoDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+
+	<bean id="lineaDAO" class="cl.abcdin.sst.dao.LineaDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+
+	<bean id="familiaDAO" class="cl.abcdin.sst.dao.FamiliaDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+
+	<bean id="rolDAO" class="cl.abcdin.sst.dao.RolDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+
+	<bean id="otTrackingDAO" class="cl.abcdin.sst.dao.OtTrackingDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	<bean id="prtsDAO" class="cl.abcdin.sst.dao.PrtsDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+
+	<bean id="diasTramosDAO" class="cl.abcdin.sst.dao.DiasTramosDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+
+	<bean id="estadoDAO" class="cl.abcdin.sst.dao.EstadoDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+
+	<bean id="bitacoraDAO" class="cl.abcdin.sst.dao.BitacoraDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="bitacoraInternaDAO" class="cl.abcdin.sst.dao.BitacoraInternaDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="ubicacionInternaDAO" class="cl.abcdin.sst.dao.UbicacionInternaDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+
+	<bean id="parametroDAO" class="cl.abcdin.sst.dao.ParametroDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+
+	<bean id="columnaDAO" class="cl.abcdin.sst.dao.ColumnaDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+
+	<bean id="ordenTrabajoDAO" class="cl.abcdin.sst.dao.OrdenTrabajoDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="ubicacionDAO" class="cl.abcdin.sst.dao.UbicacionDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	 </bean>
+	
+	<bean id="usuarioDAO" class="cl.abcdin.sst.dao.UsuarioDAO"> 
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="semaforoDAO" class="cl.abcdin.sst.dao.SemaforoDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="indicadorDAO" class="cl.abcdin.sst.dao.IndicadorDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="indicadorGestionDAO" class="cl.abcdin.sst.dao.IndicadorGestionDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="indicadorMarcaDAO" class="cl.abcdin.sst.dao.IndicadorMarcaDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="indicadorFacturaDAO" class="cl.abcdin.sst.dao.IndicadorFacturaDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="gestionesDAO" class="cl.abcdin.sst.dao.GestionesDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="facturaGestionDAO" class="cl.abcdin.sst.dao.FacturaGestionDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="parteDAO" class="cl.abcdin.sst.dao.ParteDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="regionDAO" class="cl.abcdin.sst.dao.RegionDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="comunaDAO" class="cl.abcdin.sst.dao.ComunaDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="clienteDAO" class="cl.abcdin.sst.dao.ClienteDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="servicioTecnicoDAO" class="cl.abcdin.sst.dao.ServicioTecnicoDAO">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="proveedorDAO" class="cl.abcdin.sst.dao.ProveedorDAO">
+		<property name="sqlSessionTemplate"	ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="transportistaDAO" class="cl.abcdin.sst.dao.TransportistaDAO">
+		<property name="sqlSessionTemplate"	ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="cambioDAO" class="cl.abcdin.sst.dao.CambioDAO">
+		<property name="sqlSessionTemplate"	ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="recepcionDAO" class="cl.abcdin.sst.dao.RecepcionDAO">
+		<property name="sqlSessionTemplate"	ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="documentoDAO" class="cl.abcdin.sst.dao.DocumentoDAO">
+		<property name="sqlSessionTemplate"	ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="tipoFallasDAO" class="cl.abcdin.sst.dao.TipoFallasDAO">
+		<property name="sqlSessionTemplate"	ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="ejecutivaDAO" class="cl.abcdin.sst.dao.EjecutivaDAO">
+		<property name="sqlSessionTemplate"	ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="destinoDAO" class="cl.abcdin.sst.dao.DestinoDAO">
+		<property name="sqlSessionTemplate"	ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="sucursalDAO" class="cl.abcdin.sst.dao.SucursalDAO">
+		<property name="sqlSessionTemplate"	ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="logisticoDAO" class="cl.abcdin.sst.dao.LogisticoDAO">
+		<property name="sqlSessionTemplate"	ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="tipoCambioDAO" class="cl.abcdin.sst.dao.TipoCambioDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>	
+	</bean>
+	
+	<bean id="notaCreditoDAO" class="cl.abcdin.sst.dao.NotaCreditoDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="cambioAutomaticoProveedorCartaDAO" class="cl.abcdin.sst.dao.CambioAutomaticoProveedorCartaDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="recepcionMasivaDAO" class="cl.abcdin.sst.dao.RecepcionMasivaDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="despachoInternoDAO" class="cl.abcdin.sst.dao.DespachoInternoDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+
+	<bean id="despachoDetalleDAO" class="cl.abcdin.sst.dao.DespachoDetalleDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+
+	<bean id="despachoInternoCamionDAO" class="cl.abcdin.sst.dao.DespachoInternoCamionDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+
+	<bean id="ordenTrabajoMobileDAO" class="cl.abcdin.sst.dao.OrdenTrabajoMobileDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+
+	<bean id="despachoMobileDAO" class="cl.abcdin.sst.dao.DespachoMobileDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="selloDAO" class="cl.abcdin.sst.dao.SelloDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+
+	<bean id="despachoDetalleMobileDAO" class="cl.abcdin.sst.dao.DespachoDetalleMobileDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="bitacoraInternaMobileDAO" class="cl.abcdin.sst.dao.BitacoraInternaMobileDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="transportistaMobileDAO" class="cl.abcdin.sst.dao.TransportistaMobileDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="peticionDocumentoDAO" class="cl.abcdin.sst.dao.PeticionDocumentoDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="servicioTecnicoEjecutivaDAO" class="cl.abcdin.sst.dao.ServicioTecnicoEjecutivaDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="rutaServicioTecnicoDAO" class="cl.abcdin.sst.dao.RutaServicioTecnicoDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="provinciaDAO" class="cl.abcdin.sst.dao.ProvinciaDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="oWDAO" class="cl.abcdin.sst.dao.OWDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="inventarioMobileDAO" class="cl.abcdin.sst.dao.InventarioMobileDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="inventarioUbicacionDAO" class="cl.abcdin.sst.dao.InventarioUbicacionDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="productoMobileDAO" class="cl.abcdin.sst.dao.ProductoMobileDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+
+	<bean id="rutaServicioTecnicoDetalleDAO" class="cl.abcdin.sst.dao.RutaServicioTecnicoDetalleDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+
+	<bean id="interfazService" class="cl.abcdin.sst.service.InterfazService">
+		<!-- 		 AGREGAR DAOS  -->
+		<property name="otTrackingDAO" ref="otTrackingDAO"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="bitacoraDAO" ref="bitacoraDAO"/>
+	</bean>
+
+	<bean id="oWService" class="cl.abcdin.sst.service.OWService">
+		<property name="oWDAO"  				ref="oWDAO"/>
+		<property name="ordenTrabajoDAO"  		ref="ordenTrabajoDAO"/>
+		<property name="documentoDAO"  			ref="documentoDAO"/>
+		<property name="guiaDAO"  				ref="guiaDAO"/>
+		<property name="guiaAgrupadaDAO"  		ref="guiaAgrupadaDAO"/>
+		<property name="peticionDocumentoDetalleDAO"  		ref="peticionDocumentoDetalleDAO"/>
+		<property name="ubicacionDAO"  		ref="ubicacionDAO"/>
+		<property name="facturaGestionDAO"  		ref="facturaGestionDAO"/>
+	</bean>
+	
+	<bean id="procedimientoDAO" class="cl.abcdin.sst.dao.ProcedimientoDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="ubicacionInternaDetalleDAO" class="cl.abcdin.sst.dao.UbicacionInternaDetalleDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+		
+	<bean id="peticionDocumentoDetalleDAO" class="cl.abcdin.sst.dao.PeticionDocumentoDetalleDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="inventarioDAO" class="cl.abcdin.sst.dao.InventarioDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="inventarioProductoDAO" class="cl.abcdin.sst.dao.InventarioProductoDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+
+	<bean id="envioSucursalDAO" class="cl.abcdin.sst.dao.EnvioSucursalDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="envioSucursalDetalleDAO" class="cl.abcdin.sst.dao.EnvioSucursalDetalleDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="envioSucursalMobileDAO" class="cl.abcdin.sst.dao.EnvioSucursalMobileDAO">
+		<property name ="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+		
+	
+  	<bean id="loginService" class="cl.abcdin.sst.login.service.LoginService"> 
+<!--    <bean id="loginService" class="cl.abcdin.sst.login.service.LoginServiceDummy"> -->
+		<property name="loginDAO"                    ref="loginDAO"/>
+		<property name="initialContextFactory"       value="com.sun.jndi.ldap.LdapCtxFactory"/>
+		<property name="providerURLPrimary"          value="ldap://eserver.din.cl:389"/>
+		<property name="providerURLSecundary"        value="ldap://zimbra.adretail.cl:389/"/>
+		<property name="application"                 value="INV-001"/>
+		<property name="usuarioDAO"                  ref="usuarioDAO"/>
+		<property name="ubicacionDAO"                ref="ubicacionDAO"/>
+		<property name="prtsDAO"                	 ref="prtsDAO"/>
+	</bean>
+	
+	<bean id="proveedorService" class="cl.abcdin.sst.service.ProveedorService">
+		<property name="cambioAutomaticoProveedorCartaDAO"          ref="cambioAutomaticoProveedorCartaDAO"/>
+	</bean>
+	
+	<bean id="envioRecepcionService" class="cl.abcdin.sst.service.EnvioRecepcionService">
+		<property name="recepcionMasivaDAO"   ref="recepcionMasivaDAO"/>
+		<property name="ordenTrabajoDAO"      ref="ordenTrabajoDAO"/>
+		<property name="bitacoraDAO"          ref="bitacoraDAO"/>
+		<property name="ubicacionDAO"         ref="ubicacionDAO"/>
+		<property name="guiaAgrupadaDAO"      ref="guiaAgrupadaDAO"/>
+		<property name="accesorioDAO"         ref="accesorioDAO"/>
+		<property name="guiaDAO"              ref="guiaDAO"/>
+		<property name="guiaRemateDAO"        ref="guiaRemateDAO"/>
+		<property name="estadoDAO"            ref="estadoDAO"/>
+		<property name="recepcionDAO"         ref="recepcionDAO"/>
+		<property name="gestionesDAO"         ref="gestionesDAO"/>
+		<property name="servicioTecnicoDAO"   ref="servicioTecnicoDAO"/>
+		<property name="cambioDAO"            ref="cambioDAO"/>
+		<property name="sucursalService"      ref="sucursalService"/>
+		<property name="ordenTrabajoService"  ref="ordenTrabajoService"/>
+		<property name="oWService"            ref="oWService"/>
+		<property name="productoDAO"          ref="productoDAO" />
+		<property name="familiaDAO"           ref="familiaDAO" />
+		<property name="bitacoraInternaDAO"   ref="bitacoraInternaDAO" />
+		<property name="utilDAO"              ref="utilDAO" />
+		<property name="parteDAO"             ref="parteDAO" />
+		<property name="ubicacionInternaDAO"  ref="ubicacionInternaDAO"/>
+		<property name="bodegaService"        ref="bodegaService"/>
+	</bean>
+	
+	<bean id="buscadoresService" class="cl.abcdin.sst.service.BuscadoresService">
+		<property name="recepcionDAO"          ref="recepcionDAO"/>
+		<property name="ordenTrabajoDAO"       ref="ordenTrabajoDAO"/>
+		<property name="servicioTecnicoDAO"    ref="servicioTecnicoDAO"/>
+		<property name="despachoInternoDAO"    ref="despachoInternoDAO"/>
+<!-- 		<property name="bitacoraInternaDAO"    ref="bitacoraInternaDAO"/> -->
+		<property name="ubicacionDAO"          ref="ubicacionDAO"/>
+		<property name="proveedorDAO"          ref="proveedorDAO"/>
+		<property name="tipoFallasDAO"          ref="tipoFallasDAO"/>
+	</bean>
+	
+	<bean id="sucursalService" class="cl.abcdin.sst.service.SucursalService">
+		<property name="documentoDAO"          ref="documentoDAO"/>
+		<property name="productoDAO"           ref="productoDAO"/>
+		<property name="guiaDAO"               ref="guiaDAO"/>
+		<property name="guiaAgrupadaDAO"       ref="guiaAgrupadaDAO"/>
+		<property name="servicioTecnicoDAO"    ref="servicioTecnicoDAO"/>
+		<property name="ordenTrabajoDAO"       ref="ordenTrabajoDAO"/>
+		<property name="ubicacionDAO"          ref="ubicacionDAO"/>
+		<property name="tipoFallasDAO"         ref="tipoFallasDAO"/>
+		<property name="bitacoraDAO"           ref="bitacoraDAO"/>
+		<property name="accesorioDAO"          ref="accesorioDAO"/>
+		<property name="gestionesDAO"          ref="gestionesDAO"/>
+		<property name="ejecutivaDAO"          ref="ejecutivaDAO"/>
+		<property name="utilDAO"        	   ref="utilDAO"/>
+		<property name="administracionService" ref="administracionService" />
+		<property name="ejecutivaService"      ref="ejecutivaService" />
+		<property name="proveedorService"      ref="proveedorService" />
+		<property name="proveedorDAO"          ref="proveedorDAO" />
+		<property name="loginService"          ref="loginService" />
+		<property name="parteDAO"              ref="parteDAO" />
+		<property name="sucursalDAO"           ref="sucursalDAO"/>
+		<property name="logisticoDAO"          ref="logisticoDAO"/>
+		<property name="clienteDAO"            ref="clienteDAO"/>
+		<property name="recepcionDAO"          ref="recepcionDAO"/>
+		<property name="destinoDAO"            ref="destinoDAO"/>
+		<property name="reglaComercialDAO"     ref="reglaComercialDAO"/>
+		<property name="zonaDAO"               ref="zonaDAO"/>
+		<property name="familiaDAO"            ref="familiaDAO"/>
+		<property name="lineaDAO"              ref="lineaDAO"/>
+		<property name="notaCreditoDAO"        ref="notaCreditoDAO"/>
+		<property name="estadoDAO"             ref="estadoDAO"/>
+		<property name="envioRecepcionService" ref="envioRecepcionService"/>
+		<property name="oWService"             ref="oWService"/>
+		<property name="ordenTrabajoService"   ref="ordenTrabajoService"/>
+		<property name="bitacoraInternaDAO"    ref="bitacoraInternaDAO"/>
+		<property name="cambioAutomaticoProveedorCartaDAO" ref="cambioAutomaticoProveedorCartaDAO"/>
+		<property name="interfazService" ref="interfazService"/>
+		
+	</bean>
+	
+	<bean id="bodegaService" class="cl.abcdin.sst.service.BodegaService">
+		<property name="guiaDAO"                    ref="guiaDAO"/>
+		<property name="sucursalService"            ref="sucursalService"/>
+		<property name="ordenTrabajoDAO"            ref="ordenTrabajoDAO"/>
+		<property name="estadoDAO"                  ref="estadoDAO"/>
+		<property name="despachoInternoDAO"         ref="despachoInternoDAO"/>
+		<property name="utilDAO"                    ref="utilDAO"/>
+		<property name="guiaRemateDAO"              ref="guiaRemateDAO"/>
+		<property name="servicioTecnicoDAO"         ref="servicioTecnicoDAO"/>
+		<property name="ubicacionDAO"               ref="ubicacionDAO"/>
+		<property name="bitacoraDAO"                ref="bitacoraDAO"/>
+		<property name="despachoDetalleDAO"         ref="despachoDetalleDAO"/>
+		<property name="gestionesDAO"               ref="gestionesDAO"/>
+		<property name="despachoInternoCamionDAO"	ref="despachoInternoCamionDAO"/>
+		<property name="accesorioDAO"	            ref="accesorioDAO"/>
+		<property name="semaforoDAO"	            ref="semaforoDAO"/>
+		<property name="movimientosInternosService" ref="movimientosInternosService"/>
+		<property name="indicadorDAO"               ref="indicadorDAO" />
+		<property name="selloDAO"                   ref="selloDAO" />
+		<property name="peticionDocumentoDAO"       ref="peticionDocumentoDAO" />
+		<property name="ubicacionInternaDAO"        ref="ubicacionInternaDAO" />
+		<property name="bitacoraInternaDAO"         ref="bitacoraInternaDAO" />
+		<property name="proveedorDAO"               ref="proveedorDAO" />
+		<property name="oWService"                  ref="oWService" />
+		<property name="peticionDocumentoDetalleDAO" ref="peticionDocumentoDetalleDAO" />
+		<property name="inventarioDAO"              ref="inventarioDAO" />
+		<property name="envioSucursalDAO"           ref="envioSucursalDAO" />
+		<property name="envioSucursalDetalleDAO"    ref="envioSucursalDetalleDAO" />
+		<property name="inventarioUbicacionDAO"     ref="inventarioUbicacionDAO"/>
+		<property name="inventarioProductoDAO"      ref="inventarioProductoDAO"/>
+		<property name="transportistaDAO"      		ref="transportistaDAO"/>
+		<property name="envioRecepcionService"      ref="envioRecepcionService"/>
+	</bean>
+	
+	<bean id="ejecutivaService" class="cl.abcdin.sst.service.EjecutivaService">
+		<property name="semaforoDAO"           ref="semaforoDAO" />
+		<property name="utilDAO"               ref="utilDAO" />
+		<property name="indicadorDAO"          ref="indicadorDAO" />
+		<property name="bitacoraDAO"           ref="bitacoraDAO" />
+		<property name="estadoDAO"	           ref="estadoDAO" />
+		<property name="indicadorGestionDAO"   ref="indicadorGestionDAO" />
+		<property name="indicadorMarcaDAO"     ref="indicadorMarcaDAO" />
+		<property name="indicadorFacturaDAO"   ref="indicadorFacturaDAO" />
+		<property name="ordenTrabajoDAO"       ref="ordenTrabajoDAO" />
+		<property name="facturaGestionDAO"     ref="facturaGestionDAO" />		
+		<property name="gestionesDAO"          ref="gestionesDAO"/>
+		<property name="accesorioDAO"		   ref="accesorioDAO"/>
+		<property name="parteDAO"		       ref="parteDAO"/>
+		<property name="clienteDAO"            ref="clienteDAO"/>
+		<property name="servicioTecnicoDAO"    ref="servicioTecnicoDAO"/>
+		<property name="proveedorDAO"          ref="proveedorDAO"/>
+		<property name="transportistaDAO"      ref="transportistaDAO"/>
+		<property name="cambioDAO"             ref="cambioDAO"/>
+		<property name="recepcionDAO"		   ref="recepcionDAO"/>
+		<property name="usuarioDAO"		  	   ref="usuarioDAO"/>
+		<property name="guiaDAO"		  	   ref="guiaDAO"/>	
+		<property name="sucursalService"       ref="sucursalService" />
+		<property name="ubicacionDAO"      	   ref="ubicacionDAO" />
+		<property name="bitacoraInternaDAO"    ref="bitacoraInternaDAO" />
+		<property name="parametroDAO"          ref="parametroDAO" />
+		<property name="diasTramosDAO"         ref="diasTramosDAO" />
+		<property name="oWService"             ref="oWService" />
+		<property name="interfazService"       ref="interfazService" />
+	</bean>
+	
+	<bean id="ordenTrabajoService" class="cl.abcdin.sst.service.OrdenTrabajoService">
+		<property name="ordenTrabajoDAO" 	   ref="ordenTrabajoDAO" />
+		<property name="estadoDAO" 	           ref="estadoDAO" />
+		<property name="servicioTecnicoDAO"    ref="servicioTecnicoDAO"/>
+		<property name="ejecutivaService"      ref="ejecutivaService"/>
+		<property name="sucursalService"       ref="sucursalService"/>
+		<property name="bitacoraInternaDAO"    ref="bitacoraInternaDAO"/>
+		<property name="envioRecepcionService" ref="envioRecepcionService"/>
+		<property name="guiaDAO"               ref="guiaDAO"/>
+		<property name="bitacoraDAO"           ref="bitacoraDAO"/>
+		<property name="movimientosInternosService" ref="movimientosInternosService"/>
+	</bean>
+	
+	<bean id="administracionService" class="cl.abcdin.sst.service.AdministracionService">
+		<property name="usuarioDAO"		  	  ref="usuarioDAO"/>
+		<property name="rolDAO" 	          ref="rolDAO" />
+		<property name="zonaDAO" 	          ref="zonaDAO" />
+		<property name="productoDAO"          ref="productoDAO"/>
+		<property name="familiaDAO"           ref="familiaDAO"/>
+		<property name="lineaDAO"             ref="lineaDAO"/>
+		<property name="reglaComercialDAO"    ref="reglaComercialDAO"/>
+		<property name="parametroDAO" 	      ref="parametroDAO"/>
+		<property name="ubicacionDAO"         ref="ubicacionDAO" />
+		<property name="destinoDAO"           ref="destinoDAO" />
+		<property name="servicioTecnicoDAO"   ref="servicioTecnicoDAO"/>
+		<property name="tipoCambioDAO"        ref="tipoCambioDAO"/>
+		<property name="utilDAO"              ref="utilDAO"/>
+		<property name="ordenTrabajoDAO"      ref="ordenTrabajoDAO"/>
+		<property name="sucursalDAO"          ref="sucursalDAO"/>
+		<property name="ubicacionInternaDAO"  ref="ubicacionInternaDAO"/>
+		<property name="procedimientoDAO"     ref="procedimientoDAO"/>
+		<property name="provinciaDAO"         ref="provinciaDAO"/>
+		<property name="comunaDAO"            ref="comunaDAO"/>
+		<property name="accesorioDAO"         ref="accesorioDAO"/>
+		<property name="tipoFallasDAO"        ref="tipoFallasDAO"/>
+		<property name="parteDAO"             ref="parteDAO"/>
+		<property name="rutaServicioTecnicoDAO"        ref="rutaServicioTecnicoDAO"/>
+		<property name="rutaServicioTecnicoDetalleDAO" ref="rutaServicioTecnicoDetalleDAO"/>
+		<property name="servicioTecnicoEjecutivaDAO"   ref="servicioTecnicoEjecutivaDAO"/>
+		<property name="ubicacionInternaDetalleDAO"    ref="ubicacionInternaDetalleDAO"/>
+	</bean>
+	
+	<bean id="utilService" class="cl.abcdin.sst.service.UtilService">
+		<property name="utilDAO" 	  ref="utilDAO" />
+		<property name="estadoDAO"	  ref="estadoDAO" />
+		<property name="ubicacionDAO" ref="ubicacionDAO" />
+		<property name="usuarioDAO"   ref="usuarioDAO" />
+		<property name="parametroDAO" ref="parametroDAO" />
+		<property name="columnaDAO"   ref="columnaDAO" />
+		<property name="regionDAO"    ref="regionDAO" />
+		<property name="comunaDAO"    ref="comunaDAO" />
+		<property name="logisticoDAO" ref="logisticoDAO" />
+		<property name="ubicacionInternaDAO" ref="ubicacionInternaDAO" />
+		<property name="proveedorDAO" ref="proveedorDAO" />
+	</bean>
+	
+	<bean id="movimientosInternosService" class="cl.abcdin.sst.service.MovimientosInternosService">
+		<property name="bitacoraDAO"         ref="bitacoraDAO"/>
+		<property name="ubicacionInternaDAO" ref="ubicacionInternaDAO"/>
+		<property name="bitacoraInternaDAO"  ref="bitacoraInternaDAO"/>
+		<property name="despachoInternoDAO"  ref="despachoInternoDAO"/>
+		<property name="ordenTrabajoDAO"     ref="ordenTrabajoDAO"/>
+		<property name="despachoDetalleDAO"  ref="despachoDetalleDAO"/>
+		<property name="utilService"         ref="utilService"/>
+		<property name="gestionesDAO"        ref="gestionesDAO"/>
+	</bean>
+
+	<bean id="mobileService" class="cl.abcdin.sst.service.MobileService">
+		<property name="ordenTrabajoMobileDAO"      ref="ordenTrabajoMobileDAO"/>
+		<property name="gestionesDAO"               ref="gestionesDAO"/>
+		<property name="despachoMobileDAO"          ref="despachoMobileDAO"/>
+		<property name="despachoDetalleMobileDAO"   ref="despachoDetalleMobileDAO"/>
+		<property name="loginService"               ref="loginService"/>
+		<property name="ubicacionDAO"               ref="ubicacionDAO"/>
+		<property name="bitacoraDAO"                ref="bitacoraDAO"/>
+		<property name="bitacoraInternaMobileDAO"   ref="bitacoraInternaMobileDAO"/>
+		<property name="transportistaMobileDAO"     ref="transportistaMobileDAO"/>
+		<property name="despachoInternoDAO"     	ref="despachoInternoDAO"/>
+		<property name="despachoInternoCamionDAO"   ref="despachoInternoCamionDAO"/>
+		<property name="bodegaService"  			ref="bodegaService"/>
+		<property name="transportistaDAO"  			ref="transportistaDAO"/>
+		<property name="selloDAO"  			        ref="selloDAO"/>
+		<property name="guiaDAO"  			        ref="guiaDAO"/>
+		<property name="productoDAO"  			    ref="productoDAO"/>
+		<property name="familiaDAO"  			    ref="familiaDAO"/>
+		<property name="ubicacionInternaDAO"  		ref="ubicacionInternaDAO"/>
+		<property name="bitacoraInternaDAO"  		ref="bitacoraInternaDAO"/>
+		<property name="lineaDAO"  			        ref="lineaDAO"/>
+		<property name="sucursalService"  			ref="sucursalService"/>
+		<property name="envioSucursalMobileDAO"     ref="envioSucursalMobileDAO"/>
+		<property name="envioSucursalDetalleDAO"    ref="envioSucursalDetalleDAO"/>
+		<property name="envioSucursalDAO"           ref="envioSucursalDAO"/>
+		<property name="inventarioMobileDAO"        ref="inventarioMobileDAO"/>
+		<property name="inventarioProductoDAO"      ref="inventarioProductoDAO"/>
+		<property name="inventarioUbicacionDAO"     ref="inventarioUbicacionDAO"/>
+		<property name="ordenTrabajoDAO"            ref="ordenTrabajoDAO"/>
+	</bean>
+	
+	<bean id="SSTFacade" class="cl.abcdin.sst.facade.SSTFacade">
+		<property name="loginService"          ref="loginService" />
+		<property name="sucursalService"       ref="sucursalService" />
+		<property name="utilService"           ref="utilService" />
+		<property name="ejecutivaService"      ref="ejecutivaService" />
+		<property name="administracionService" ref="administracionService" />
+		<property name="bodegaService"         ref="bodegaService" />
+		<property name="envioRecepcionService" ref="envioRecepcionService"/>
+		<property name="buscadoresService"     ref="buscadoresService"/>
+		<property name="ordenTrabajoService"   ref="ordenTrabajoService"/>
+		<property name="movimientosInternosService"   ref="movimientosInternosService"/>
+	</bean>
+	
+	<import resource="reports-context.xml"/>
+	
+</beans>

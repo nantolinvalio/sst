@@ -1,0 +1,375 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="recepcionMasiva">
+
+ 	<resultMap type="recepcionCamion" id="recepcionMasiva">
+ 		<result property="transportista.id"      column="id_transportista"/>
+ 		<result property="transportista.rut"     column="id_transportista" typeHandler="RunTypeHandler"/>
+ 		<result property="id"				     column="id_recepcion_camion"/>
+ 		<result property="nombreResponsable"     column="s_responsable"/>
+ 		<result property="estado.id"		     column="id_estado"/>
+ 		<result property="logistico.rut"	     column="id_logistico" typeHandler="RunTypeHandler"/>
+ 		<result property="fechaInicio"		     column="d_fecha_inicio"/>
+ 		<result property="fechaTermino"		     column="d_fecha_termino"/>
+ 		<result property="observacion"		     column="s_observacion"/>
+ 		<result property="transportista.nombre"  column="s_nombre"/>
+		<result property="estado.nombre"  		 column="s_estado"/>
+ 	</resultMap>
+	
+	 <select id="listRecepcionesMasivas" resultMap="recepcionMasiva">
+		select
+			rc.id_recepcion_camion,
+		    tr.s_nombre,
+		    tr.id_transportista,
+		    rc.s_responsable,
+		    rc.id_estado,
+		    es.s_nombre as s_estado
+		from 
+		    owv_transportistas tr
+		    inner join  sstt_recepciones_camion rc on rc.id_transportista = tr.id_transportista 
+                and rc.id_estado = 80001000 and rc.d_fecha_termino is null
+		    left join sstt_estados es on es.id_estado = rc.id_estado
+        union
+		select
+			null as id_recepcion_camion,
+		    tr.s_nombre,
+		    tr.id_transportista,
+		    '' as s_responsable,
+		    null as id_estado,
+		    '' as s_estado
+		from 
+		    owv_transportistas tr
+        where
+            not exists (select 1 from sstt_recepciones_camion rc where rc.id_transportista = tr.id_transportista and rc.id_estado = 80001000 )
+	 </select>
+	 
+	 <insert id="saveOTRecepcionMasiva" parameterType="RecepcionCamionOT" keyColumn="id_recepcion_camion_ot" keyProperty="id">
+ 	 	<selectKey resultType="Integer" keyProperty="id" order="BEFORE">
+	 		select ssts_recepciones_camion_ot.nextval from dual
+	 	</selectKey>
+		insert into sstt_recepciones_camion_ot (
+		    id_recepcion_camion_ot,
+		    id_recepcion_camion_guia,
+		    id_estado_ot,
+		    id_ot,
+		    d_fecha_recepcion
+		) values (
+			#{id},
+			#{recepcionCamionGuia.id},
+			#{ordenTrabajo.estado.id},
+			#{ordenTrabajo.id},
+			#{fechaRecepcion}
+		)
+	 </insert>
+	 
+	 <update id="updateOTRecepcionMasiva" parameterType="RecepcionCamionOT">
+	 	update sstt_recepciones_camion_ot set
+	 	id_estado_ot = #{ordenTrabajo.estado.id}
+	 	,d_fecha_recepcion = sysdate
+	 	where id_recepcion_camion_ot = #{id}
+	 </update>
+	
+	 <insert id="saveRecepcionMasiva" parameterType="RecepcionCamion" keyColumn="id_recepcion_camion" keyProperty="id">
+	 	<selectKey resultType="Integer" keyProperty="id" order="BEFORE">
+	 		select ssts_recepciones_camion.nextval from dual
+	 	</selectKey>
+	 	insert into sstt_recepciones_camion (
+	 		id_recepcion_camion
+	 		,id_transportista
+	 		,s_responsable
+	 		,id_estado
+	 		,id_logistico
+	 		,d_fecha_inicio
+	 		,d_fecha_termino
+	 		,s_observacion
+	 		)
+	 	values(
+	 		#{id}
+	 		,#{transportista.id}
+	 		,#{nombreResponsable}
+	 		,#{estado.id}
+	 		,#{logistico.rut, typeHandler=RunTypeHandler}
+	 		,sysdate
+	 		,#{fechaTermino}
+	 		,#{observacion}
+	 		)
+	 </insert>
+	 
+	 <resultMap type="Guia" id="guia">
+	 	<result property="id"                     column="id_guia"/>
+	 	<result property="estado.id"              column="id_estado"/>
+	 	<result property="ordenTrabajo"            column="id_ot"/>
+	 	<result property="origen.id"              column="id_origen"/>
+	 	<result property="destino.id"             column="id_destino"/>
+	 	<result property="usuario.id"             column="id_usuario"/>
+	 	<result property="transportista.rut"      column="id_transportista" typeHandler="RunTypeHandler"/>
+	 	<result property="numero"                 column="i_numero"/>
+	 	<result property="fechaEmision"           column="d_fecha_emision"/>
+	 	<result property="fechaRegistro"          column="d_fecha_registro"/>
+	 	<result property="transportista.patente"  column="s_patente"/>
+	 	<result property="vigente"                column="s_vigente"/>
+	 	<result property="observacion"            column="s_observacions"/>
+	 	<result property="entregaCliente"         column="s_entrega_cliente"/>
+	 	<result property="estadoActual.id"        column="id_estado_actual"/>
+	 	<result property="fechaUltimoEstado"      column="d_fecha_ultimo_estado"/>
+	 </resultMap>
+	 
+	 <select id="getGuiaByFilterGuia" parameterType="filterRecepcionProducto" resultMap="guia">
+	 	select
+	 		g.id_guia
+		    ,g.id_estado
+		    ,g.id_ot
+		    ,g.id_origen
+		    ,g.id_destino
+		    ,g.id_usuario
+		    ,g.id_transportista
+		    ,g.i_numero
+		    ,g.d_fecha_emision
+		    ,g.d_fecha_registro
+		    ,g.s_patente
+		    ,g.s_vigente
+		    ,g.s_observacion
+		    ,g.s_entrega_cliente
+		    ,g.id_estado_actual
+		    ,g.d_fecha_ultimo_estado
+		from sstt_guias g
+		    left join sstt_bitacoras b on b.id_guia = g.id_guia
+		    left join sstt_ordenes_trabajo ot on ot.id_ot = b.id_ot
+		where 
+			g.s_vigente = 'S'
+			and g.id_estado = #{idEstadoGuia}
+		    <if test="codigoBarra != null and !codigoBarra.equals('')">
+		    	and ot.i_cod_barra = #{codigoBarra, typeHandler=CodigoBarrasTypeHandler}
+		    </if>
+		    <if test="idOT != null">
+		    	and ot.id_ot = #{idOT}
+		    </if>
+		    <if test="numeroSerie!=null and !numeroSerie.equals('')">
+		    	and ot.s_nmro_serie = #{numeroSerie}
+		    </if>
+		    <if test="idDestino!=null">
+<!-- 		    	and b.id_guia = (select max(b1.id_guia)from sstt_bitacoras b1 where b1.id_ot = ot.id_ot and g.id_origen = 10012 or g.id_destino = 10012) -->
+		    	and (g.id_origen = #{idDestino} or g.id_destino = #{idDestino} )
+		    </if>
+	 </select>
+	 
+	 <select id="existeGuiaEnRecepcion" parameterType="FilterRecepcionProducto" resultType="Integer">
+	 	select count(*)
+	 	from sstt_recepciones_camion_guias
+	 	where id_recepcion_camion = #{idRecepcionCamion}
+	 		and id_guia = #{idGuia}
+	 </select>
+	 
+	 <select id="getTotalEstadoRecepcionCamion" parameterType="FilterRecepcionProducto"  resultType="Integer">
+	 	select
+		    count(*)
+		from 
+		    sstt_recepciones_camion_guias rcg
+		    inner join sstt_recepciones_camion rc on rc.id_recepcion_camion = rcg.id_recepcion_camion
+		where
+		    	id_guia = #{idGuia}
+		    and rc.id_estado = #{idEstadoRecepcion}
+		    and rcg.id_recepcion_camion != #{idRecepcionCamion}
+	 </select>
+	 
+	<insert id="saveRecepcionesCamionGuias" parameterType="RecepcionCamionGuia" keyColumn="id_recepcion_camion_guia" keyProperty="id">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_recepciones_camion_guias.nextval from dual
+		</selectKey> 
+	 	insert 
+	 	into sstt_recepciones_camion_guias (
+	 		id_recepcion_camion_guia
+	 		,id_recepcion_camion
+	 		,id_guia
+	 		,d_fecha_inicio
+	 	) values (
+	 		#{id}
+	 		,#{recepcionCamion.id}
+	 		,#{guia.id}
+	 		,sysdate
+ 		)
+	 </insert>
+	 
+	 <update id="updateCerrarRecepcionMasiva" parameterType="RecepcionCamionGuia">
+	 	update sstt_recepciones_camion_guias
+	 	set 
+	 		d_fecha_termino = sysdate
+	 		,id_estado_guia = #{estadoGuia.id}
+	 	where
+	 		id_recepcion_camion_guia = #{id}
+	 </update>
+	 
+	 <resultMap type="RecepcionCamionGuia" id="recepcionCamionGuia">
+ 		<result property="id"                 column="id_recepcion_camion_guia"/>
+ 		<result property="recepcionCamion.id" column="id_recepcion_camion"/>
+ 		<result property="guia.id"            column="id_guia"/>
+ 		<result property="estadoGuia.id"      column="id_estado_guia"/>
+ 		<result property="fechaInicio"        column="d_fecha_inicio"/>
+ 		<result property="fechaTermino"       column="d_fecha_termino"/>
+	 </resultMap>
+	 
+	 <select id="getRecepcionGuiaByFilter" parameterType="FilterRecepcionProducto" resultMap="recepcionCamionGuia">
+	 	select
+	 		rcg.id_recepcion_camion_guia,
+	 		rcg.id_recepcion_camion,
+	 		rcg.id_guia,
+	 		rcg.id_estado_guia,
+	 		rcg.d_fecha_inicio,
+	 		rcg.d_fecha_termino
+		from
+			sstt_recepciones_camion_guias rcg
+		where
+				rcg.id_recepcion_camion = #{idRecepcionCamion}
+			and rcg.id_guia = #{idGuia}
+	 </select>
+	 
+	 <select id="getUltimaRecepcionGuiaByFilter" parameterType="FilterRecepcionProducto" resultMap="recepcionCamionGuia">
+		 select
+		    rcg.id_recepcion_camion_guia,
+		    rcg.id_recepcion_camion,
+		    rcg.id_guia,
+		    rcg.id_estado_guia,
+		    rcg.d_fecha_inicio,
+		    rcg.d_fecha_termino
+		from
+		    sstt_recepciones_camion_guias rcg
+		where
+		    rcg.id_recepcion_camion_guia = (select max(r.id_recepcion_camion_guia) from 
+		                                    sstt_recepciones_camion_guias r 
+		                                    where r.id_guia = #{idGuia})
+	 </select>
+	 
+	 <resultMap type="OrdenTrabajo" id="ot">
+	 	<result property="id"             column="id_ot"/>
+	 	<result property="logistico.rut"  column="id_logistico" typeHandler="RunTypeHandler"/>
+	 	<result property="producto.id"    column="id_producto"/>
+	 	<result property="sucursal.id"    column="id_sucursal"/>
+	 	<result property="estado.id"      column="id_estado"/>
+	 	<result property="estado.glosa"   column="s_nombre_estado"/>
+	 	<result property="fechaCreacion"  column="d_fecha_creacion"/>
+	 	<result property="numeroSerie"    column="s_nmro_serie"/>
+	 	<result property="codigoBarra"    column="i_cod_barra" typeHandler="CodigoBarrasTypeHandler"/>
+	 </resultMap>
+	 
+	 <select id="listOTbyIdGuia" parameterType="Long" resultMap="ot">
+	 	select 
+	 		ot.id_ot
+	 		,ot.id_logistico
+	 		,ot.id_producto
+	 		,ot.id_sucursal
+	 		,ot.id_estado
+	 		,ot.d_fecha_creacion
+	 		,ot.s_nmro_serie
+	 		,ot.i_cod_barra
+		from sstt_ordenes_trabajo ot
+    		left join sstt_bitacoras bi on bi.id_ot = ot.id_ot
+    		left join sstt_guias gu on gu.id_guia = bi.id_guia
+		where gu.id_guia = #{idGuia}
+			and bi.id_estado = #{idEstadoBitacora}
+	 </select>
+	 
+	 <resultMap type="DetalleRecepcion" id="detalleRecepcion">
+	 	<result property="guia.id"             column="id_guia"/>
+	 	<result property="guia.numero"         column="i_numero"/>
+	 	<result property="guia.origen.id"      column="id_origen"/>
+	 	<result property="guia.origen.nombre"  column="s_nombre"/>
+	 	<result property="guia.fechaEmision"   column="d_fecha_emision"/>
+	 	<result property="guia.numeroTO"   column="i_nmro_to"/>
+	 	<result property="cantidadTotalOT"     column="i_total_ot"/>
+	 	<result property="cantidadOTRecibidas" column="i_ot_recibidas"/>
+	 	<result property="cantidadOTRevisadas" column="i_ot_revisadas"/>
+	 </resultMap>
+	 
+	 <select id="listDetalleGuiaRecepcion" parameterType="filterRecepcionProducto" resultMap="detalleRecepcion">
+ 		select
+			g.id_guia,
+		    g.i_numero,
+		    g.id_origen,
+		    o.s_nombre,
+		    g.d_fecha_emision,
+		    g.i_nmro_to,
+		    count(ot.id_ot) i_total_ot,
+		    sum(case when ot.id_estado_ot in (10031000, 10032000, 10033000, 10034000, 10035000, 10039000) then 1 else 0 end) i_ot_recibidas,
+		    sum(case when ot.id_estado_ot in (10032000, 10033000, 10034000, 10035000, 10039000) then 1 else 0 end) i_ot_revisadas,
+            sum(case when ot.id_estado_ot in (10031000, 10032000, 10033000, 10034000, 10035000, 10039000) then 1 else 0 end) - 
+            sum(case when ot.id_estado_ot in (10032000, 10033000, 10034000, 10035000, 10039000) then 1 else 0 end) as faltantes 
+		from
+		    sstt_recepciones_camion rc
+		    inner join sstt_recepciones_camion_guias rcg on rcg.id_recepcion_camion = rc.id_recepcion_camion
+		    inner join sstt_recepciones_camion_ot ot on rcg.id_recepcion_camion_guia = ot.id_recepcion_camion_guia
+		    inner join sstt_guias g on g.id_guia = rcg.id_guia
+		    inner join sstt_ubicaciones o on o.id_ubicacion = g.id_origen
+		where
+			g.s_vigente = 'S'
+		    and rc.id_recepcion_camion = #{idRecepcionCamion}
+		group by
+			g.id_guia,
+		    g.i_numero,
+		    g.id_origen,
+		    o.s_nombre,
+		    g.d_fecha_emision,
+		    g.i_nmro_to
+		    
+		    <if test="orderBy != null and !orderBy.equals('')">
+				order by ${orderBy}
+				<if test="sortOrder != null and !sortOrder.equals('')">
+					${sortOrder}
+				</if>	
+			</if>
+	 </select>
+	 
+	 <select id="getTotalDetalleGuiaRecepcion" parameterType="FilterRecepcionProducto" resultType="Integer">
+	 	select 
+	 		count (distinct g.id_guia)
+	 	from
+		    sstt_recepciones_camion rc
+		    inner join sstt_recepciones_camion_guias rcg on rcg.id_recepcion_camion = rc.id_recepcion_camion
+		    inner join sstt_guias g on g.id_guia = rcg.id_guia
+		    inner join sstt_ubicaciones o on o.id_ubicacion = g.id_origen
+		    inner join sstt_bitacoras b on b.id_guia = g.id_guia
+		    inner join sstt_ordenes_trabajo ot on ot.id_ot = b.id_ot
+		where rc.id_recepcion_camion = #{idRecepcionCamion}
+	 </select>
+	 
+	 <update id="updateTerminoRecepcionMasiva" parameterType="RecepcionCamion">
+	 	update sstt_recepciones_camion
+	 		set id_estado = #{estado.id}
+	 			,d_fecha_termino = sysdate
+	 			,s_observacion = #{observacion}
+	 	where id_recepcion_camion = #{id}
+	 </update>
+	
+	 <select id="getRecepcionCamionById" parameterType="Integer" resultMap="recepcionMasiva">
+		select id_recepcion_camion
+		    ,id_transportista
+		    ,s_responsable
+		    ,id_estado
+		    ,id_logistico
+		    ,d_fecha_inicio
+		    ,d_fecha_termino
+		    ,s_observacion 
+		from sstt_recepciones_camion
+		where id_recepcion_camion = #{idRecepcion}
+	 </select>
+	 
+	 <select id="getRecepcionCamionAbiertaByTransportista"  parameterType="Long" resultMap="recepcionMasiva">
+	 	select 
+		    r.id_recepcion_camion
+		    ,r.id_transportista
+		    ,r.s_responsable
+		    ,r.id_estado
+		    ,r.id_logistico
+		    ,r.d_fecha_inicio
+		    ,r.d_fecha_termino
+		    ,r.s_observacion 
+		from 
+		    sstt_recepciones_camion r
+		where
+		    id_transportista = #{idTransportista}
+		    and id_estado = 80001000
+		    and d_fecha_termino is null
+	 </select>
+	 
+</mapper>

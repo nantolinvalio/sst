@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cambio">
+
+	<resultMap type="Cambio" id="cambioByOT">
+		<result property="ot.empresaFacturar.id"		column="id_facturar"/>
+		<result property="ot.empresaFacturar.rut"		column="id_facturar" typeHandler="RunTypeHandler"/>
+		<result property="motivoCambio"					column="s_motivo_cambio"/>
+		<result property="ot.cambioAutorizado" 			column="s_cambio_autorizado" />
+		<result property="ot.empresaFacturar.nombre" 	column="s_facturar_tipo" />
+		<result property="ubicacion.nombre"				column="s_nombre_ubicacion"/>
+		<result property="transportista.nombre"			column="s_nombre_transportista"/>
+		<result property="proveedor.nombre"				column="s_nombre_proveedor"/>
+		<result property="ubicacion.direccion"			column="s_direccion_ubicacion"/>
+		<result property="transportista.direccion"		column="s_direccion_transportista"/>
+		<result	property="proveedor.direccion"			column="s_direccion_proveedor"/>
+		<result property="comuna.glosa"					column="s_comuna_ubicacion"/>
+		<result property="transportista.comuna.glosa"	column="s_comuna_transportista"/>
+		<result property="proveedor.comuna"             column="s_comuna_proveedor"/>
+	</resultMap>
+	
+	<select id="getCambioByOT" parameterType="Long" resultMap="cambioByOT">
+        select
+              ot.id_facturar
+             ,ot.s_motivo_cambio
+             ,ot.s_cambio_autorizado
+             ,ot.s_facturar_tipo
+             ,u.s_nombre AS s_nombre_ubicacion
+             ,t.s_nombre AS s_nombre_transportista
+             ,pv.s_nombre AS s_nombre_proveedor
+             ,u.s_direccion AS s_direccion_ubicacion
+             ,t.s_direccion AS s_direccion_transportista
+             ,pv.s_direccion AS s_direccion_proveedor
+     		,c.s_nombre AS s_comuna_ubicacion
+     		,t.s_comuna AS s_comuna_transportista
+     		,pv.s_comuna AS s_comuna_proveedor
+ 		from sstt_ordenes_trabajo ot
+ 			left join sstt_ubicaciones u on u.i_rut = ot.id_facturar and u.s_tipo = 'PJ'
+ 			left join sstt_comunas c ON c.id_comuna = u.id_comuna
+ 			left join owv_transportistas t ON t.id_transportista = ot.id_facturar
+ 			left join owv_proveedores pv ON pv.id_proveedor = ot.id_facturar
+		where ot.id_ot = #{idOT}
+	</select>
+	
+	<select id="existeNumeroCambio" resultType="Long" parameterType="Long">
+		select count(*)
+        from sstt_ordenes_trabajo ot
+        where ot.i_nmro_cambio = #{numeroCambio}
+        and ot.s_vigente = 'S'
+	</select>
+	
+	<select id="getFechaAuorizacionByOT" parameterType="Long" resultType="Date">
+		select ot.d_fecha_cambio_autorizado
+		from sstt_ordenes_trabajo ot 
+		where ot.id_ot = #{idOT}
+	</select>
+	
+	<select id="autorizarCambio" parameterType="Cambio">
+		update sstt_ordenes_trabajo ot
+        set ot.id_facturar 				= #{ot.empresaFacturar.id}
+            ,ot.s_facturar_tipo         = #{tipoFacturar}
+            ,ot.s_motivo_cambio         = #{motivoCambio}
+            ,ot.i_nmro_cambio           = #{numeroCambio}
+            ,ot.s_cambio_autorizado     = 'S'
+            ,ot.s_tipo_cambio           = 'EM'
+		<if test="fechaCambioAutorizado == null">
+			,ot.d_fecha_cambio_autorizado = SYSDATE
+		</if>
+		<if test="fechaCambioAutorizado !=null">
+			,ot.d_fecha_cambio_autorizado = #{fechaCambioAutorizado}
+		</if>
+        where ot.id_ot = #{ot.id}
+	</select>
+</mapper>
+
+
+	

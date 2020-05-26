@@ -1,0 +1,410 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+
+<beans>
+	<bean id="jasperConfigurationGeneral" class="cl.abcdin.sst.reports.common.JasperConfigurationGeneral">
+		<property name="jasperLocation" value="cl/abcdin/sst/reports/jasper/"/>
+		<property name="parameters">
+		<map>
+			<entry key="SUBREPORT_DIR">
+		    	<value>cl/abcdin/sst/reports/jasper/</value>
+		  	</entry>
+		  	<entry key="IMAGE_DIR">
+		     	 <value>cl/abcdin/sst/reports/jasper/images/</value>
+		  	</entry>
+		</map>
+       	</property>
+	</bean>
+	
+	<bean id="OTDespachosSucReport" class="cl.abcdin.sst.reports.beans.OTDespachosSucReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="ordenTrabajoDAO" ref="ordenTrabajoDAO"/>
+    </bean>
+	
+	<bean id="OrdenTrabajoIndicadorEjecutivaReport" class="cl.abcdin.sst.reports.beans.OrdenTrabajoIndicadorEjecutivaReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="ejecutivaService" ref="ejecutivaService"/>
+    </bean>
+	
+	<bean id="ProcedimientoProveedorReport" class="cl.abcdin.sst.reports.beans.ProcedimientoProveedorReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="procedimientoDAO" ref="procedimientoDAO"/>
+    </bean>
+	
+	<bean id="ServiciosTecnicosLocalesReport" class="cl.abcdin.sst.reports.beans.ServiciosTecnicosLocalesReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="servicioTecnicoDAO" ref="servicioTecnicoDAO"/>
+    </bean>
+	
+	<bean id="OTTransitoReport" class="cl.abcdin.sst.reports.beans.OTTransitoReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="ordenTrabajoDAO" ref="ordenTrabajoDAO"/>
+    </bean>
+	
+	<bean id="OTPendienteReport" class="cl.abcdin.sst.reports.beans.OTPendienteReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="ordenTrabajoDAO" ref="ordenTrabajoDAO"/>
+    </bean>
+    
+	<bean id="OrdenTrabajoIndicadorReport" class="cl.abcdin.sst.reports.beans.OrdenTrabajoIndicadorReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="ordenTrabajoDAO" ref="ordenTrabajoDAO"/>
+    </bean>
+    
+    
+	<bean id="OrdenTrabajoReport" class="cl.abcdin.sst.reports.beans.OrdenTrabajoReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="ordenTrabajoDAO" ref="ordenTrabajoDAO"/>
+		<property name="rolDAO" ref="rolDAO"/>
+    </bean>
+	
+	<bean id="TiendasZonasReport" class="cl.abcdin.sst.reports.beans.TiendasZonasReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="zonaDAO" ref="zonaDAO"/>
+	</bean>
+	
+	<bean id="FacturacionResumenReport" class="cl.abcdin.sst.reports.beans.FacturacionResumenReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="facturaGestionDAO" ref="facturaGestionDAO"/>
+	</bean>
+	
+	<bean id="FacturacionReport" class="cl.abcdin.sst.reports.beans.FacturacionReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="facturaGestionDAO" ref="facturaGestionDAO"/>
+	</bean>
+	
+	<bean id="ReglasComercialesReport" class="cl.abcdin.sst.reports.beans.ReglasComercialesReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="reglaComercialDAO" ref="reglaComercialDAO"/>
+	</bean>
+	
+	<bean id="ReglasComercialesHistoricasReport" class="cl.abcdin.sst.reports.beans.ReglasComercialesHistoricasReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="reglaComercialDAO" ref="reglaComercialDAO"/>
+	</bean>
+	
+	<bean id="OrdenTrabajoCambioAutomaticoReport" class="cl.abcdin.sst.reports.beans.OrdenTrabajoCambioAutomaticoReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="ordenTrabajoDAO" ref="ordenTrabajoDAO"/>	
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+	</bean>
+	
+	<bean id="RecepcionFallaFabricacionReport" class="cl.abcdin.sst.reports.beans.RecepcionFallaFabricacionReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="recepcionDAO" ref="recepcionDAO"/>
+	</bean>
+	
+	<bean id="OrdenTrabajoParaDespachoReport" class="cl.abcdin.sst.reports.beans.OrdenTrabajoParaDespachoReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="ordenTrabajoDAO"            ref="ordenTrabajoDAO"/>
+		<property name="utilDAO"                    ref="utilDAO"/>
+		<property name="columnaDAO"                 ref="columnaDAO"/>
+	</bean>
+	
+	<bean id="DespachosRevisionReport" class="cl.abcdin.sst.reports.beans.DespachosRevisionReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="despachoInternoDAO"         ref="despachoInternoDAO"/>
+		<property name="utilDAO"                    ref="utilDAO"/>
+		<property name="columnaDAO"                 ref="columnaDAO"/>
+	</bean>
+	
+	<bean id="ZonaReport" class="cl.abcdin.sst.reports.beans.ZonaReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="zonaDAO" ref="zonaDAO"/>
+	</bean>
+	
+	<bean id="OrdenesAutorizadasSinGuiaReport" class="cl.abcdin.sst.reports.beans.OrdenesAutorizadasSinGuiaReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="ordenTrabajoDAO" ref="ordenTrabajoDAO"/>
+	</bean>
+	
+	<bean id="GuiaRemateReport" class="cl.abcdin.sst.reports.beans.GuiaRemateReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="guiaRemateDAO" ref="guiaRemateDAO"/>
+	</bean>
+	
+	<bean id="FacturacionDetalleReport" class="cl.abcdin.sst.reports.beans.FacturacionDetalleReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="ejecutivaService" ref="ejecutivaService"/>
+	</bean>
+	
+	<bean id="FamiliaExcluidaReport" class="cl.abcdin.sst.reports.beans.FamiliaExcluidaReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="familiaDAO" ref="familiaDAO"/>
+	</bean>
+	
+	<bean id="CondicionRecepcionReport" class="cl.abcdin.sst.reports.beans.CondicionRecepcionReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>				
+		<property name="parametroDAO" ref="parametroDAO"/>
+	</bean>
+	
+	<bean id="FamiliaExcluidaSerieReport" class="cl.abcdin.sst.reports.beans.FamiliaExcluidaSerieReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="familiaDAO" ref="familiaDAO"/>
+	</bean>
+	
+	<bean id="GuiaPendienteReport" class="cl.abcdin.sst.reports.beans.GuiaPendienteReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="guiaDAO" ref="guiaDAO"/>
+	</bean>
+	
+	<bean id="GuiaPendienteBodegaReport" class="cl.abcdin.sst.reports.beans.GuiaPendienteBodegaReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="guiaDAO" ref="guiaDAO"/>
+	</bean>
+	
+	<bean id="GuiaPendienteAgrupadaReport" class="cl.abcdin.sst.reports.beans.GuiaPendienteAgrupadaReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="guiaAgrupadaDAO" ref="guiaAgrupadaDAO"/>
+	</bean>
+	
+	<bean id="GuiaPendienteAgrupadaReportFF" class="cl.abcdin.sst.reports.beans.GuiaPendienteAgrupadaReportFF">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="guiaAgrupadaDAO" ref="guiaAgrupadaDAO"/>
+	</bean>
+	
+	<bean id="OrdenTrabajoDetalleReport" class="cl.abcdin.sst.reports.beans.OrdenTrabajoDetalleReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="ordenTrabajoDAO" ref="ordenTrabajoDAO"/>
+		<property name="productoDAO" ref="productoDAO"/>
+		<property name="clienteDAO" ref="clienteDAO"/>
+		<property name="tipoFallasDAO" ref="tipoFallasDAO"/>
+		<property name="accesorioDAO" ref="accesorioDAO"/>
+		<property name="parteDAO" ref="parteDAO"/>
+		<property name="proveedorDAO" ref="proveedorDAO"/>
+		<property name="utilDAO" ref="utilDAO"/>
+	</bean>	
+	
+	<bean id="InformeCambioProductoReport" class="cl.abcdin.sst.reports.beans.InformeCambioProductoReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="ordenTrabajoDAO" ref="ordenTrabajoDAO"/>
+		<property name="productoDAO" ref="productoDAO"/>
+		<property name="clienteDAO" ref="clienteDAO"/>
+		<property name="tipoFallasDAO" ref="tipoFallasDAO"/>
+		<property name="utilDAO" ref="utilDAO"/>
+	</bean>	
+	
+	<bean id="NotaCreditoReport" class="cl.abcdin.sst.reports.beans.NotaCreditoReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="ordenTrabajoDAO" ref="ordenTrabajoDAO"/>
+		<property name="productoDAO" ref="productoDAO"/>
+		<property name="clienteDAO" ref="clienteDAO"/>
+		<property name="utilDAO" ref="utilDAO"/>
+	</bean>	
+	
+	<bean id="TicketCambioReport" class="cl.abcdin.sst.reports.beans.TicketCambioReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="ordenTrabajoDAO" ref="ordenTrabajoDAO"/>
+		<property name="productoDAO" ref="productoDAO"/>
+		<property name="clienteDAO" ref="clienteDAO"/>
+		<property name="utilDAO" ref="utilDAO"/>
+	</bean>	
+	
+	<bean id="OrdenTrabajoFacturacionReport" class="cl.abcdin.sst.reports.beans.OrdenTrabajoFacturacionReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="facturaGestionDAO" ref="facturaGestionDAO"/>
+	</bean>
+	
+	<bean id="GuiaDetalleReport" class="cl.abcdin.sst.reports.beans.GuiaDetalleReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="ordenTrabajoDAO" ref="ordenTrabajoDAO"/>
+		<property name="productoDAO" ref="productoDAO"/>
+		<property name="tipoFallasDAO" ref="tipoFallasDAO"/>
+		<property name="accesorioDAO" ref="accesorioDAO"/>
+		<property name="parteDAO" ref="parteDAO"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="guiaDAO" ref="guiaDAO"/>
+		<property name="ubicacionDAO" ref="ubicacionDAO"/>
+		<property name="clienteDAO" ref="clienteDAO"/>
+	</bean>	
+	
+	<bean id="GuiaAgrupadaReport" class="cl.abcdin.sst.reports.beans.GuiaAgrupadaReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="guiaDAO" ref="guiaDAO"/>
+		<property name="guiaAgrupadaDAO" ref="guiaAgrupadaDAO"/>
+		<property name="ubicacionDAO" ref="ubicacionDAO"/>
+		<property name="transportistaDAO" ref="transportistaDAO"/>
+		<property name="guiaRemateDAO" ref="guiaRemateDAO"/>
+	</bean>	
+	
+	<bean id="GuiaAgrupadaGIMReport" class="cl.abcdin.sst.reports.beans.GuiaAgrupadaGIMReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="guiaDAO" ref="guiaDAO"/>
+		<property name="guiaAgrupadaDAO" ref="guiaAgrupadaDAO"/>
+		<property name="ubicacionDAO" ref="ubicacionDAO"/>
+		<property name="proveedorDAO" ref="proveedorDAO"/>
+	</bean>	
+	
+	<bean id="ServiciosTecnicoGarantiaProveedor" class="cl.abcdin.sst.reports.beans.ServiciosTecnicoGarantiaProveedor">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="servicioTecnicoDAO" ref="servicioTecnicoDAO"/>
+<!-- 		<property name="utilDAO" ref="utilDAO"/> -->
+<!-- 		<property name="ordenTrabajoDAO" ref="ordenTrabajoDAO"/> -->
+    </bean>	
+    <bean id="OrdenTrabajoTrasladoFFReport" class="cl.abcdin.sst.reports.beans.OrdenTrabajoTrasladoFFReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="ordenTrabajoDAO" ref="ordenTrabajoDAO"/>	
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+	</bean>
+	
+	 <bean id="DespachosFFReport" class="cl.abcdin.sst.reports.beans.DespachosFFReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="despachoInternoDAO" ref="despachoInternoDAO"/>	
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+	</bean>
+	
+	 <bean id="DespachosDesdeFFReport" class="cl.abcdin.sst.reports.beans.DespachosDesdeFFReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="despachoInternoDAO" ref="despachoInternoDAO"/>	
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+	</bean>
+	
+	 <bean id="OrdenTrabajoIndicadorFFReport" class="cl.abcdin.sst.reports.beans.OrdenTrabajoIndicadorFFReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="bodegaService" ref="bodegaService"/>	
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="indicadorDAO" ref="indicadorDAO"/>
+	</bean>
+	
+	<bean id="OrdenTrabajoIndicadorFFGuiaReport" class="cl.abcdin.sst.reports.beans.OrdenTrabajoIndicadorFFGuiaReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="bodegaService" ref="bodegaService"/>	
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="indicadorDAO" ref="indicadorDAO"/>
+	</bean>
+	
+	<bean id="OrdenTrabajoTrasladoDesdeFFReport" class="cl.abcdin.sst.reports.beans.OrdenTrabajoTrasladoDesdeFFReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="ordenTrabajoDAO" ref="ordenTrabajoDAO"/>	
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+	</bean>
+	
+	<bean id="FamiliaExcluidaCCReport" class="cl.abcdin.sst.reports.beans.FamiliaExcluidaCCReport">
+		<property name="jasperConfigurationGeneral"   ref="jasperConfigurationGeneral"/>
+		<property name="familiaDAO"                   ref="familiaDAO"/>
+		<property name="utilDAO"                      ref="utilDAO"/>
+		<property name="columnaDAO"                   ref="columnaDAO"/>
+	</bean>
+	
+	<bean id="ProductoExcluidoCCReport" class="cl.abcdin.sst.reports.beans.ProductoExcluidoCCReport">
+		<property name="jasperConfigurationGeneral"   ref="jasperConfigurationGeneral"/>
+		<property name="productoDAO"                  ref="productoDAO"/>
+		<property name="utilDAO"                      ref="utilDAO"/>
+		<property name="columnaDAO"                   ref="columnaDAO"/>
+	</bean>
+	
+	<bean id="EjecutivasServicioTecnicoReport" class="cl.abcdin.sst.reports.beans.EjecutivasServicioTecnicoReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="ServicioTecnicoDAO" ref="servicioTecnicoDAO"/>
+	</bean>
+	
+	<bean id="ProveedorReport" class="cl.abcdin.sst.reports.beans.ProveedorReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="ProveedorDAO" ref="proveedorDAO"/>
+	</bean>
+	
+	<bean id="ProveedorReportFallas" class="cl.abcdin.sst.reports.beans.ProveedorReportFallas">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="proveedorDAO" ref="proveedorDAO"/>
+		<property name="tipoFallasDAO" ref="tipoFallasDAO"/>
+	</bean>
+	
+	<bean id="UbicacionesInternasCDReport" class="cl.abcdin.sst.reports.beans.UbicacionesInternasCDReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="administracionService" ref="administracionService"/>
+	</bean>
+	
+	<bean id="DespachosSucReport" class="cl.abcdin.sst.reports.beans.DespachosSucReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="envioSucursalDAO" ref="envioSucursalDAO"/>
+	</bean>
+	
+	<bean id="RutaServicioTecnicoReport" class="cl.abcdin.sst.reports.beans.RutaServicioTecnicoReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="rutaServicioTecnicoDAO" ref="rutaServicioTecnicoDAO"/>
+	</bean>
+	
+	<bean id="InventarioReport" class="cl.abcdin.sst.reports.beans.InventarioReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="inventarioDAO" ref="inventarioDAO"/>
+	</bean>
+	
+	<bean id="ProductosInventarioReport" class="cl.abcdin.sst.reports.beans.ProductosInventarioReport">
+		<property name="jasperConfigurationGeneral" ref="jasperConfigurationGeneral"/>
+		<property name="columnaDAO" ref="columnaDAO"/>
+		<property name="utilDAO" ref="utilDAO"/>
+		<property name="inventarioProductoDAO" ref="inventarioProductoDAO"/>
+	</bean>
+</beans>

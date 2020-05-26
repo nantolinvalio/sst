@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="rol">
+
+	<resultMap type="Rol" id="rol">
+		<result property="id"      column="id_rol"/>
+		<result property="nombre"  column="s_nombre"/>
+		<result property="vigente" column="s_vigente"/>
+	</resultMap>
+	
+	<select id="getRolByNombre" parameterType="String" resultMap="rol">
+		select 
+		    id_rol, 
+		    upper(s_nombre) s_nombre, 
+		    s_vigente 
+		from 
+		    sstt_roles r 
+		where upper(r.s_nombre) = upper(#{nombre})
+	</select>
+	
+	<select id="getRolById" parameterType="Long" resultMap="rol">
+		select 
+		    id_rol, 
+		    upper(s_nombre) s_nombre,
+		    s_vigente 
+		from 
+		    sstt_roles r 
+		where r.id_rol = #{id}
+	</select>
+	
+	<select id="listRoles" resultMap="rol">
+		select 
+		    id_rol, 
+		    upper(s_nombre) s_nombre,
+		    s_vigente 
+		from 
+		    sstt_roles r 
+		<if test="orderBy == null or orderBy.equals('')">
+			order by r.s_vigente desc, r.s_nombre asc
+		</if>
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+		<if test="sortOrder != null and !sortOrder.equals('')">
+			${sortOrder}
+		</if>	
+		</if>
+	</select>
+	
+	<select id="getTotalRoles" resultType="Integer">
+		select 
+		    count(1)
+		from 
+		    sstt_roles r 
+	</select>
+	
+	<select id="getRolesByUsuario" parameterType="Usuario" resultMap="rol">
+		select
+		    r.id_rol,
+		    upper(s_nombre) s_nombre,
+		    r.s_vigente
+		from
+			sstt_roles r
+			inner join sstt_usuarios_roles ur on r.id_rol = ur.id_rol 
+		    							  and ur.id_usuario = #{rut, typeHandler=RunTypeHandler}
+		where
+		    r.s_vigente = 'S'
+	</select>
+	
+	<select id="listRolesActivos" resultMap="rol">
+		select
+		    r.id_rol,
+		    upper(s_nombre) s_nombre,
+		    r.s_vigente
+		from
+			sstt_roles r
+		where
+		    r.s_vigente = 'S'
+	</select>
+	
+	<update id="updateEstado" parameterType="Rol">
+		update sstt_roles 
+		set s_vigente = #{vigente} 
+		where id_rol = #{id}
+	</update>
+	
+	<update id="updateNombre" parameterType="Rol">
+		update sstt_roles 
+		set s_nombre = upper(#{nombre}) 
+		where id_rol = #{id}
+	</update>
+	
+	<delete id="deleteRolesUsuarios" parameterType="Usuario">
+		delete sstt_usuarios_roles where id_usuario = #{id}
+	</delete>
+	
+	<insert id="save" parameterType="Rol" keyProperty="id" keyColumn="id_rol">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_roles.nextval from dual
+		</selectKey>	
+		insert into sstt_roles (id_rol, s_nombre, s_vigente) values (#{id},upper(#{nombre}),#{vigente})
+	</insert>
+		
+	<insert id="saveRolUsuario" parameterType="Map" keyProperty="id" keyColumn="id_usuario_rol">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_usuarios_roles.nextval from dual
+		</selectKey>	
+			insert into sstt_usuarios_roles (id_usuario_rol, id_usuario, id_rol) values (#{id}, #{idUsuario}, #{idRol})
+	</insert>
+
+</mapper>

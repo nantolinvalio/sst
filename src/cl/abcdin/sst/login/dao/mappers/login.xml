@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="login">
+	
+	<select id="getAplicacionByCodigo" parameterType="String" resultType="Aplicacion">
+		select 
+			admin, 
+			codigo, 
+			descripcion, 
+			fecha, 
+			rol 
+		from 
+			aplicacion 
+		where 
+			codigo = #{codigo}
+	</select>
+	
+	<select id="listAccesosByCodigo" parameterType="String" resultType="Acceso">
+		select 
+			busqueda, 
+			codigo, 
+			fecha, 
+			tipo 
+		from 
+			acceso 
+		where 
+			codigo = #{codigo}
+	</select>
+	
+	<insert id="saveRegistro" parameterType="Map">
+		insert into registro 
+		(CODIGO, USUARIO, IP) 
+		values
+		(#{CODIGO},#{USUARIO},#{IP})
+	</insert>
+	
+</mapper>

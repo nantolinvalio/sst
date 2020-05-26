@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="linea">
+
+	<select id="listAll" resultType="Linea">
+		select 
+			id_linea codigo, 
+			s_nombre glosa 
+		from 
+			owv_lineas
+		order by s_nombre asc
+	</select>
+	
+	<select id="getTotalAll" resultType="Integer">
+		select count(*)
+		from 
+			owv_lineas
+	</select>
+	
+	<select id="getById" resultType="Linea" parameterType="String">
+		select 
+			id_linea codigo, 
+			s_nombre glosa 
+		from 
+			owv_lineas
+		where id_linea = #{idLinea}
+		order by s_nombre asc
+	</select>
+	
+	<select id="listAllIdLineaLessCodigoUbicacion" parameterType="String" resultType="CheckForFlexigrid">
+		select 
+			id_linea as "codigo",
+			'N' as "check"
+		from owv_lineas
+		where id_linea not in (select ubid.id_linea
+                          	   from sstt_ubicacion_interna_det ubid
+                                   left join sstt_ubicaciones_internas ubi on ubi.id_ubicacion_interna = ubid.id_ubicacion_interna
+                               where ubi.s_codigo=#{codigo} and ubid.id_linea is not null)
+	</select>
+	
+	<select id="listAllIdLinea" resultType="CheckForFlexigrid">
+		select 
+			id_linea as "codigo",
+			'N' as "check"
+		from owv_lineas
+	</select>
+	
+	<select id="listLineasLessCodigoUbicacion" resultType="Linea" parameterType="String">
+		select 
+			id_linea codigo, 
+			s_nombre glosa 
+		from 
+			owv_lineas
+		where id_linea not in (select ubid.id_linea
+                          	   from sstt_ubicacion_interna_det ubid
+                                   left join sstt_ubicaciones_internas ubi on ubi.id_ubicacion_interna = ubid.id_ubicacion_interna
+                               where ubi.s_codigo=#{codigo} and ubid.id_linea is not null)
+        order by s_nombre
+	</select>
+	
+	<select id="getTotalLineasLessCodigoUbicacion" resultType="Integer" parameterType="String">
+		select count(1) 
+		from 
+			owv_lineas
+		where id_linea not in (select ubid.id_linea
+                          	   from sstt_ubicacion_interna_det ubid
+                                   left join sstt_ubicaciones_internas ubi on ubi.id_ubicacion_interna = ubid.id_ubicacion_interna
+                               where ubi.s_codigo=#{codigo} and ubid.id_linea is not null)
+	</select> 
+	
+	<select id="listLineasByCodigo" resultType="Linea" parameterType="java.util.List">
+		select 
+			id_linea codigo, 
+			s_nombre glosa 
+		from 
+			owv_lineas
+		where id_linea in
+		<foreach collection="list" item="codigo" open="(" separator="," close=")">
+			#{codigo}
+		</foreach>
+	</select>
+	
+	<resultMap type="Linea" id="lineaUbicacion">
+		<result property="id"      column="id_linea"/>
+		<result property="codigo"  column="id_linea"/>
+		<result property="glosa"   column="s_nombre"/>
+	</resultMap>
+	
+	<select id="listLineasByIdUbicacionInterna" resultMap="lineaUbicacion" parameterType="Integer">
+        select 
+            l.id_linea
+            ,l.s_nombre 
+        from owv_lineas l
+            inner join SSTT_UBICACION_INTERNA_DET ubid on ubid.id_linea = l.id_linea
+        where ubid.id_ubicacion_interna = #{idUbicacion}
+        order by l.s_nombre
+	</select>
+	
+	<select id="listAllLineasByIdUbicacionInterna" resultType="CheckForFlexigrid" parameterType="Integer">
+        select 
+            l.id_linea as "codigo",
+			'N' as "check" 
+        from owv_lineas l
+            inner join SSTT_UBICACION_INTERNA_DET ubid on ubid.id_linea = l.id_linea
+        where ubid.id_ubicacion_interna = #{idUbicacion}
+	</select>
+	
+	<select id="getTotalLineasByIdUbicacionInterna" resultType="Integer" parameterType="Integer">
+        select count(1)
+        from owv_lineas l
+            inner join SSTT_UBICACION_INTERNA_DET ubid on ubid.id_linea = l.id_linea
+        where ubid.id_ubicacion_interna = #{idUbicacion}
+	</select>
+	
+	<select id="getByIdFamilia" parameterType="String" resultType="Linea">
+		select 
+		    id_linea as codigo,
+		    s_nombre as nombre
+		from
+		    owv_lineas l
+		where
+		    exists (select 1 from owv_familias f where f.id_linea = l.id_linea and f.id_familia = #{idFamilia})
+	</select>
+
+	<select id="listAllAsTreeView" resultType="TreeView">
+		select 
+            to_char(id_linea) id,
+            to_char(id_linea) "metadata.id",
+            'LINEA' "metadata.tipo",
+		    id_linea || ' ' || s_nombre data
+		from 
+			owv_lineas
+	</select>
+
+	<select id="listLineasAsTreeViewByFilter" parameterType="FilterRegla" resultType="TreeView">
+        select 
+            to_char(l.id_linea) id,
+            to_char(l.id_linea) "metadata.id",
+            'LINEA' "metadata.tipo",
+		    l.id_linea || ' ' || l.s_nombre data,
+            case when re.id_regla_comercial is not null then 
+                'checked'
+            end as checked
+		from 
+			owv_lineas l
+            left join sstt_regla_entidad re 
+                on re.id_linea = l.id_linea
+               and re.id_regla_comercial = #{idRegla}
+               and re.s_entidad = 'L'
+		order by l.id_linea asc
+	</select>
+
+	<select id="listLineasHistoricasAsTreeViewByFilter" parameterType="FilterRegla" resultType="TreeView">
+        select 
+            to_char(l.id_linea) id,
+            to_char(l.id_linea) "metadata.id",
+            'LINEA' "metadata.tipo",
+		    l.id_linea || ' ' || l.s_nombre data,
+            case when re.id_regla_comercial is not null then 
+                'checked'
+            end as checked
+		from 
+			owv_lineas l
+            left join sstt_regla_entidad_hist re 
+                on re.id_linea = l.id_linea
+               and re.id_regla_comercial_hist = #{idReglaHistorica}
+               and re.s_entidad = 'L'
+        order by l.id_linea asc
+	</select>
+
+</mapper>

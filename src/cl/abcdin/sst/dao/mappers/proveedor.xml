@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="proveedor">
+	
+    <resultMap type="Proveedor" id="proveedor">
+		<result column="id_proveedor"  property="id" />
+		<result column="s_nombre"      property="nombre" />
+		<result column="s_direccion"   property="direccion" />
+		<result column="s_comuna"      property="comuna" />
+		<result column="s_telefono"    property="telefono" />
+		<result column="s_celular"     property="celular" />
+		<result column="id_proveedor"  property="rut" typeHandler="RunTypeHandler" />
+	</resultMap>
+    
+	<select id="listProveedores" resultMap="proveedor" >
+		select 
+			t.id_proveedor
+			,t.s_nombre
+			,t.s_direccion
+			,t.s_comuna
+			,nvl(t.s_codigo_area,'') || nvl(t.s_telefono,'') as s_telefono
+			,t.s_celular
+		from owv_proveedores t
+		<where>
+		    <if test="rut != null and !rut.equals('')">
+	            and id_proveedor = #{rut, typeHandler=RunTypeHandler}
+		    </if>  
+		    <if test="nombre != null and !nombre.equals('')">
+				and upper(t.s_nombre) like '%'||upper(#{nombre})||'%' 
+			</if>   
+		</where>
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+		<if test="orderBy == null or orderBy.equals('')">
+			order by t.s_nombre asc
+		</if>
+	</select>
+	
+	<select id="listAllProveedoresCheck" parameterType="FilterProveedor" resultType="CheckForFlexigrid">
+	  select 
+			id_proveedor as "id",
+      		'N' as "check"
+		from owv_proveedores t
+			<where>
+		    	<if test="id != null and !id.equals('')">
+		        	    id_proveedor = #{id}
+		    	</if>  
+		    	<if test="nombre != null and !nombre.equals('')">
+					    and upper(t.s_nombre) like '%'||upper(#{nombre})||'%' 
+				</if>   
+			</where>
+				
+	</select>
+	
+	<select id="getProveedorByOt" parameterType="Long" resultType="Proveedor">
+		 select pv.id_proveedor as id
+		 ,pv.s_nombre as nombre
+	     from (select t.id_producto from sstt_ordenes_trabajo t where t.id_ot = #{idOT}) ot
+	     inner join owv_productos p on ot.id_producto = p.id_producto
+	     inner join owv_proveedores pv on pv.id_proveedor = p.id_proveedor
+	</select>
+	
+	<select id="getProveedorById" parameterType="Long" resultType="Ubicacion">
+		select 
+		    id_proveedor as id
+		    ,s_nombre	as nombre
+		    ,s_direccion || ', ' || s_comuna	as direccion
+		    ,s_comuna  as "comuna.glosa"
+		from
+		    owv_proveedores
+		where 
+		    id_proveedor = #{id}
+	</select>
+	
+	<select id="getTotalProveedoresByFilter" parameterType="Long" resultType="Integer">
+		select 
+			count(*)
+		from owv_proveedores t
+		<where>
+		    <if test="id != null and !id.equals('')">
+		            and t.id_proveedor = #{id}
+		    </if>  
+		    <if test="nombre != null and !nombre.equals('')">
+				    and upper(t.s_nombre) like '%'||upper(#{nombre})||'%' 
+			</if>   
+		</where>
+		order by t.s_nombre asc
+	</select>
+	
+	<select id="getProveedoresById" parameterType="Long" resultType="Integer">
+		select 
+		    id_proveedor as id
+		    ,s_nombre	as nombre
+		    ,s_direccion as direccion
+		from
+		    owv_proveedores
+		where 
+		    id_proveedor = #{id}
+	</select>
+	
+	<resultMap type="ReporteProveedor" id="reporteProveedor">
+		<result property="proveedor.id" 	     column="id_proveedor"/>
+		<result property="proveedor.nombre" 	 column="proveedor_nombre"/>
+		<result property="marca.nombre"          column="marca_nombre"/>
+		<result property="marca.codigo"          column="marca_codigo"/>
+		<result property="producto.id" 		     column="id_producto"/>
+		<result property="producto.descripcion"  column="producto_descripcion"/>
+		<result property="cliente.rut" 	         column="cliente_rut" typeHandler="RunTypeHandler" />
+		<result property="cliente.nombre" 	     column="cliente_nombre"/>
+		<result property="fechaVenta" 	         column="d_fecha_venta"/>
+		<result property="ubicacion.nombre" 	 column="ubicacion_nombre"/>
+		<result property="ubicacion.direccion" 	 column="ubicacion_direccion"/>
+		<result property="cantidadFallas"        column="i_cantidad_fallas"/>
+		<result property="totalVenta"            column="i_total_venta"/>
+		<result property="cantidadFF"            column="i_cantidad_ff"/>
+		<result property="cantidadST"            column="i_cantidad_st"/>
+		<result property="cantidadOT"            column="i_cantidad_ot"/>
+		<result property="factorFF"              column="i_factor_ff"/>
+		<result property="factorST"              column="i_factor_st"/>
+		<result property="factorOT"              column="i_factor_ot"/>
+		<result property="ordenTrabajo.id"       column="id_ot"/>
+	</resultMap>
+	
+	<select id="listProveedorReportByFilter" parameterType="FilterOT" resultMap="reporteProveedor">
+		select 
+            pr.id_proveedor
+            ,pr.s_nombre_proveedor as proveedor_nombre
+            ,pr.id_marca   as  marca_codigo
+            ,pr.s_nombre_marca as marca_nombre
+            ,pr.id_producto
+            ,pr.s_descripcion_producto as producto_descripcion
+            ,sum(pr.i_total_venta) as i_total_venta
+            ,sum(pr.i_cantidad_ff) as i_cantidad_ff
+            ,sum(pr.i_cantidad_st) as i_cantidad_st
+            ,sum(pr.i_cantidad_ot) as i_cantidad_ot
+            ,case when sum(pr.i_total_venta) != 0 then 
+                round(sum(pr.i_cantidad_ff) / sum(pr.i_total_venta),2) 
+             else 0 
+             end as i_factor_ff
+            ,case when sum(pr.i_total_venta) != 0 then 
+                round(sum(pr.i_cantidad_st) / sum(pr.i_total_venta),2) 
+             else 0 
+             end as i_factor_st
+            ,case when sum(pr.i_total_venta) != 0 then
+                round(sum(pr.i_cantidad_ot) / sum(pr.i_total_venta),2)
+             else 0
+             end as i_factor_ot
+        from 
+            sstt_proveedor_report pr  
+		<where>
+		    	pr.d_fecha &gt;= #{fechaCreacion} 
+		    and pr.d_fecha &lt;= #{fechaCreacionFin}
+		    <if test="idProducto != null">
+		    	and pr.id_producto = #{idProducto}
+		    </if>
+		    <if test="idMarca != null and !idMarca.equals('')">
+		    	and pr.id_marca = #{idMarca}
+		    </if>
+		    <if test="idProveedor != null">
+		    	and pr.id_proveedor = #{idProveedor}
+		    </if>
+		   <!-- <if test="rutCliente != null and !rutCliente.equals('')">
+		    	and ot.id_cliente = #{rutCliente, typeHandler=RunTypeHandler}
+		    </if> -->
+		    <!-- <if test="nombreCliente != null and !nombreCliente.equals('')">
+		    	and c.s_nombre = #{nombreCliente}
+		    </if> -->
+		</where>
+		group by  pr.id_proveedor
+            ,pr.s_nombre_proveedor
+            ,pr.id_marca
+            ,pr.s_nombre_marca 
+            ,pr.id_producto
+            ,pr.s_descripcion_producto 
+            ,pr.i_total_venta
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+		    </if>	
+		</if>
+	</select>
+	
+	<select id="getTotalProveedorReportByFilter" parameterType="FilterOT" resultType="Integer">
+		select count(1)from (
+			select 
+				1 
+			from 
+				sstt_proveedor_report pr 
+			<where>
+			    and trunc(pr.d_fecha) &gt;= #{fechaCreacion} 
+			    and trunc(pr.d_fecha) &lt;= #{fechaCreacionFin}
+			    <if test="idProducto != null">
+			    	and pr.id_producto = #{idProducto}
+			    </if>
+			    <if test="idMarca != null and !idMarca.equals('')">
+			    	and pr.id_marca = #{idMarca}
+			    </if>
+			    <if test="idProveedor != null">
+			    	and pr.id_proveedor = #{idProveedor}
+			    </if>
+			   <!--  <if test="rutCliente != null and !rutCliente.equals('')">
+			    	and ot.id_cliente = #{rutCliente}
+			    </if>
+			    <if test="nombreCliente != null and !nombreCliente.equals('')">
+			    	and c.s_nombre = #{nombreCliente}
+			    </if> -->
+			</where>
+			group by 
+				pr.id_proveedor 
+				,pr.s_nombre_proveedor 
+				,pr.id_marca 
+				,pr.s_nombre_marca 
+				,pr.id_producto 
+				,pr.s_descripcion_producto 
+				,pr.i_total_venta) t
+	</select>
+	
+	<select id="listReporteFallaByFilter" parameterType="FilterOT" resultMap="reporteProveedor">
+		select
+		    ot.id_ot    
+		    ,p.id_proveedor                                        as   id_proveedor
+		    ,pro.s_nombre                                          as   proveedor_nombre
+		    ,m.s_nombre                                            as   marca_nombre
+		    ,p.id_producto                                             
+		    ,p.s_descripcion                                       as   producto_descripcion
+		    ,cl.id_cliente                                         as   cliente_rut
+		    ,cl.s_nombre                                           as   cliente_nombre
+		    ,ubi.s_direccion                                       as   ubicacion_direccion
+		    ,ubi.s_nombre                                          as   ubicacion_nombre
+		    ,to_date(to_char(d.d_fecha_emision+1900000),'YYYYDDD') as   d_fecha_venta
+		from
+		    sstt_ordenes_trabajo ot
+		    inner join owv_documentos d on d.id_documento = ot.id_documento and d.s_tipo_documento = ot.s_tipo_documento
+		    inner join owv_productos p on p.id_producto = ot.id_producto
+		    inner join sstt_ubicaciones ubi on ubi.id_ubicacion = ot.id_sucursal
+		    left join sstt_clientes cl on cl.id_cliente = ot.id_cliente
+		    left join owv_marcas m on m.id_marca = p.id_marca
+		    left join owv_proveedores pro on pro.id_proveedor = p.id_proveedor
+		<where>
+		     	ot.d_fecha_creacion &gt;= #{fechaCreacion} 
+		    and ot.d_fecha_creacion &lt;= #{fechaCreacionFin}
+		    <if test="idProducto != null">
+		    	and p.id_producto = #{idProducto}
+		    </if>
+		    <if test="idMarca != null and !idMarca.equals('')">
+		    	and m.id_marca = #{idMarca}
+		    </if>
+		    <if test="idProveedor != null">
+		    	and p.id_proveedor = #{idProveedor}
+		    </if>
+		    <if test="rutCliente != null and !rutCliente.equals('')">
+		    	and ot.id_cliente = #{rutCliente}
+		    </if>
+		    <if test="nombreCliente != null and !nombreCliente.equals('')">
+		    	and cl.s_nombre = #{nombreCliente}
+		    </if>
+		    <if test="tipoCambio != null and tipoCambio.equals('FF')">
+		    	and ot.s_tipo_cambio = 'FF'
+		    </if>
+		     <if test="tipoCambio != null and tipoCambio.equals('ST')">
+		    	 and (ot.s_tipo_cambio != 'FF' or ot.s_tipo_cambio is null)  
+		    </if>
+		</where>
+	    <if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+		    </if>	
+		</if>
+	</select>
+	
+	<select id="getTotalReporteFallaByFilter" parameterType="FilterOT" resultType="Integer">
+		select  count(1) from (select 
+		    1  
+		from 
+		    sstt_ordenes_trabajo ot 
+		    inner join owv_documentos d on d.id_documento = ot.id_documento and d.s_tipo_documento = ot.s_tipo_documento
+		    inner join sstt_ubicaciones ubi on ubi.id_ubicacion = ot.id_sucursal 
+		    inner join owv_productos p on p.id_producto = ot.id_producto 
+		    inner join owv_marcas m on m.id_marca = p.id_marca 
+		    left join owv_proveedores prov on prov.id_proveedor = p.id_proveedor 
+		    left join owv_clientes cl on cl.id_cliente = ot.id_cliente 
+		<where>
+			<!-- ot.s_cambio_autorizado = 'S' -->
+		     ot.d_fecha_creacion &gt;= #{fechaCreacion} 
+		    and ot.d_fecha_creacion &lt;= #{fechaCreacionFin}
+		    <!-- and trunc(ot.d_fecha_cambio_autorizado) &gt;= #{fechaCreacion} 
+		    and trunc(ot.d_fecha_cambio_autorizado) &lt;= #{fechaCreacionFin}  -->
+		    <if test="idProducto != null">
+		    	and p.id_producto = #{idProducto}
+		    </if>
+		    <if test="idMarca != null and !idMarca.equals('')">
+		    	and m.id_marca = #{idMarca}
+		    </if>
+		    <if test="idProveedor != null">
+		    	and p.id_proveedor = #{idProveedor}
+		    </if>
+		    <if test="rutCliente != null and !rutCliente.equals('')">
+		    	and ot.id_cliente = #{rutCliente}
+		    </if>
+		    <if test="nombreCliente != null and !nombreCliente.equals('')">
+		    	and c.s_nombre = #{nombreCliente}
+		    </if>
+		     <if test="tipoCambio != null and tipoCambio.equals('FF')">
+		    	and ot.s_tipo_cambio = 'FF'
+		    </if>
+		     <if test="tipoCambio != null and tipoCambio.equals('ST')">
+		    	 and (ot.s_tipo_cambio != 'FF' or ot.s_tipo_cambio is null)  
+		    </if>
+		     ) t
+		</where>
+	</select>
+</mapper>

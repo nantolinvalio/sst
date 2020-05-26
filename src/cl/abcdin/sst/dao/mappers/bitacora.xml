@@ -1,0 +1,504 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="bitacora">
+
+	<resultMap type="Bitacora" id="bitacoraResumen">
+		<result property="id"                        column="id_bitacora" />
+		<result property="id"                        column="id_bitacora_accesorio" />
+		<result property="fechaEntrada"              column="d_fecha_entrada" />
+		<result property="fechaSalida"               column="d_fecha_salida" />
+		<result property="vigente"                   column="s_vigente" />
+		<result property="estado.id"                 column="id_estado" />
+		<result property="estado.glosa"              column="s_nombre" />
+		<result property="estado.icono"              column="s_icono" />
+		<result property="estado.estadoSiguiente.id" column="id_estado_siguiente" />
+	</resultMap>
+	
+	<resultMap type="Bitacora" id="bitacora">
+		<result property="id"                                         column="id_bitacora" />
+		<result property="fechaEntrada"                               column="d_fecha_entrada" />
+		<result property="fechaSalida"                                column="d_fecha_salida" />
+		<result property="vigente"                                    column="s_vigente" />
+		<result property="duracion"                                   column="i_duracion" />
+		<result property="estado.id"                                  column="id_estado" />
+		<result property="estado.descripcion"                         column="s_descripcion" />
+		<result property="guia.numero"                                column="i_numero" />
+		<result property="guia.estado.id"                             column="id_estado_guia" />
+		<result property="guia.estado.glosa"                          column="s_estado_guia" />
+		<result property="guia.transportista.patente"                 column="s_patente" />
+		<result property="guia.transportista.nombreCompleto"          column="s_transportista" />
+		<result property="guia.usuario.nombreCompleto"                column="s_usuario_guia" />
+		<result property="guia.recepcion.observacion"                 column="s_observacion" />
+		<result property="guia.recepcion.usuario.nombreCompleto"      column="s_usuario_recepcion" />
+		<result property="guia.recepcion.estado.id"                   column="id_estado_recepcion" />
+		<result property="guia.recepcion.estado.glosa"                column="s_estado_recepcion" />
+		<result property="ubicacion.tipo"                             column="s_tipo_ubicacion" />
+		<result property="ubicacion.id"                               column="id_ubicacion" />
+		<result property="ubicacion.nombre"                           column="s_ubicacion" />
+		<result property="ubicacion.glosa"                            column="s_glosa_ubicacion" />
+	</resultMap>
+	
+	<select id="listResumenBitacorasByIdOT" parameterType="Long" resultMap="bitacoraResumen">
+		select 
+			b.id_bitacora,
+			b.d_fecha_entrada,
+			b.d_fecha_salida,
+			CASE WHEN b.d_fecha_entrada IS NOT NULL AND b.d_fecha_salida IS NULL THEN
+				'S'
+			ELSE
+				'N'
+			END AS s_vigente,
+			e.id_estado,
+			e.s_nombre,
+			e.s_icono,
+			e.id_estado_siguiente
+		from 
+			sstt_bitacoras b
+		    inner join sstt_estados e on e.id_estado = b.id_estado 
+		where 
+			b.id_ot = #{idOt}
+		order by b.id_bitacora ASC	
+	</select>
+	
+	
+	<select id="getByIdGuia" parameterType="Long" resultMap="bitacoraResumen">
+		select 
+			b.id_bitacora,
+			b.d_fecha_entrada,
+			b.d_fecha_salida,
+			CASE WHEN b.d_fecha_entrada IS NOT NULL AND b.d_fecha_salida IS NULL THEN
+				'S'
+			ELSE
+				'N'
+			END AS s_vigente,
+			b.id_estado,
+			e.s_nombre
+		from 
+		    sstt_bitacoras b 
+		    inner join sstt_estados e on e.id_estado = b.id_estado 
+		where b.id_guia = #{idGuia}
+	</select>
+	
+	<select id="getBitacoraAccesorioByIdGuia" parameterType="Long" resultMap="bitacoraResumen">
+		   select 
+            b.id_bitacora_accesorio,
+            b.d_fecha_entrada,
+            b.d_fecha_salida,
+            CASE WHEN b.d_fecha_entrada IS NOT NULL AND b.d_fecha_salida IS NULL THEN
+                'S'
+            ELSE
+                'N'
+            END AS s_vigente,
+            b.id_estado,
+            e.s_nombre
+        from 
+            sstt_bitacoras_accesorios b 
+            inner join sstt_estados e on e.id_estado = b.id_estado 
+        where b.id_guia = #{idGuia}
+	</select>
+	
+	<select id="getByIdGuiaAgrupadaAndOT" parameterType="FilterOT" resultMap="bitacoraResumen">
+		select 
+			b.id_bitacora,
+			b.d_fecha_entrada,
+			b.d_fecha_salida,
+			CASE WHEN b.d_fecha_entrada IS NOT NULL AND b.d_fecha_salida IS NULL THEN
+				'S'
+			ELSE
+				'N'
+			END AS s_vigente,
+			b.id_estado,
+			e.s_nombre
+		from 
+		    sstt_bitacoras b 
+		    inner join sstt_estados e on e.id_estado = b.id_estado 
+		where 
+				b.id_guia = #{idGuiaAgrupada}
+            and b.id_ot = #{idOT}
+	</select>
+	
+	<select id="listBitacorasByIdOT" parameterType="Long" resultMap="bitacora">
+		select 
+		    b.id_bitacora,
+		    b.d_fecha_entrada,
+		    b.d_fecha_salida,
+		    case when b.d_fecha_entrada is not null and b.d_fecha_salida is null then
+		        'S'
+		    else
+		        'N'
+		    end s_vigente,
+		    case when b.d_fecha_salida is not null then 
+		        ceil(b.d_fecha_salida - b.d_fecha_entrada)
+		    else
+		        ceil(sysdate - b.d_fecha_entrada)
+		    end i_duracion,
+		    e.id_estado,
+		    e.s_descripcion,
+		    g.i_numero, 
+		    g.s_patente,
+		    eg.id_estado id_estado_guia,
+		    eg.s_nombre s_estado_guia,
+		    t.s_nombre s_transportista,
+		    ug.s_nombre || ' ' || ug.s_apellido_paterno s_usuario_guia,
+		    r.s_observacion,
+		    ur.s_nombre || ' ' || ur.s_apellido_paterno s_usuario_recepcion,
+		    er.id_estado id_estado_recepcion,
+		    er.s_nombre s_estado_recepcion,
+		    u.s_tipo s_tipo_ubicacion, 
+		    u.id_ubicacion,
+		    u.s_nombre s_ubicacion,
+            par.s_descripcion s_glosa_ubicacion
+		from sstt_bitacoras b
+		    inner join sstt_estados e on b.id_estado = e.id_estado
+		    left join sstt_guias g on g.id_guia = b.id_guia
+		    left join sstt_estados eg on eg.id_estado = g.id_estado
+		    left join owv_transportistas t on t.id_transportista = g.id_transportista
+		    left join sstt_usuarios ug on ug.id_usuario = g.id_usuario
+		    left join sstt_recepciones r on r.id_recepcion = b.id_recepcion
+		    left join sstt_usuarios ur on ur.id_usuario = r.id_usuario
+		    left join sstt_estados er on er.id_estado = r.id_estado
+		    left join sstt_ubicaciones u on u.id_ubicacion = b.id_ubicacion
+            left join sstt_parametros par on par.s_nombre = u.s_tipo and par.s_string1 = 'UBIC'
+		where b.id_ot = #{id}
+		order by b.id_bitacora asc
+	</select>
+	
+	<delete id="deleteBitacoraMayoresByOT" parameterType="Bitacora">
+		delete from sstt_bitacoras
+		where id_ot = #{ordenTrabajo.id}
+		and id_bitacora &gt; #{id}
+	</delete>
+	
+	<delete id="deleteBitacoraAccesoriosMayoresByOT" parameterType="Bitacora">
+		delete from sstt_bitacoras_accesorios
+		where id_ot = #{ordenTrabajo.id}
+		and id_bitacora_accesorio &gt; #{id}
+	</delete>
+	
+	<delete id="deleteBitacoraByOTNoEstado" parameterType="Bitacora">
+		delete from sstt_bitacoras
+		where id_ot = #{ordenTrabajo.id}
+		and id_estado != #{estado.id}
+	</delete>
+	
+	<delete id="deleteBitacoraByOT" parameterType="Long">
+		delete from sstt_bitacoras b 
+		where b.id_ot = #{idOT}
+	</delete>
+	
+	<update id="updateFechaSalida" parameterType="Bitacora">
+		update sstt_bitacoras
+		set d_fecha_salida  = #{fechaSalida}
+		where id_bitacora = #{id}
+	</update>
+	
+	<update id="updateFechaSalidaBitacoraAccesorio" parameterType="Bitacora">
+		update sstt_bitacoras_accesorios
+		set d_fecha_salida  = #{fechaSalida}
+		where id_bitacora_accesorio = #{id}
+	</update>
+	
+	<insert id="save" parameterType="Bitacora">
+		insert into sstt_bitacoras (
+			id_guia,
+			id_recepcion,
+			id_ot,
+			d_fecha_entrada,
+			d_fecha_salida,
+			id_estado,
+			id_ubicacion
+		) values (
+			#{guia.id},
+			#{recepcion.id},
+			#{ordenTrabajo.id},
+			#{fechaEntrada},
+			#{fechaSalida},
+			#{estado.id},
+			#{ubicacion.id}
+		)
+	</insert>
+	
+	<insert id="saveBitacoraAccesorios" parameterType="Bitacora" keyColumn="id_bitacora_accesorio" keyProperty="id">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_bitacoras_accesorios.nextval from dual
+		</selectKey>
+		insert into sstt_bitacoras_accesorios (
+			id_bitacora_accesorio,
+			id_guia,
+			id_recepcion,
+			id_ot,
+			d_fecha_entrada,
+			d_fecha_salida,
+			id_estado,
+			id_ubicacion
+		) values (
+			#{id},
+			#{guia.id},
+			#{recepcion.id},
+			#{ordenTrabajo.id},
+			#{fechaEntrada},
+			#{fechaSalida},
+			#{estado.id},
+			#{ubicacion.id}
+		)
+	</insert>
+	
+	<update id="updateAsignaBitacoraAGuia" parameterType="Bitacora">
+		update sstt_bitacoras b
+		set b.id_guia = #{guia.id}
+		where b.id_bitacora = (select max(bi.id_bitacora)
+								from sstt_bitacoras bi
+								where bi.id_ot = #{ordenTrabajo.id}
+                                   and bi.id_ubicacion = #{ubicacion.id})
+	</update>
+	
+	<update id="updateAsignaBitacoraAGuiaAccesorio" parameterType="Bitacora">
+		update sstt_bitacoras_accesorios b
+		set b.id_guia = #{guia.id}
+		where b.id_bitacora_accesorio = (select max(bi.id_bitacora_accesorio)
+								from sstt_bitacoras_accesorios bi
+								where bi.id_ot = #{ordenTrabajo.id}
+                                   and bi.id_ubicacion = #{ubicacion.id})
+	</update>
+	
+	<update id="updateBitacoraUnlinkGuia" parameterType="FilterGuiasPendientes">
+		update sstt_bitacoras b
+		set b.id_guia = null
+		where exists (select 1 from sstt_guias g where 
+					        g.s_vigente = 'S'
+					    and g.id_estado = 50001000
+					    and g.id_origen = #{idUbicacion}
+					    and g.id_ot is null
+					    and g.id_guia = b.id_guia)
+	</update>
+	
+	<insert id="saveBitacoraEnCrearOT" parameterType="Bitacora">
+		insert into sstt_bitacoras (
+			id_ot
+			,d_fecha_entrada
+			,id_estado
+			,id_ubicacion) 
+		values (
+			#{idOT}
+			,sysdate
+			,#{estado.id}
+			,#{ubicacion.id})
+	</insert>
+	
+	<update id="updateBitacoraFechaEstado" parameterType="Recepcion">
+	 	update sstt_bitacoras b 
+	 	set b.d_fecha_salida = #{fechaRecepcion}
+	 	where b.id_bitacora = (select max(b2.id_bitacora)
+	 						   from sstt_bitacoras b2
+	 						   where b2.id_ot = #{guia.ordenTrabajo.id})
+	</update>
+	
+	<resultMap type="Bitacora" id="resultEstadoUltimaUbicacion">
+		<result property="estado.id"                 column="id_estado" />
+		<result property="ubicacion.id"              column="id_ubicacion" />
+	</resultMap>
+	
+	<select id="getEstadoUltimaUbicacion" parameterType="Recepcion" resultMap="resultEstadoUltimaUbicacion">
+		 select b.id_estado
+              ,nvl(b.id_ubicacion, 0) id_ubicacion
+         from sstt_bitacoras b
+         where b.id_bitacora = (select max(bi.id_bitacora)
+								from sstt_bitacoras bi
+								where bi.id_ot = #{ordenTrabajo.id}
+                                and bi.id_ubicacion = #{ubicacion.id})
+	</select>
+	
+	<insert id="saveBitacoraEstadoSiguiente" parameterType="Bitacora">
+		insert into sstt_bitacoras (
+			id_ot, 
+			d_fecha_entrada, 
+			d_fecha_salida, 
+			id_estado
+		)values(
+			#{ordenTrabajo.id}, 
+			#{fechaEntrada}, 
+			#{fechaEntrada}, 
+			#{estado.estadoSiguiente.id}, 
+		)
+	</insert>	
+	
+	<resultMap type="Bitacora" id="resultUltimaBitacora">
+		<result  property="id" 						column="id_bitacora"/>
+		<result  property="id" 						column="id_bitacora_accesorio"/>
+		<result  property="fechaEntrada"    		column="d_fecha_entrada" />
+		<result  property="fechaSalida"				column="d_fecha_salida" />
+		<result  property="estado.id"				column="id_estado" />
+		<result  property="estado.descripcion"		column="s_nombre" />
+		<result  property="ubicacion.tipo"   		column="s_tipo" />	
+		<result  property="ubicacion.id"	   		column="id_ubicacion" />
+		<result  property="guia.id"	   				column="id_guia" />	
+		<result  property="recepcion.id"			column="id_recepcion" />
+		<result  property="ordenTrabajo.id"			column="id_ot" />	
+	</resultMap>
+	
+	<select id="getUltimaBitacora" parameterType="Long" resultMap="resultUltimaBitacora">
+		 select 
+			 b.id_bitacora
+			 ,b.d_fecha_entrada
+			 ,b.d_fecha_salida
+			 ,b.id_estado
+			 ,e.s_nombre
+			 ,u.s_tipo
+			 ,u.id_ubicacion
+		 from 
+		 	sstt_bitacoras b
+		 	inner join sstt_estados e on e.id_estado = b.id_estado
+		 	left join sstt_ubicaciones u on u.id_ubicacion = b.id_ubicacion
+		 where 
+		 	b.id_bitacora = (select max(bi.id_bitacora)
+								from sstt_bitacoras bi 
+								where bi.id_ot = #{idOT})
+	</select>
+	
+	<select id="getUltimaBitacoraAccesorio" parameterType="Long" resultMap="resultUltimaBitacora">
+		 select 
+			 b.id_bitacora_accesorio
+			 ,b.d_fecha_entrada
+			 ,b.d_fecha_salida
+			 ,b.id_estado
+			 ,e.s_nombre
+			 ,u.s_tipo
+			 ,u.id_ubicacion
+		 from 
+		 	sstt_bitacoras_accesorios b
+		 	inner join sstt_estados e on e.id_estado = b.id_estado
+		 	left join sstt_ubicaciones u on u.id_ubicacion = b.id_ubicacion
+		 where 
+		 	b.id_bitacora_accesorio = (select max(bi.id_bitacora_accesorio)
+								from sstt_bitacoras_accesorios bi 
+								where bi.id_ot = #{idOT})
+	</select>
+	
+	<select id="getUltimaBitacoraAbierta" parameterType="Long" resultMap="resultUltimaBitacora">
+		select 
+		    b.id_bitacora
+		    ,b.id_ubicacion
+		    ,b.id_guia
+		    ,b.id_recepcion
+		    ,b.id_ot
+		    ,b.id_estado
+		from 
+		    sstt_bitacoras b
+		    left join sstt_ubicaciones ub on ub.id_ubicacion = b.id_ubicacion
+		where 
+		    b.id_ot = #{idOT}
+		    and b.d_fecha_entrada is not null
+		    and b.d_fecha_salida is null
+	</select>
+	
+	<select id="getBitacoraUltimaUbicacionOT" parameterType="Long" resultMap="resultUltimaBitacora">
+		select 
+			b.id_bitacora
+			,b.id_guia
+			,b.id_recepcion
+			,b.id_ot
+			,b.d_fecha_entrada
+			,d_fecha_salida
+			,b.id_estado
+			,b.id_ubicacion
+		from 
+			sstt_bitacoras b
+			inner join sstt_ubicaciones u on u.id_ubicacion = b.id_ubicacion
+			inner join sstt_comunas c on c.id_comuna = u.id_comuna
+			inner join sstt_provincias p on p.id_provincia = c.id_provincia
+			inner join sstt_regiones r on r.id_region = p.id_region
+			left join sstt_parametros pa on pa.s_nombre = u.s_tipo         
+		where b.id_ot = #{idOT}
+			and pa.s_string1 = 'UBIC'
+			and b.id_bitacora = (select max(bi.id_bitacora) from sstt_bitacoras bi 
+		                              where bi.id_ot = #{idOT}
+		                              and bi.id_ubicacion &gt; 0)
+		    
+	</select>
+	
+	<insert id="saveBitacoraCerrarCliente" parameterType="Bitacora">
+		insert into sstt_bitacoras (
+			id_ot,
+			d_fecha_entrada,  
+			id_estado
+		)values(
+			#{ordenTrabajo.id},
+			#{fechaEntrada},
+			20007000
+		)
+	</insert>
+	
+	<update id="updateBitacoraByOT" parameterType="Bitacora">
+		update sstt_bitacoras
+		set
+			id_ot = #{idOT}
+			<if test="estado!=null and estado.id!=null">
+				,id_estado = #{estado.id}
+			</if>
+		where
+			id_ot = #{idOT}
+	</update>
+	
+	<select id="getBitacoraByEnvioRecepcionMasiva" parameterType="FilterRecepcionProducto" resultMap="bitacora">
+		select 
+			id_bitacora
+			,id_guia
+			,id_recepcion
+			,id_ot
+			,d_fecha_entrada
+			,d_fecha_salida
+			,id_estado
+			,id_ubicacion
+		from sstt_bitacoras
+		where id_ot = #{idOT}
+			and id_guia = #{idGuia}
+	</select>
+	
+	<update id="updateBitacoraEnvioRecepcionByBitacora" parameterType="Bitacora">
+		update sstt_bitacoras
+			set id_estado = #{estado.id}
+				,id_ubicacion = #{ubicacion.id}
+		where id_ot = #{idOT}
+			  and id_guia = #{guia.id}
+	</update>
+	
+	<update id="updateEstadoBitacora" parameterType="Bitacora">
+		update sstt_bitacoras b 
+			set b.id_estado = #{estado.id} 
+			<if test="numeroIT != null">
+				,b.i_nmro_it = #{numeroIT}
+			</if>
+		where 
+			b.id_bitacora = #{id}
+	</update>
+	
+	<update id="updateEstadoUltimaBitacora" parameterType="Bitacora">
+		update sstt_bitacoras b 
+			set b.id_estado = #{estado.id} 
+		where 
+			b.id_bitacora = (select max(bi.id_bitacora)
+								from sstt_bitacoras bi
+								where bi.id_ot = #{ordenTrabajo.id}
+                                   and bi.id_ubicacion = #{ubicacion.id})
+	</update>
+	
+	<update id="updateBitacoraAccesorio" parameterType="Bitacora">
+		update sstt_bitacoras_accesorios
+		set id_recepcion = #{recepcion.id}
+		    ,d_fecha_salida = #{fechaSalida}
+		    ,id_estado = #{estado.id}
+		    ,id_ubicacion = #{ubicacion.id}
+		where id_bitacora_accesorio = #{id}  
+	</update>
+	
+	<select id="getUbicacionInicialOT" parameterType="Long" resultType="Long">
+		 SELECT B.ID_UBICACION 
+		 FROM SSTT_BITACORAS B
+		 WHERE B.ID_BITACORA = (SELECT MIN(ID_BITACORA) 
+		 FROM SSTT_BITACORAS
+		 WHERE ID_OT = #{id})                      
+	</select>
+</mapper>

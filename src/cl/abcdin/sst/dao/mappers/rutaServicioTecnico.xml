@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<mapper namespace="rutaServicioTecnico">
+	
+	<resultMap type="RutaServicioTecnico" id="rutaServicioTecnico">
+		<result property="id"                                 column="id_ruta_s_tecnico"/>
+		<result property="codigo"                             column="s_codigo"/>
+		<result property="nombre"                             column="s_nombre"/>
+		<result property="vigente"                            column="s_vigente"/>
+		<result property="fechaCreacion"                      column="d_fecha_creacion"/>
+		<result property="usuarioCreacion.id"                 column="id_usuario_creacion"/>
+		<result property="usuarioCreacion.nombreCompleto"     column="s_usuario_creacion"/>
+		<result property="fechaModificacion"                  column="d_fecha_modificacion"/>
+		<result property="usuarioModificacion.id"             column="id_usuario_modificacion"/>
+		<result property="usuarioModificacion.nombreCompleto" column="id_usuario_modificacion"/>
+	</resultMap>
+	
+    <select id="listRutasServicioTecnico" resultMap="rutaServicioTecnico" parameterType="FilterRutaServicioTecnico">
+        select 
+        	rst.id_ruta_s_tecnico
+            ,rst.s_codigo
+            ,rst.s_nombre
+            ,rst.s_vigente
+            ,rst.d_fecha_creacion
+            ,rst.id_usuario_creacion
+            ,trim(us1.s_nombre)||' '||trim(us1.s_apellido_paterno)||' '||trim(us1.s_apellido_materno) as s_usuario_creacion
+            ,rst.d_fecha_modificacion
+            ,rst.id_usuario_modificacion
+            ,trim(us2.s_nombre)||' '||trim(us2.s_apellido_paterno)||' '||trim(us2.s_apellido_materno) as s_usuario_modificacion
+        from sstt_rutas_s_tecnico rst
+            left join sstt_usuarios us1 on us1.id_usuario = rst.id_usuario_creacion
+            left join sstt_usuarios us2 on us2.id_usuario = rst.id_usuario_modificacion
+		<where>
+			<if test="codigo!=null and !codigo.equals('')">
+				and rst.s_codigo = #{codigo}
+			</if>
+			<if test="nombre!=null and !nombre.equals('')">
+				and upper(rst.s_nombre) = upper(#{nombre})
+			</if>
+			<if test="vigente!=null">
+				and rst.s_vigente = #{vigente}
+			</if>
+		</where>		            
+        <if test="orderBy != null and !orderBy.equals('')">
+		    order by ${orderBy}
+		    <if test="sortOrder != null and !sortOrder.equals('')">
+			    ${sortOrder}
+		    </if>	
+		</if>
+    </select>
+    
+    <select id="getTotalRutasServicioTecnico"  resultType="Integer">
+        select count(1)
+        from sstt_rutas_s_tecnico
+        <where>
+			<if test="codigo!=null and !codigo.equals('')">
+				and s_codigo = #{codigo}
+			</if>
+			<if test="nombre!=null and !nombre.equals('')">
+				and upper(rst.s_nombre) = upper(#{nombre})
+			</if>
+			<if test="vigente!=null">
+				s_vigente = #{vigente}
+			</if>
+		</where>	
+    </select>
+    
+    <insert id="saveRutaServicioTecnico" parameterType="RutaServicioTecnico"> 
+    	<selectKey resultType="Integer" keyProperty="id" order="BEFORE">
+			select ssts_rutas_s_tecnico.nextval from dual
+		</selectKey> 
+		insert into sstt_rutas_s_tecnico(
+			id_ruta_s_tecnico
+			,s_codigo
+			,s_nombre
+			,s_vigente
+			,d_fecha_creacion
+			,id_usuario_creacion
+		) values (
+			#{id}
+			,upper(#{codigo})
+			,upper(#{nombre})
+			,#{vigente}
+			,SYSDATE
+			,#{usuarioCreacion.id}
+		)
+    </insert>
+    
+    <select id="getRutaServicioTecnicoByCodigo" parameterType="String" resultMap="rutaServicioTecnico">
+    	select 
+        	rst.id_ruta_s_tecnico
+            ,rst.s_codigo
+            ,rst.s_nombre
+            ,rst.s_vigente
+            ,rst.d_fecha_creacion
+            ,rst.id_usuario_creacion
+            ,trim(us1.s_nombre)||' '||trim(us1.s_apellido_paterno)||' '||trim(us1.s_apellido_materno) as s_usuario_creacion
+            ,rst.d_fecha_modificacion
+            ,rst.id_usuario_modificacion
+            ,trim(us2.s_nombre)||' '||trim(us2.s_apellido_paterno)||' '||trim(us2.s_apellido_materno) as s_usuario_modificacion
+        from sstt_rutas_s_tecnico rst
+            left join sstt_usuarios us1 on us1.id_usuario = rst.id_usuario_creacion
+            left join sstt_usuarios us2 on us2.id_usuario = rst.id_usuario_modificacion
+        where
+			rst.s_codigo = upper(#{codigo})
+    </select>
+    
+    <update id="updateRutaServicioTecnico" parameterType="RutaServicioTecnico">
+    	update sstt_rutas_s_tecnico
+    		set 
+    			s_codigo                 = upper(#{codigo})
+    			,s_vigente               = #{vigente}
+    			,s_nombre                = upper(#{nombre})
+    			,id_usuario_modificacion = #{usuarioModificacion.id}
+    			,d_fecha_modificacion    = sysdate
+    	where id_ruta_s_tecnico = #{id}
+    </update>
+</mapper>

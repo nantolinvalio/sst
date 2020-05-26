@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="transportista">
+	
+	<resultMap type="Transportista" id="tran">
+		<result property="id"							column="id_transportista"/>
+		<result property="rut"							column="id_transportista" typeHandler="RunTypeHandler"/>
+		<result property="nombreCompleto"				column="s_nombre"/>
+		<result property="direccion"					column="s_direccion"/>
+		<result property="comuna.glosa"					column="s_comuna"/>
+		<result property="comuna.provincia.codigoArea"	column="s_codigo_area"/>
+		<result property="telefono"						column="s_telefono"/>
+		<result property="celular"						column="s_celular"/>
+	</resultMap>
+
+	<select id="listTransportista" resultMap="tran">
+		select
+			t.id_transportista
+			,t.s_nombre
+			,t.s_direccion
+			,t.s_comuna
+			,t.s_codigo_area
+			,t.s_telefono
+			,t.s_celular
+		from owv_transportistas t 
+		order by t.s_nombre asc  
+	</select>
+	
+	<select id="getTransportistaByUltimaRecepcionOT" resultMap="tran" parameterType="Long">
+		select 
+			distinct
+			t.id_transportista
+			,t.s_nombre
+			,t.s_direccion
+			,t.s_comuna
+			,t.s_codigo_area
+			,t.s_telefono
+			,t.s_celular 
+		from 
+		    sstt_ordenes_trabajo ot
+		    inner join sstt_bitacoras b on b.id_ot = ot.id_ot
+		    inner join sstt_guias g on b.id_guia = g.id_guia
+		    inner join sstt_recepciones_camion_guias rcg on rcg.id_guia = g.id_guia
+		    inner join sstt_recepciones_camion rc on rc.id_recepcion_camion = rcg.id_recepcion_camion
+                                         		 and rc.id_estado = 80001000
+		    inner join owv_transportistas t on t.id_transportista = rc.id_transportista
+		where ot.id_ot = #{idOT}
+	</select>
+	
+	
+	
+	<select id="getTransportistaById" resultMap="tran" parameterType="Long">
+		select
+		    id_transportista
+		    ,s_nombre
+		    ,s_direccion
+		    ,s_comuna 
+		    ,s_codigo_area
+		    ,s_telefono
+		    ,s_celular
+		from owv_transportistas
+		where id_transportista = #{id}
+	</select>
+	
+</mapper>

@@ -1,0 +1,9 @@
+.container .marco .table_plana td.td_etapa.documento          {background-image: url('../icons/sucursales/documento.png')}
+.container .marco .table_plana td.td_etapa.gProveedor         {background-image: url('../icons/sucursales/garantia.png')}
+.container .marco .table_plana td.td_etapa.gMaster            {background-image: url('../icons/sucursales/garantia.png')}
+.container .marco .table_plana td.td_etapa.fallas             {background-image: url('../icons/sucursales/fallas.png')}
+.container .marco .table_plana td.td_etapa.accesorios         {background-image: url('../icons/sucursales/accesorios.png')}
+.container .marco .table_plana td.td_etapa.revision           {background-image: url('../icons/sucursales/revision.png')}
+.container .marco .table_plana td.td_etapa.terminar           {background-image: url('../icons/sucursales/terminar.png')}
+.container .marco .table_plana td.td_etapa.guia               {background-image: url('../icons/sucursales/documento.png')}
+.container .marco .table_plana td.td_etapa.preparacion        {background-image: url('../icons/sucursales/preparacion.png')}

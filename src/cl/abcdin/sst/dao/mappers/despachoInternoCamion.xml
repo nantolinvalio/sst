@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="despachoInternoCamion">
+	<resultMap type="DespachoInternoCamion" id="despachoInternoCamion">
+		<result column="id_despacho_interno_camion"		property="id"/>
+		<result column="id_despacho_interno"			property="despachoInterno"/>
+	</resultMap>
+	
+	<insert id="save" parameterType="DespachoInternoCamion" keyColumn="id_despacho_interno_camion" keyProperty="id">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_despachos_internos_camion.nextval from dual
+		</selectKey>
+		insert into sstt_despachos_internos_camion(
+			id_despacho_interno_camion
+			,id_despacho_interno
+		) values (
+			#{id}
+			,#{despachoInterno.id}
+		)
+	</insert>
+	
+	<select id="get" parameterType="DespachoInterno" resultType="DespachoInternoCamion">
+		select
+		    id_despacho_interno_camion as id
+		    ,id_despacho_interno as "despachoInterno.id" 
+		from 
+		    sstt_despachos_internos_camion
+		where
+		    id_despacho_interno = #{id}
+	</select>
+	
+	<select id="getDespachoInternoCamionUltimo" parameterType="DespachoInterno" resultType="DespachoInternoCamion">
+		select 
+		    dpc.id_despacho_interno_camion as id
+		    ,dpc.id_despacho_interno as "despachoInterno.id" 
+		from 
+		    sstt_despachos_internos_camion dpc 
+		where id_despacho_interno_camion =(select max(dpc1.id_despacho_interno_camion) 
+		                            from sstt_despachos_internos_camion dpc1 
+		                            where dpc1.id_despacho_interno = #{id})
+	</select>
+	
+</mapper>

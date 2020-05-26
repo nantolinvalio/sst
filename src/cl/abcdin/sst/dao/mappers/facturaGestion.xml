@@ -1,0 +1,1076 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="facturaGestion">
+	
+	<resultMap type="Factura" id="factura">
+		<result property="id"               column="id_factura"/>
+		<result property="numero"      		column="i_numero"/>
+		<result property="fechaEmision"     column="d_fecha_emision"/>
+		<result property="nombre"      		column="s_nombre"/>
+		<result property="cantidadFacturas" column="i_cantidad_ots"/>
+		<result property="montoTotal"    	column="i_total"/>
+		<result property="montoNeto"      	column="i_neto"/>
+		<result property="iva"   			column="i_iva"/>
+		<result property="numeroSC"      	column="i_numero_sc"/>
+		<result property="fechaAceptacion"  column="d_fecha_aceptada"/>
+		<result property="fechaRechazada"	column="d_fecha_rechazada"/>
+		<result property="estado.glosa"     column="s_estado" />
+		<result property="estado.id"    	column="id_estado"/>
+		<result property="otsConcatenadas"  column="s_ots_factura"/>
+		<result property="idFacturar"       column="i_rut"/>
+		<result property="direccion"       	column="s_direccion"/>
+		<result property="comuna"       	column="s_comuna"/>
+		<result property="tipoFactura"      column="s_facturar_tipo"/>
+	</resultMap>
+		
+	<resultMap type="Factura" id="factura2">
+		<result property="id"                               column="id_factura"/>
+		<result property="nombre"          					column="s_nombre"/>
+		<result property="rut"      						column="i_rut"/>
+		<result property="montoTotal"      					column="i_suma_con_iva"/>
+		<result property="montoNeto"      					column="i_suma_sin_iva"/>
+		<result property="cantidadFacturas" 				column="i_cantidad_facturas"/>
+		<result property="cantidadFacturasRechazadas"    	column="i_cantidad_facturas_rechazadas"/>
+		<result property="cantidadOTs"      				column="i_cantidad_ots"/>
+		<result property="iva"   							column="i_iva"/>										
+	</resultMap>
+	
+	<resultMap type="Factura" id="factura3">
+		<result property="nombre"          					column="s_nombre"/>
+		<result property="fechaEmision"						column="d_fecha_emision"/>
+		<result property="numero"        					column="i_numero"/>
+		<result property="estado.descripcion"    			column="estado"/>
+		<result property="estado.id"    			        column="id_estado"/>
+	</resultMap>
+		
+	<select id="listFactura" resultMap="factura">		
+		select 
+			f.id_factura
+			,nvl(f.i_numero, 0) as i_numero
+			,f.d_fecha_emision
+			,f.i_rut
+            ,f.s_nombre
+			,count(fot.id_factura_ot) as i_cantidad_ots
+			,floor(f.i_neto) + floor(f.i_iva) as i_total
+			,floor(f.i_neto) as i_neto
+			,floor(f.i_iva) as i_iva
+			,f.i_numero_sc  
+			,case when f.id_estado = 40003000 then 
+				f.d_fecha_aceptacion
+			else null
+			end AS s_fecha_aceptada
+			,case when f.id_estado = 40004000 then
+				f.d_fecha_aceptacion
+			else null
+				end as d_fecha_rechazada
+			,e.s_nombre as s_estado
+			,f.id_estado 
+			, 0 as checkMarca   
+		from owt_facturas f
+			inner join sstt_facturas_ot fot on f.id_factura = fot.id_factura
+			inner join sstt_estados e ON e.id_estado = f.id_estado
+		where 
+			f.id_estado in (40001000,40001500,40002000,40003000) 
+		group by f.d_fecha_aceptacion
+			,f.d_fecha_sc
+			,f.id_estado
+			,f.i_numero_sc
+			,f.d_fecha_registro
+			,f.s_comuna
+			,f.s_giro
+			,f.s_direccion
+			,f.s_nombre
+			,f.i_rut
+			,f.i_neto
+			,f.i_iva
+			,f.d_fecha_emision
+			,f.i_numero
+			,f.id_factura
+			,e.s_nombre
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="listIdOTbyIdFactura" parameterType="Long" resultType="Long">
+		select 
+			id_ot 
+		from 
+			sstt_facturas_ot t
+		where 
+			t.id_factura = #{id} 
+		order by t.id_ot asc
+	</select>
+	
+	<select id="listOtsFactura" parameterType="FilterFactura" resultMap="ordenTrabajo.ot">
+	    <include refid="ordenTrabajo.listOT"/>
+	    where
+				ot.s_cerrada = 'N'
+	        and ot.s_vigente = 'S'
+	        and ot.s_cambio_autorizado = 'S' 
+	        and ot.id_facturar != 89772300     
+	        and not exists (select 1
+					        from owt_facturas f1
+					        inner join sstt_facturas_ot fot on fot.id_factura = f1.id_factura       
+					        where f1.id_estado != 40000000
+					        and f1.id_estado != 40005000
+					        and fot.id_ot = ot.id_ot)
+		    and  exists (select 1 
+                        from sstt_guias g
+                             inner join sstt_recepciones re on re.i_nmro_guia = g.i_numero
+                        where 
+                            g.id_ot = ot.id_ot 
+                            and g.s_procesado_ow = 'S'      
+                            and g.s_vigente = 'S'
+                            and g.id_estado = 50005000
+                            and id_destino = 10015
+                            and re.id_estado in(60001000,60003000) )
+	        <if test="idOT != null">
+	        	and ot.id_ot = #{idOT}
+	        </if> 
+	        <if test="tipoOT != null and !tipoOT.equals('')">
+	        	and ot.s_tipo = #{tipoOT} 
+	        </if>    
+	        <if test="idEjecutiva != null">
+	        	and ot.id_ejecutiva = #{idEjecutiva}
+	        </if>  
+	        <if test="idProducto != null">
+	        	and ot.id_producto = #{idProducto}
+	        </if> 
+	        <if test="fechaInicio != null">
+	        	and ot.d_fecha_cambio_autorizado &gt;= #{fechaInicio}
+	        </if> 
+	        <if test="fechaTermino != null">
+	        	and ot.d_fecha_cambio_autorizado &lt;= #{fechaTermino}
+	        </if> 
+	        <if test="idProveedor != null">
+	        	and ot.id_facturar = #{idProveedor}
+	        </if>
+	        <if test="idTransportista != null">
+	        	and ot.id_facturar = #{idTransportista}
+	        </if>
+	      	<if test="idFamilia != null and !idFamilia.equals('')">
+	        	and prod.id_familia = #{idFamilia}            
+	        </if>
+	        <if test="idMarca != null and !idMarca.equals('')">
+	        	and prod.id_marca = #{idMarca}
+	        </if>  
+	        and ot.s_tipo in ('BT','GP','GPC') 
+		<if test="orderBy == null or orderBy.equals('')">
+			order by ot.i_nmro_cargo desc nulls last, ot.id_facturar nulls last  
+		</if>
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="listOtByFactura" parameterType="Long" resultType="OrdenTrabajo">
+		select 
+			ot.id_ot
+		from 
+			sstt_facturas_ot
+		where 
+			id_factura = #{id}
+	</select>
+	
+	<select id="listAllOtsFacturaCheck" parameterType="FilterFactura" resultType="CheckForFlexigrid">
+        select 
+	    	ot.id_ot as "id",
+	    	'N' as "check"
+		from
+			sstt_ordenes_trabajo ot
+		    left join owv_productos prod on prod.id_producto = ot.id_producto
+		where
+			ot.s_cerrada = 'N'
+        and ot.s_vigente = 'S'
+        and ot.s_cambio_autorizado = 'S' 
+        and ot.id_facturar != 89772300     
+        and not exists (select 1
+				        from owt_facturas f1
+				        inner join sstt_facturas_ot fot on fot.id_factura = f1.id_factura       
+				        where f1.id_estado != 40000000
+				        and f1.id_estado != 40005000
+				        and fot.id_ot = ot.id_ot)
+         and  exists (select 1 
+                        from sstt_guias g
+                             inner join sstt_recepciones re on re.i_nmro_guia = g.i_numero
+                        where 
+                            g.id_ot = ot.id_ot 
+                            and g.s_procesado_ow = 'S'      
+                            and g.s_vigente = 'S'
+                            and g.id_estado = 50005000
+                            and id_destino = 10015
+                            and re.id_estado in(60001000,60003000) )
+        <if test="idOT != null">
+        	and ot.id_ot = #{idOT}
+        </if> 
+        <if test="tipoOT != null and !tipoOT.equals('')">
+        	and ot.s_tipo = #{tipoOT} 
+        </if>    
+        <if test="idEjecutiva != null">
+        	and ot.id_ejecutiva = #{idEjecutiva}
+        </if>  
+        <if test="idProducto != null">
+        	and ot.id_producto = #{idProducto}
+        </if> 
+        <if test="fechaInicio != null">
+        	and ot.d_fecha_cambio_autorizado &gt;= #{fechaInicio}
+        </if> 
+        <if test="fechaTermino != null">
+        	and ot.d_fecha_cambio_autorizado &lt;= #{fechaTermino}
+        </if> 
+        <if test="idProveedor != null">
+        	and ot.id_facturar = #{idProveedor}
+        </if>
+        <if test="idTransportista != null">
+        	and ot.id_facturar = #{idTransportista}
+        </if>
+      	<if test="idFamilia != null and !idFamilia.equals('')">
+        	and prod.id_familia = #{idFamilia}            
+        </if>
+        <if test="idMarca != null and !idMarca.equals('')">
+        	and prod.id_marca = #{idMarca}
+        </if>  
+        and ot.s_tipo in ('BT','GP','GPC') 
+	</select>
+	
+	<select id="listTotalOtsFactura" resultType="Integer">
+		select
+			count(1)
+		from
+			sstt_ordenes_trabajo ot
+		    left join owv_productos prod on prod.id_producto = ot.id_producto
+		where
+			ot.s_cerrada = 'N'
+        and ot.s_vigente = 'S'
+        and ot.s_cambio_autorizado = 'S' 
+        and ot.id_facturar != 89772300     
+        and not exists (select 1
+				        from owt_facturas f1
+				        inner join sstt_facturas_ot fot on fot.id_factura = f1.id_factura       
+				        where f1.id_estado != 40000000
+				        and f1.id_estado != 40005000
+				        and fot.id_ot = ot.id_ot)
+		 and  exists (select 1 
+                        from sstt_guias g
+                             inner join sstt_recepciones re on re.i_nmro_guia = g.i_numero
+                        where 
+                            g.id_ot = ot.id_ot 
+                            and g.s_procesado_ow = 'S'      
+                            and g.s_vigente = 'S'
+                            and g.id_estado = 50005000
+                            and id_destino = 10015
+                            and re.id_estado in(60001000,60003000) )
+        <if test="idOT != null">
+        	and ot.id_ot = #{idOT}
+        </if> 
+        <if test="tipoOT != null and !tipoOT.equals('')">
+        	and ot.s_tipo = #{tipoOT} 
+        </if>    
+        <if test="idEjecutiva != null">
+        	and ot.id_ejecutiva = #{idEjecutiva}
+        </if>  
+        <if test="idProducto != null">
+        	and ot.id_producto = #{idProducto}
+        </if> 
+        <if test="fechaInicio != null">
+        	and ot.d_fecha_cambio_autorizado &gt;= #{fechaInicio}
+        </if> 
+        <if test="fechaTermino != null">
+        	and ot.d_fecha_cambio_autorizado &lt;= #{fechaTermino}
+        </if> 
+        <if test="idProveedor != null">
+        	and ot.id_facturar = #{idProveedor}
+        </if>
+        <if test="idTransportista != null">
+        	and ot.id_facturar = #{idTransportista}
+        </if>
+      	<if test="idFamilia != null and !idFamilia.equals('')">
+        	and prod.id_familia = #{idFamilia}            
+        </if>
+        <if test="idMarca != null and !idMarca.equals('')">
+        	and prod.id_marca = #{idMarca}
+        </if>  
+        and ot.s_tipo in ('BT','GP','GPC') 
+	</select>
+	
+	<select id="listTotalFactura" parameterType="FilterFactura" resultType="Integer">
+		select 
+			count(distinct f.id_factura ) 
+		from 
+			owt_facturas f
+			inner join sstt_facturas_ot fot on f.id_factura = fot.id_factura
+			inner join sstt_estados e on e.id_estado = f.id_estado
+		where 
+		     f.id_estado in (40001000,40001500,40002000,40003000) 
+	</select>
+	
+
+	
+	<select id="listMarca" resultType="Marca">
+			select m.id_marca codigo
+				  ,m.s_nombre nombre
+		    from owv_marcas m 
+		    order by m.s_nombre asc
+	</select>
+	
+	<select id="listProveedor" resultType="Proveedor" >
+	 	select distinct t.id_proveedor id
+	 	     ,t.s_nombre nombre
+	    from owv_proveedores t                
+	    order by t.s_nombre asc
+	</select>
+	
+	<select id="listFamilia" resultType="Familia">
+		select distinct f.id_familia id, 
+		f.s_nombre nombre
+	    from owv_familias f
+	    order by f.s_nombre asc
+	</select>
+	
+	<select id="getIdOTByIdFactura" parameterType="Long" resultType="Long">	
+		select 
+			t.id_ot as id
+		from sstt_facturas_ot t 
+		where t.id_factura = #{idFactura}
+	</select>
+	
+	<select id="getIdEstadoByIdFactura" parameterType="Long" resultType="Integer">
+		select 
+        	f.id_estado
+		from owt_facturas f 
+		where f.id_factura = #{idFactura} 		
+	</select>
+	
+	<select id="updateEstadoFactura" parameterType="Factura">
+		 update owt_facturas f 
+		 set f.id_estado = #{estado.id}
+		 <if test="numeroSC != null">
+		 	,i_numero_sc = #{numeroSC}
+		 </if> 
+		 <if test="fechaSC != null and !fechaSC.equals('')">
+		 	,d_fecha_sc = #{fechaSC}
+		 </if>
+		 where f.id_factura = #{id}
+	</select>
+	
+	<select id="updateEstadoFacturaAceptada" parameterType="Factura">
+		update owt_facturas f
+        set f.id_estado = #{estado.id}
+        <if test="fechaAceptacion != null and !fechaAceptacion.equals('')">
+			,f.d_fecha_aceptacion = #{fechaAceptacion}
+		</if>
+		<if test="fechaEmision != null and !fechaEmision.equals('')">
+			,f.d_fecha_emision = #{fechaEmision}
+		</if>
+		<if test="numero != null">
+			,f.i_numero = #{numero}
+		</if>                          
+        where f.id_factura = #{id}
+	</select>
+
+<!-- Cerrar OT ejecutiva -->	
+	<select id="updateOtTareaUrgente" parameterType="OrdenTrabajo">
+  		update sstt_ordenes_trabajo ot
+  		set
+  		<if test="motivoCierre != null and !motivoCierre.equals('')">
+			ot.s_motivo_cierre = #{motivoCierre},
+		</if>
+		<if test="cerrada == true">
+			ot.s_cerrada       = 'S'
+		</if>
+		<if test="cerrada == false">
+			ot.s_cerrada       = 'N'
+		</if>  
+        where ot.id_ot = #{id}
+	</select>	
+	
+<!-- Resumen Facturas -->
+	<select id="listResumenFacturasByOT" parameterType="FilterFactura" resultMap="factura2"> 
+		select 
+				  f.id_factura
+				  ,f.s_nombre
+	              ,f.i_rut
+	              ,sum(floor(f.i_neto) + floor(f.i_iva)) as i_suma_con_iva
+	              ,sum(floor(f.i_neto)) as i_suma_sin_iva
+	              ,count( distinct case
+	                         when f.id_estado = 40004000 then
+	                          f.id_factura
+	                         else
+	                          null
+	                     end) as i_cantidad_facturas
+	              ,count(case
+	                         when f.id_estado = 40005000 then
+	                          f.id_factura
+	                         else
+	                          null
+	                     end) as i_cantidad_facturas_rechazadas
+	              ,count(case
+	                         when f.id_estado = 40004000 or f.id_estado = 40005000 then
+	                          ot.id_ot
+	                         ELSE
+	                          NULL
+	                     END) as i_cantidad_ots
+	              ,sum(floor(f.i_iva)) AS i_iva
+	          from owt_facturas f
+	         inner join sstt_facturas_ot fot on fot.id_factura = f.id_factura
+	         inner join sstt_ordenes_trabajo ot on ot.id_ot = fot.id_ot
+<!-- 	         left join sstt_facturas_ot fot on fot.id_factura = f.id_factura -->
+<!-- 	         left join sstt_ordenes_trabajo ot on ot.id_ot = fot.id_ot -->
+	         where f.id_estado = 40004000
+	           and ot.s_vigente = 'S'
+	           and f.i_rut != 89772300
+	           and f.i_rut != 82982300
+	        <if test="rut != 0"> 
+	               and f.i_rut = #{rut}
+	        </if>
+	        <if test="!tipoOT.equals('')"> 
+	               and ot.s_tipo = #{tipoOT}
+	        </if>
+	        <if test="idEjecutiva != null"> 
+	              and ot.id_ejecutiva = #{idEjecutiva}
+	        </if>
+	        <if test="fechaInicio != null and !fechaInicio.equals('')"> 
+	              and f.d_fecha_emision &gt;= #{fechaInicio}
+	        </if>
+	       	<if test="fechaTermino != null and !fechaTermino.equals('')"> 
+	              and f.d_fecha_emision &lt;=  #{fechaTermino} + 1
+	        </if>       
+	        <if test="idFacturar != null"> 
+	              and ot.s_facturar_tipo =  #{idFacturar}
+	        </if>
+	         group by f.id_factura,f.s_nombre, f.i_rut
+	         <if test="orderBy != null and !orderBy.equals('')">
+            	order by ${orderBy}
+            	<if test="sortOrder != null and !sortOrder.equals('')">
+                	${sortOrder}
+            	</if>
+            </if>    
+	</select>
+	
+	<select id="listTotalResumenFacturas" parameterType="FilterFactura" resultType="Integer"> 
+		select count(1) from(
+		select count(1)
+	          from owt_facturas f
+	         	inner join sstt_facturas_ot fot on fot.id_factura = f.id_factura
+	         	inner join sstt_ordenes_trabajo ot on ot.id_ot = fot.id_ot
+<!-- 				left join sstt_facturas_ot fot on fot.id_factura = f.id_factura -->
+<!-- 	         	left join sstt_ordenes_trabajo ot on ot.id_ot = fot.id_ot -->
+	         where f.id_estado = 40004000
+	           and ot.s_vigente = 'S'
+	           and f.i_rut != 89772300
+	           and f.i_rut != 82982300
+	        <if test="rut != 0"> 
+	               and f.i_rut = #{rut}
+	        </if>
+	        <if test="!tipoOT.equals('')"> 
+	               and ot.s_tipo = #{tipoOT}
+	        </if>
+	        <if test="idEjecutiva != null">  
+	              and ot.id_ejecutiva = #{idEjecutiva}
+	        </if>
+	        <if test="fechaInicio != null and !fechaInicio.equals('')"> 
+	              and f.d_fecha_emision &gt;= #{fechaInicio}
+	        </if>
+	       	<if test="fechaTermino != null and !fechaTermino.equals('')"> 
+	              and f.d_fecha_emision &lt;=  #{fechaTermino} + 1
+	        </if>       
+	        <if test="idFacturar != null"> 
+	              and ot.s_facturar_tipo =  #{idFacturar}
+	        </if>
+	        group by f.i_rut
+	        )
+	</select>
+	<select id="listFacturasByRutFacturado" parameterType="filterFactura" resultMap="factura3">
+			select
+                f.s_nombre
+	            ,f.d_fecha_emision
+                ,f.i_numero  
+                ,e.s_nombre as estado
+	          from owt_facturas f	               
+           inner join sstt_estados e on e.id_estado = f.id_estado
+           inner join sstt_facturas_ot fot on fot.id_factura = f.id_factura
+           inner join sstt_ordenes_trabajo ot on (ot.id_ot = fot.id_ot)
+           and (ot.d_fecha_creacion = (select max(ot2.d_fecha_creacion) from sstt_ordenes_trabajo ot2 inner join sstt_facturas_ot fot2 on ot2.id_ot = fot2.id_ot
+           		where fot2.id_factura in fot.id_factura))
+           where f.id_factura in (           
+           <choose>
+	           <when test="idIndicador == 30011000">
+	           		select
+	                f.id_factura
+		          from owt_facturas f
+		           inner join sstt_facturas_ot fot on fot.id_factura = f.id_factura
+		           inner join sstt_ordenes_trabajo ot on (ot.id_ot = fot.id_ot)
+		           and (ot.d_fecha_creacion = (select max(ot2.d_fecha_creacion) from sstt_ordenes_trabajo ot2 inner join sstt_facturas_ot fot2 on ot2.id_ot = fot2.id_ot
+		           		where fot2.id_factura in fot.id_factura))
+		           where		
+		           f.id_estado = 40004000
+		           and f.i_rut =  #{rut}
+		           and ot.s_vigente = 'S'           
+		           <if test="!tipoOT.equals('')"> 
+			               and ot.s_tipo = #{tipoOT}
+			        </if>
+			        <if test="idEjecutiva != 0"> 
+			              and ot.id_ejecutiva = #{idEjecutiva}
+			        </if>
+			        <if test="fechaInicio != null and !fechaInicio.equals('')"> 
+			              and f.d_fecha_emision &gt;= #{fechaInicio}
+			        </if>
+			       	<if test="fechaTermino != null and !fechaTermino.equals('')"> 
+			              and f.d_fecha_emision &lt;=  #{fechaTermino} + 1
+			        </if>       
+		 			<if test="!tipoFacturado.equals('')"> 
+			              and f.s_facturar_tipo =  #{tipoFacturado}
+			        </if>   
+	           </when>
+           	   <otherwise>
+           	   		<choose>
+           	   			<when test="fecha != null">
+           	   				<if test="idIndicador == 30001000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where
+<!--            	   					where f.d_fecha_registro &gt;= #{fecha} - #{diasTramos.primerTramo}   -->
+<!--            	   					and f.d_fecha_registro &lt;= #{fecha} + 1 -->
+           	   					 f.id_estado = 40001000
+           	   				</if>
+           	   				<if test="idIndicador == 30002000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where
+<!--            	   					where f.d_fecha_registro &gt;= #{fecha} - #{diasTramos.segundoTramo} -->
+<!--            	   					and f.d_fecha_registro &lt;= #{fecha} + 1 -->
+           	   					 f.id_estado = 40001000
+           	   				</if>
+           	   				<if test="idIndicador == 30003000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where
+<!--            	   					where f.d_fecha_emision &gt;= #{fecha} - #{diasTramos.primerTramo} -->
+<!--            	   					and f.d_fecha_emision &lt;= #{fecha} + 1 -->
+           	   					 f.id_estado = 40003000
+           	   				</if>
+           	   				<if test="idIndicador == 30004000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where
+<!--            	   					where f.d_fecha_emision &gt;= #{fecha} - #{diasTramos.segundoTramo} -->
+<!--            	   					and f.d_fecha_emision &lt;= #{fecha} + 1 -->
+           	   					 f.id_estado = 40003000
+           	   				</if>
+           	   				<if test="idIndicador == 30005000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where
+<!--            	   					where f.d_fecha_aceptacion &gt;= #{fecha} - #{diasTramos.primerTramo} -->
+<!--            	   					and f.d_fecha_aceptacion &lt;= #{fecha} + 1 -->
+           	   					 f.id_estado = 40004000
+           	   				</if>
+           	   				<if test="idIndicador == 30006000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where
+<!--            	   					where f.d_fecha_aceptacion &gt;= #{fecha} - #{diasTramos.segundoTramo} -->
+<!--            	   					and f.d_fecha_aceptacion &lt;= #{fecha} + 1 -->
+           	   					 f.id_estado = 40004000
+           	   				</if>
+           	   				<if test="idIndicador == 30007000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where
+<!--            	   					where f.d_fecha_aceptacion &gt;= #{fecha} - #{diasTramos.primerTramo} -->
+<!--            	   					and f.d_fecha_aceptacion &lt;= #{fecha} + 1 -->
+           	   					 f.id_estado = 40005000
+           	   				</if>
+           	   				<if test="idIndicador == 30008000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where
+<!--            	   					where f.d_fecha_aceptacion &gt;= #{fecha} - #{diasTramos.segundoTramo} -->
+<!--            	   					and f.d_fecha_aceptacion &lt;= #{fecha} + 1 -->
+           	   					 f.id_estado = 40005000
+           	   				</if>
+           	   				<if test="idIndicador == 30009000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where
+<!--            	   					where f.d_fecha_registro &gt;= #{fecha} - #{diasTramos.primerTramo} -->
+<!--            	   					and f.d_fecha_registro &lt;= #{fecha} + 1 -->
+           	   					 f.id_estado = 40002000
+           	   				</if>
+           	   				<if test="idIndicador == 30010000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where
+<!--            	   					where f.d_fecha_registro &gt;= #{fecha} - #{diasTramos.segundoTramo} -->
+<!--            	   					and f.d_fecha_registro &lt;= #{fecha} + 1 -->
+           	   					 f.id_estado = 40002000
+           	   				</if>
+           	   			</when>
+           	   			<otherwise>
+           	   				<if test="idIndicador == 30001000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where
+<!--            	   					where f.d_fecha_registro &gt;= #{fechaInicio}   -->
+<!--            	   					and f.d_fecha_registro &lt;= #{fechaTermino} + 1 -->
+           	   					 f.id_estado = 40001000
+           	   				</if>
+           	   				<if test="idIndicador == 30003000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where
+<!--            	   					where f.d_fecha_emision &gt;= #{fechaInicio} -->
+<!--            	   					and f.d_fecha_emision &lt;= #{fechaTermino} + 1 -->
+           	   					 f.id_estado = 40003000
+           	   				</if>
+           	   				<if test="idIndicador == 30005000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where
+<!--            	   					where f.d_fecha_aceptacion &gt;= #{fechaInicio} -->
+<!--            	   					and f.d_fecha_aceptacion &lt;= #{fechaTermino} + 1 -->
+           	   					 f.id_estado = 40004000
+           	   				</if>
+           	   				<if test="idIndicador == 30007000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where
+<!--            	   					where f.d_fecha_aceptacion &gt;= #{fechaInicio} -->
+<!--            	   					and f.d_fecha_aceptacion &lt;= #{fechaTermino} + 1 -->
+           	   					 f.id_estado = 40005000
+           	   				</if>
+           	   				<if test="idIndicador == 30009000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where
+<!--            	   					where f.d_fecha_registro &gt;= #{fechaInicio} -->
+<!--            	   					and f.d_fecha_registro &lt;= #{fechaTermino} + 1 -->
+           	   					 f.id_estado = 40002000
+           	   				</if>
+           	   			</otherwise>
+           	   		</choose>           	   
+           	   </otherwise>           
+           </choose>
+           	)
+           	 order by f.i_numero asc
+	</select>
+	
+	<select id="listTotalFacturasByRutFacturado" parameterType="filterFactura" resultType="Integer">
+		select count(1)
+	          from owt_facturas f	               
+           inner join sstt_estados e on e.id_estado = f.id_estado
+           inner join sstt_facturas_ot fot on fot.id_factura = f.id_factura
+           inner join sstt_ordenes_trabajo ot on (ot.id_ot = fot.id_ot)
+           and (ot.d_fecha_creacion = (select max(ot2.d_fecha_creacion) from sstt_ordenes_trabajo ot2 inner join sstt_facturas_ot fot2 on ot2.id_ot = fot2.id_ot
+           		where fot2.id_factura in fot.id_factura))
+           where f.id_factura in (           
+           <choose>
+	           <when test="idIndicador == 30011000">
+	           		select
+	                f.id_factura
+		          from owt_facturas f
+		           inner join sstt_facturas_ot fot on fot.id_factura = f.id_factura
+		           inner join sstt_ordenes_trabajo ot on (ot.id_ot = fot.id_ot)
+		           and (ot.d_fecha_creacion = (select max(ot2.d_fecha_creacion) from sstt_ordenes_trabajo ot2 inner join sstt_facturas_ot fot2 on ot2.id_ot = fot2.id_ot
+		           		where fot2.id_factura in fot.id_factura))
+		           where		
+		           f.id_estado = 40004000
+		           and f.i_rut =  #{rut}
+		           and ot.s_vigente = 'S'           
+		           <if test="!tipoOT.equals('')"> 
+			               and ot.s_tipo = #{tipoOT}
+			        </if>
+			        <if test="idEjecutiva != 0"> 
+			              and ot.id_ejecutiva = #{idEjecutiva}
+			        </if>
+			        <if test="fechaInicio != null and !fechaInicio.equals('')"> 
+			              and f.d_fecha_emision &gt;= #{fechaInicio}
+			        </if>
+			       	<if test="fechaTermino != null and !fechaTermino.equals('')"> 
+			              and f.d_fecha_emision &lt;=  #{fechaTermino} + 1
+			        </if>       
+		 			<if test="!tipoFacturado.equals('')"> 
+			              and f.s_facturar_tipo =  #{tipoFacturado}
+			        </if>   
+	           </when>
+           	   <otherwise>
+           	   		<choose>
+           	   			<when test="fecha != null">
+           	   				<if test="idIndicador == 30001000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where f.d_fecha_registro &gt;= #{fecha} - #{diasTramos.primerTramo}  
+           	   					and f.d_fecha_registro &lt;= #{fecha} + 1
+           	   					and f.id_estado = 40001000
+           	   				</if>
+           	   				<if test="idIndicador == 30002000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where f.d_fecha_registro &gt;= #{fecha} - #{diasTramos.segundoTramo}
+           	   					and f.d_fecha_registro &lt;= #{fecha} + 1
+           	   					and f.id_estado = 40001000
+           	   				</if>
+           	   				<if test="idIndicador == 30003000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where f.d_fecha_emision &gt;= #{fecha} - #{diasTramos.primerTramo}
+           	   					and f.d_fecha_emision &lt;= #{fecha} + 1
+           	   					and f.id_estado = 40003000
+           	   				</if>
+           	   				<if test="idIndicador == 30004000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where f.d_fecha_emision &gt;= #{fecha} - #{diasTramos.segundoTramo}
+           	   					and f.d_fecha_emision &lt;= #{fecha} + 1
+           	   					and f.id_estado = 40003000
+           	   				</if>
+           	   				<if test="idIndicador == 30005000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where f.d_fecha_aceptacion &gt;= #{fecha} - #{diasTramos.primerTramo}
+           	   					and f.d_fecha_aceptacion &lt;= #{fecha} + 1
+           	   					and f.id_estado = 40004000
+           	   				</if>
+           	   				<if test="idIndicador == 30006000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where f.d_fecha_aceptacion &gt;= #{fecha} - #{diasTramos.segundoTramo}
+           	   					and f.d_fecha_aceptacion &lt;= #{fecha} + 1
+           	   					and f.id_estado = 40004000
+           	   				</if>
+           	   				<if test="idIndicador == 30007000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where f.d_fecha_aceptacion &gt;= #{fecha} - #{diasTramos.primerTramo}
+           	   					and f.d_fecha_aceptacion &lt;= #{fecha} + 1
+           	   					and f.id_estado = 40005000
+           	   				</if>
+           	   				<if test="idIndicador == 30008000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where f.d_fecha_aceptacion &gt;= #{fecha} - #{diasTramos.segundoTramo}
+           	   					and f.d_fecha_aceptacion &lt;= #{fecha} + 1
+           	   					and f.id_estado = 40005000
+           	   				</if>
+           	   				<if test="idIndicador == 30009000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where f.d_fecha_registro &gt;= #{fecha} - #{diasTramos.primerTramo}
+           	   					and f.d_fecha_registro &lt;= #{fecha} + 1
+           	   					and f.id_estado = 40002000
+           	   				</if>
+           	   				<if test="idIndicador == 30010000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where f.d_fecha_registro &gt;= #{fecha} - #{diasTramos.segundoTramo}
+           	   					and f.d_fecha_registro &lt;= #{fecha} + 1
+           	   					and f.id_estado = 40002000
+           	   				</if>
+           	   			</when>
+           	   			<otherwise>
+           	   				<if test="idIndicador == 30001000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where f.d_fecha_registro &gt;= #{fechaInicio}  
+           	   					and f.d_fecha_registro &lt;= #{fechaTermino} + 1
+           	   					and f.id_estado = 40001000
+           	   				</if>
+           	   				<if test="idIndicador == 30003000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where f.d_fecha_emision &gt;= #{fechaInicio}
+           	   					and f.d_fecha_emision &lt;= #{fechaTermino} + 1
+           	   					and f.id_estado = 40003000
+           	   				</if>
+           	   				<if test="idIndicador == 30005000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where f.d_fecha_aceptacion &gt;= #{fechaInicio}
+           	   					and f.d_fecha_aceptacion &lt;= #{fechaTermino} + 1
+           	   					and f.id_estado = 40004000
+           	   				</if>
+           	   				<if test="idIndicador == 30007000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where f.d_fecha_aceptacion &gt;= #{fechaInicio}
+           	   					and f.d_fecha_aceptacion &lt;= #{fechaTermino} + 1
+           	   					and f.id_estado = 40005000
+           	   				</if>
+           	   				<if test="idIndicador == 30009000">
+           	   					select 
+           	   						distinct f.id_factura
+           	   					from owt_facturas f
+           	   					where f.d_fecha_registro &gt;= #{fechaInicio}
+           	   					and f.d_fecha_registro &lt;= #{fechaTermino} + 1
+           	   					and f.id_estado = 40002000
+           	   				</if>
+           	   			</otherwise>
+           	   		</choose>           	   
+           	   </otherwise>           
+           </choose>
+           	)
+	</select>
+	
+	<select id="listProductosByListOT" parameterType="java.util.List" resultType="Producto">
+		select 
+            ot.id_producto as id
+            ,OWF_OBTENER_COSTO_PRODUCTO(ot.id_producto) as precioVenta        
+            ,count(ot.id_producto) as cantidad
+        from 
+            sstt_ordenes_trabajo ot
+        where 
+            ot.id_ot in 
+		<foreach collection="list" item="ot" open="(" separator="," close=")">
+			#{ot.id}
+		</foreach>     
+        group by ot.id_producto	
+	</select>
+	
+	<select id="getProductoForFacturacion" parameterType="Long" resultType="PeticionDocumentoDetalle">
+		select 
+            ot.id_producto as "ordentrabajo.producto.id"
+            ,100 as "ordenTrabajo.recuperacion"        
+            ,ot.i_cantidad as cantidad
+        from 
+           owt_facturas_detalles ot
+        where 
+           id_factura = #{id}
+        group by ot.id_producto,100,ot.i_cantidad
+	</select>
+	
+	<select id="getExisteOTFactura" parameterType="Long" resultType="Integer">
+		 select count(*) 
+         from sstt_facturas_ot fot
+         inner join owt_facturas f on f.id_factura = fot.id_factura
+         where fot.id_ot = #{idOT}
+         and f.id_estado &gt; 40000000	
+	</select>
+	
+	<select id="getExisteOTFacturaDestino" parameterType="Long" resultType="Integer">
+		 select count(*) 
+         from sstt_ordenes_trabajo ot
+         where ot.id_ot = #{idOT}
+         and ot.s_facturar_tipo is not null
+         and ot.id_facturar is not null
+         and ot.s_cambio_autorizado = 'S'
+	</select>
+	
+	<!-- 	se verifica que las ordenes de trabajo se facturan a la misma persona -->
+	<select id="getVerificaOTsFactura" parameterType="java.util.List" resultType="Integer">
+		 select count(distinct ot.id_facturar) 
+		 from sstt_ordenes_trabajo ot 
+		 where ot.id_ot in
+		<foreach collection="list" item="ot" open="(" separator="," close=")">
+			#{ot.id}
+		</foreach>
+	</select>
+	
+	<select id="getOTFactura" parameterType="java.util.List" resultType="Factura">
+		select distinct ot.s_facturar_tipo as tipoFactura
+		, ot.id_facturar as idFacturar
+		from sstt_ordenes_trabajo ot 
+		where ot.id_ot in
+		<foreach collection="list" item="ot" open="(" separator="," close=")">
+			#{ot.id}
+		</foreach>
+	</select>	
+	
+	
+	<select id="getCalculoNetoIvaByListOT" parameterType="java.util.List" resultType="Long">
+		select sum(floor(OWF_OBTENER_COSTO_PRODUCTO(ot.id_producto)))              
+        from sstt_ordenes_trabajo ot
+        where ot.id_ot in 
+        <foreach collection="list" item="ot" open="(" separator="," close=")">
+			#{ot.id}
+		</foreach>
+	</select>
+	
+	<insert id="insertFactura" parameterType="Factura" keyColumn="id_factura" keyProperty="id">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ows_facturas.nextval from dual
+		</selectKey>
+		insert into owt_facturas(
+			id_factura
+			,i_iva
+			,i_neto
+			,i_rut
+			,s_nombre
+			,s_direccion
+			,s_giro
+			,s_comuna
+			,d_fecha_registro
+			,id_estado
+			,s_facturar_tipo
+		)values(
+			 #{id}
+			,(select p.f_float1 from sstt_parametros p where p.id_parametro = 30001000)
+			,#{montoNeto}
+			,#{idFacturar}
+			,#{nombre}
+			,#{direccion}
+			,#{giro}
+			,#{comuna}
+			,sysdate
+			,40001000
+			,#{tipoFactura}
+			)	
+	</insert>
+	
+	<insert id="insertRelacionFactura" parameterType="FacturaOT">
+		insert into sstt_facturas_ot(
+		id_factura
+		,id_ot
+		)values(
+		 #{factura.id}
+		,#{ot.id}
+		)
+	</insert>
+	
+	<insert id="insertDetallesFactura" parameterType="Producto">	
+		insert into owt_facturas_detalles(		
+		 id_factura
+		,id_producto 
+		,i_valor
+		,i_cantidad
+		)values(
+		 #{idFactura}
+		,#{id}
+		,#{precioVenta}
+		,#{cantidad}
+		)
+	</insert>
+	
+	<resultMap type="Factura" id="factura4">
+		<result property="id" column="id_factura" />
+	<result property="numero" column="i_numero" />
+	<result property="fechaEmision" column="d_fecha_emision" />
+	<result property="nombre" column="s_nombre" />
+	<result property="cantidadFacturas" column="i_cantidad_ots" />
+	<result property="montoTotal" column="i_total" />
+	<result property="montoNeto" column="i_neto" />
+	<result property="iva" column="i_iva" />
+	<result property="numeroSC" column="i_numero_sc" />
+	<result property="fechaAceptacion" column="d_fecha_aceptada" />
+	<result property="fechaRechazada" column="d_fecha_rechazada" />
+	<result property="estado.glosa" column="s_estado" />
+	<result property="estado.id" column="id_estado" />
+	<result property="otsConcatenadas" column="s_ots_factura" />
+	<result property="rutFacturar" column="i_rut" typeHandler="RunTypeHandler" />
+	<result property="direccion" column="s_direccion" />
+	<result property="comuna" column="s_comuna" />
+	<result property="tipoFactura" column="s_facturar_tipo" />
+	<result property="generada" column="s_factura_generada" />
+	<result property="emitir" column="s_factura_lista_para_emitir" />
+	<result property="emitida" column="s_factura_emitida" />
+	<result property="aceptada" column="s_factura_aceptada" />
+	<result property="producto.id" column="id_producto" />
+	<result property="producto.descripcion" column="s_descripcion" />
+	<result property="marca.nombre" column="s_marca" />
+	<result property="valor" column="i_valor" />
+	<result property="cantidad" column="i_cantidad" />
+	<result property="subTotal" column="i_sub_total" />
+	<result property="giro" column="s_giro" />
+	</resultMap>
+	
+	<select id="getFacturaById"  parameterType="Integer" resultMap="factura4">
+		select 
+		    f.id_factura,
+		    f.s_giro,
+		    f.i_numero,
+		    f.d_fecha_emision,
+		    f.i_iva,
+		    f.i_rut,
+		    f.s_nombre,
+		    f.s_direccion,
+		    f.s_comuna,
+		    f.i_numero_sc,
+		    f.id_estado,
+		    f.s_facturar_tipo,
+		    f.i_neto,
+            f.i_neto + f.i_iva as i_total
+		from 
+		    OWT_FACTURAS f 
+		where 
+			f.id_factura = #{id}
+	</select>
+	
+	<select id="getPasosFacturaById" parameterType="Integer" resultMap="factura4">
+		select 
+		    t.s_factura_generada,
+		    t.s_factura_lista_para_emitir,
+		    t.s_factura_emitida,
+		    t.s_factura_aceptada,
+		    t.id_factura 
+		from 
+		    sstv_pasos_factura t 
+		where 
+		    t.id_factura = #{id}
+	</select>
+	
+	<select id="listarDetalleFactura" parameterType="Integer" resultMap="factura4">
+		select 
+		    fd.id_producto,
+		    p.s_descripcion,
+		    m.s_nombre as s_marca,
+		    fd.i_valor,
+		    fd.i_cantidad,
+		    fd.i_cantidad * fd.i_valor as i_sub_total
+		from 
+		    owt_facturas_detalles fd
+		    inner join owv_productos p on p.id_producto = fd.id_producto
+		    left outer join owv_marcas m on m.id_marca = p.id_marca
+		    where fd.id_factura = #{id}
+		order by fd.id_producto asc	
+	</select>
+	
+	<select id="getTotalDetalleFactura" parameterType="Integer" resultMap="factura4">
+		select 
+		     count(fd.id_factura)
+		from 
+		    owt_facturas_detalles fd
+		    inner join owv_productos p on p.id_producto = fd.id_producto
+		    left outer join owv_marcas m on m.id_marca = p.id_marca
+		    where fd.id_factura = #{id}
+	</select>
+<!-- End Resumen Facturas -->
+
+</mapper>

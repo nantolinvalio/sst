@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="sucursal">
+	<resultMap type="Sucursal" id="sucursal">
+		<result property="id"			                  column="id_ubicacion"/>
+		<result property="comuna.id"	                  column="id_comuna"/>
+		<result property="glosa"		                  column="s_nombre"/>
+		<result property="direccion"	                  column="s_direccion"/>
+		<result property="telefono"		                  column="s_telefono"/>
+		<result property="vigente"		                  column="s_vigente"/>
+		<result property="abiertoDespacho"                column="s_abierta_despacho"/>
+		<result property="totalOTLeidas"                  column="i_total_ot_leidas"/>
+        <result property="totalOT"                        column="i_total_ot"/>
+        <result property="usuarioDespacho.nombreCompleto" column="s_nombre_usuario"/>
+        <result property="usuarioDespacho"                column="id_usuario"/>
+	</resultMap>
+
+	<select id="getSucursalById" parameterType="Long" resultMap="sucursal">
+		select 
+			id_ubicacion
+			,id_comuna
+			,s_nombre
+			,s_direccion
+			,s_telefono
+			,s_vigente
+		from sstt_ubicaciones
+		where 
+			s_tipo = 'SC'
+			and id_ubicacion = #{id}
+	</select>
+
+	<select id="listSucursalesByComuna" parameterType="Long" resultMap="sucursal">
+		select 
+		    id_ubicacion
+		    ,id_comuna
+		    ,s_nombre
+		    ,s_direccion
+		    ,s_telefono
+		    ,s_vigente
+		from sstt_ubicaciones
+		where 
+		        s_tipo = 'SC'
+		    and s_vigente = 'S'
+		    and id_comuna = #{idComuna}
+	</select>
+	
+	<select id="listSucursalesByIdUbicacionInterna" parameterType="Integer" resultMap="sucursal">
+        select
+             su.id_ubicacion
+		    ,su.id_comuna
+		    ,su.s_nombre
+		    ,su.s_direccion
+		    ,su.s_telefono
+		    ,su.s_vigente
+        from sstt_ubicaciones su
+          inner join sstt_ubicacion_interna_det ubid on ubid.id_sucursal = su.id_ubicacion
+        where su.s_tipo = 'SC'
+        	and ubid.id_ubicacion_interna = #{idUbicacionInterna}
+        order by su.s_nombre
+	</select>
+	
+	<select id="getTotalSucursalesByIdUbicacionInterna" parameterType="Integer" resultMap="sucursal">
+        select
+            count(1)
+        from sstt_ubicaciones su
+          inner join sstt_ubicacion_interna_det ubid on ubid.id_sucursal = su.id_ubicacion
+        where s_tipo = 'SC'
+        	and ubid.id_ubicacion_interna = #{idUbicacionInterna}
+	</select>
+	
+	<select id="listSucursalLessCodigoUbicacion" resultType="Sucursal" parameterType="String">
+		select
+			id_ubicacion id,
+			s_nombre glosa
+		from
+			sstt_ubicaciones
+		where 
+			s_tipo ='SC'
+			and id_ubicacion not in (select ubid.id_sucursal
+								from sstt_ubicacion_interna_det ubid
+									left join sstt_ubicaciones_internas ubi on ubi.id_ubicacion_interna = ubid.id_ubicacion_interna
+								where ubi.s_codigo=#{codigo} and ubid.id_sucursal is not null)
+		order by s_nombre
+	</select>
+	
+	<select id="getTotalSucursalLessCodigoUbicacion" resultType="Integer" parameterType="String">
+		select count(1)
+		from
+			sstt_ubicaciones
+		where 
+			s_tipo ='SC'
+			and id_ubicacion not in (select ubid.id_sucursal
+								from sstt_ubicacion_interna_det ubid
+									left join sstt_ubicaciones_internas ubi on ubi.id_ubicacion_interna = ubid.id_ubicacion_interna
+								where ubi.s_codigo=#{codigo} and ubid.id_sucursal is not null)
+	</select>
+	
+	<select id="listAllSucursalLessCodigoUbicacion" resultType="CheckForFlexigrid" parameterType="String">
+		select
+			id_ubicacion as "id",
+			'N' as "check"
+		from
+			sstt_ubicaciones
+		where 
+			s_tipo ='SC'
+			and id_ubicacion not in (select ubid.id_sucursal
+								from sstt_ubicacion_interna_det ubid
+									left join sstt_ubicaciones_internas ubi on ubi.id_ubicacion_interna = ubid.id_ubicacion_interna
+								where ubi.s_codigo=#{codigo} and ubid.id_sucursal is not null)
+	</select>
+	
+	
+	
+	
+	
+</mapper>

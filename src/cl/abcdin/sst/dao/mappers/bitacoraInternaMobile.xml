@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="bitacoraInternaMobile">
+
+	<insert id="saveBitacoraInternaMobile" parameterType="BitacoraInternaMobile" keyColumn="id_bitacora_interna" keyProperty="id">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_bitacoras_internas.nextval from dual
+		</selectKey>
+		insert into sstt_bitacoras_internas (
+			id_bitacora_interna
+			,id_bitacora
+			,id_estado
+			,d_fecha_inicio
+			,d_fecha_termino
+			,id_ubicacion_interna
+			,id_despacho
+			,id_recepcion
+			,id_ot
+			,s_clasificacion
+		    )
+		values(
+			#{id}
+			,#{bitacora}
+			,#{estado}
+			,SYSDATE
+			,#{fechaTermino}
+			,#{ubicacionInterna}
+			,#{despachoInterno}
+			,#{recepcion}
+			,#{ordenTrabajo}
+			,#{clasificacion}
+			)
+	</insert>
+	
+	<resultMap type="BitacoraInternaMobile" id="bitacoraInternaMobile">
+		<result property="id"                column="id_bitacora_interna"/>
+		<result property="bitacora"          column="id_bitacora"/>
+		<result property="estado"            column="id_estado"/>
+		<result property="fechaInicio"       column="d_fecha_inicio"/>
+		<result property="fechaTermino"      column="d_fecha_termino"/>
+		<result property="ubicacionInterna"  column="id_ubicacion_interna"/>
+		<result property="despachoInterno"   column="id_despacho"/>
+		<result property="recepcion"         column="id_recepcion"/>
+		<result property="ordenTrabajo"      column="id_ot"/>
+		<result property="clasificacion"     column="s_clasificacion"/>	
+	</resultMap>
+	
+	<select id="getBitacoraInternaMobileByIdOT" parameterType="Long" resultMap="bitacoraInternaMobile">
+        select
+            id_bitacora_interna
+            ,id_bitacora
+            ,id_estado
+            ,d_fecha_inicio
+            ,d_fecha_termino
+            ,id_ubicacion_interna
+            ,id_despacho
+            ,id_recepcion
+            ,id_ot
+            ,s_clasificacion
+        from sstt_bitacoras_internas
+        where 
+        	d_fecha_termino is null
+        	and id_ot = #{idOT}
+	</select>
+	
+	<update id="cerrarBitacoraInternaByIdOT" parameterType="Long">
+        update sstt_bitacoras_internas
+            set d_fecha_termino = SYSDATE
+        where id_ot = #{idOT} and d_fecha_termino is null
+	</update>
+</mapper>

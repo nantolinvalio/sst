@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="envioSucursalDetalle">
+	<insert id="save" parameterType="EnvioSucursalDetalle" keyColumn="id_envio_sucursal_detalle" keyProperty="id">
+		<selectKey resultType="Integer" keyProperty="id" order="BEFORE">
+			select ssts_envio_sucursal_detalle.nextval from dual
+		</selectKey>
+		insert into sstt_envio_sucursal_detalle(
+			id_envio_sucursal_detalle
+			,id_envio_sucursal
+			,id_ot
+			,s_vigente
+		) values (
+			#{id}
+			,#{envioSucursal.id}
+			,#{ordenTrabajo.id}
+			,#{vigente}
+		)
+	</insert>
+	
+	<update id="cerrarEnvioSucursalDetalleByIdEnvio" parameterType="Integer">
+		update sstt_envio_sucursal_detalle
+			set s_vigente = 'N'
+		where id_envio_sucursal=#{idEnvioSucursa}
+	</update>
+	
+	<select id="isOTInEnvio" parameterType="Map" resultType="Integer">
+		select
+			count(*)
+		from sstt_envio_sucursal_detalle
+		where id_ot = #{idOT}
+			and id_envio_sucursal = #{idEnvio}
+	</select>
+	
+	<select id="getTotalOTOnEnvio" parameterType="Long" resultType="Integer">
+		select
+			count(*)
+		from sstt_envio_sucursal_detalle
+		where id_envio_sucursal = #{idEnvio}
+			and s_vigente = 'S'
+	</select>
+	
+	<select id="getTotalOTLeidas" parameterType="Long" resultType="Integer">
+		select
+			count(esd.id_envio_sucursal_detalle)
+		from sstt_envio_sucursal_detalle esd
+			left join sstt_bitacoras_internas bi on bi.id_ot = esd.id_ot and bi.d_fecha_termino is null
+		where esd.id_envio_sucursal = #{idEnvio}
+			and esd.s_vigente = 'S'
+			and bi.id_ubicacion_interna = 1001500003<!-- mesón de elbaoración -->
+	</select>
+</mapper>

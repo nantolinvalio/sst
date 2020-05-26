@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="prts">
+
+	<resultMap type="Prts" id="prts">
+		<result property="sid"      column="sid"/>
+		<result property="codigo"  column="codigo"/>
+		<result property="valor" column="valor"/>
+		<result property="descripcion" column="descripcion"/>
+	</resultMap>
+	
+	<select id="getTotalPrts" resultMap="prts">
+		select 
+		    sid, 
+		    codigo, 
+		    valor,
+		    descripcion
+		from 
+		    sstt_prts r 
+	</select>
+	
+	
+</mapper>

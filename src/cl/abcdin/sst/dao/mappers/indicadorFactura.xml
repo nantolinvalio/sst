@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="indicadorFactura">
+	
+	
+	<resultMap type="Factura" id="factura">
+		<result property="nombre"          					column="s_nombre"/>
+		<result property="fechaEmision"						column="d_fecha_emision"/>
+		<result property="numero"        					column="i_numero"/>
+		<result property="estado.descripcion"    			column="estado"/>
+	</resultMap>
+	
+	<select id="getTotalFacturasListasParaEmitir" parameterType="FilterIndicador" resultType="Double">
+		select count(*)
+			from owt_facturas f
+		where 
+			f.id_estado = 40001000
+			and	f.d_fecha_registro &gt;= #{fechaInicio}
+			and f.d_fecha_registro &lt;= #{fechaTermino}
+	</select>
+	
+	<select id="listFacturasListasParaEmitir" parameterType="FilterIndicador" resultMap="factura">
+		select
+		    f.s_nombre
+		    ,f.d_fecha_emision
+		    ,f.i_numero  
+		    ,e.s_nombre as estado
+		from 
+		    owt_facturas f	               
+		    inner join sstt_estados e on e.id_estado = f.id_estado
+		where 
+			f.id_estado = 40001000
+			and	f.d_fecha_registro &gt;= #{fechaInicio}
+			and f.d_fecha_registro &lt;= #{fechaTermino}
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getTotalFacturasEmitidas" parameterType="FilterIndicador" resultType="Double">
+		select count(*)
+			from owt_facturas f
+		where 
+			f.id_estado = 40003000
+			and	f.d_fecha_emision &gt;= #{fechaInicio}
+			and f.d_fecha_emision &lt;= #{fechaTermino}
+	</select>
+	
+	<select id="listFacturasEmitidas" parameterType="FilterIndicador" resultMap="factura">
+		select
+		    f.s_nombre
+		    ,f.d_fecha_emision
+		    ,f.i_numero  
+		    ,e.s_nombre as estado
+		from 
+		    owt_facturas f	               
+		    inner join sstt_estados e on e.id_estado = f.id_estado
+		where 
+			f.id_estado = 40003000
+			and	f.d_fecha_emision &gt;= #{fechaInicio}
+			and f.d_fecha_emision &lt;= #{fechaTermino}
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>	
+	</select>
+	
+	<select id="getTotalFacturasAceptadasMarcadas" parameterType="FilterIndicador" resultType="Double">
+		select count(*)
+			from owt_facturas f
+		where 
+			f.id_estado = 40004000
+			and	f.d_fecha_aceptacion &gt;= #{fechaInicio}
+			and f.d_fecha_aceptacion &lt;= #{fechaTermino}
+	</select>
+	
+	<select id="listFacturasAceptadasMarcadas" parameterType="FilterIndicador" resultMap="factura">
+		select
+		    f.s_nombre
+		    ,f.d_fecha_emision
+		    ,f.i_numero  
+		    ,e.s_nombre as estado
+		from 
+		    owt_facturas f	               
+		    inner join sstt_estados e on e.id_estado = f.id_estado
+		where 
+			f.id_estado = 40004000
+			and	f.d_fecha_aceptacion &gt;= #{fechaInicio}
+			and f.d_fecha_aceptacion &lt;= #{fechaTermino}
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>	
+	</select>
+	
+	<select id="getTotalFacturasRechazadasMarcadas" parameterType="FilterIndicador" resultType="Double">
+		select count(*)
+			from owt_facturas f
+		where 
+			f.id_estado = 40005000
+			and	f.d_fecha_aceptacion &gt;= #{fechaInicio}
+			and f.d_fecha_aceptacion &lt;= #{fechaTermino}
+	</select>
+	
+	<select id="listFacturasRechazadasMarcadas" parameterType="FilterIndicador" resultMap="factura">
+		select
+		    f.s_nombre
+		    ,f.d_fecha_emision
+		    ,f.i_numero  
+		    ,e.s_nombre as estado
+		from 
+		    owt_facturas f	               
+		    inner join sstt_estados e on e.id_estado = f.id_estado
+		where 
+			f.id_estado = 40005000
+			and	f.d_fecha_aceptacion &gt;= #{fechaInicio}
+			and f.d_fecha_aceptacion &lt;= #{fechaTermino}
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>	
+	</select>
+	
+	<select id="listFacturasIndicadorIndefinido" parameterType="FilterIndicador" resultMap="factura">
+		select
+		    f.s_nombre
+		    ,f.d_fecha_emision
+		    ,f.i_numero  
+		    ,e.s_nombre as estado
+		from owt_facturas f	               
+		    INNER JOIN sstt_facturas_ot fot ON fot.id_factura = f.id_factura
+		    INNER JOIN sstt_ordenes_trabajo ot ON ot.id_ot = fot.id_ot
+		where f.id_estado = 40005000
+			AND ot.s_vigente = 'S'
+			AND f.i_rut != 89772300
+			AND f.i_rut != 82982300
+			<if test="rut != 0"> 
+	               and f.i_rut = #{rut}
+	        </if>
+	        <if test="!tipoOT.equals('')"> 
+	               and ot.s_tipo = #{tipoOT}
+	        </if>
+	        <if test="idEjecutiva != null"> 
+	              and ot.id_ejecutiva = #{idEjecutiva}
+	        </if>
+	        <if test="fechaInicio != null and !fechaInicio.equals('')"> 
+	              and f.d_fecha_emision &gt;= #{fechaInicio}
+	        </if>
+	       	<if test="fechaTermino != null and !fechaTermino.equals('')"> 
+	              and f.d_fecha_emision &lt;=  #{fechaTermino} + 1
+	        </if>       
+	        <if test="idFacturar != null"> 
+	              and ot.s_facturar_tipo =  #{idFacturar}
+	        </if>
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>	
+	</select>
+	
+	<select id="listIndicadorFacturaByRut" parameterType="FilterIndicador" resultMap="factura">
+		select
+  			f.s_nombre as s_nombre
+  			,f.i_numero as i_numero
+  			,f.d_fecha_emision as d_fecha_emision
+  			,e.s_descripcion as estado
+		from owt_facturas f
+  			left join sstt_estados e on e.id_estado = f.id_estado
+  		where f.i_rut = #{rut}
+  		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>	
+	</select>
+	
+	<select id="getTotalIndicadorFacturaByRut" parameterType="FilterIndicador" resultType="Integer">
+		select
+  			count(1)
+		from owt_facturas f
+  		where f.i_rut = #{rut}
+	</select>
+
+</mapper>

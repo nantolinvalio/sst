@@ -1,0 +1,605 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ubicacion">
+
+	<resultMap type="Ubicacion" id="ubicacion">
+		<result property="id"                column="id_ubicacion"/>
+		<result property="comuna.id"         column="id_comuna"/>
+		<result property="nombre"            column="s_nombre"/>
+		<result property="direccion"         column="s_direccion"/>
+		<result property="rut"               column="i_rut" typeHandler="RunTypeHandler"/>
+		<result property="giro"              column="s_giro"/>
+		<result property="telefono"          column="s_telefono"/>
+		<result property="tipo"              column="s_tipo"/>
+		<result property="vigente"           column="s_vigente"/>
+		<result property="region.id"         column="id_region"/>
+		<result property="comuna.glosa"      column="s_nombre_comuna"/>
+		<result property="comuna.ciudad"     column="s_nombre_ciudad"/>
+		<result property="region.glosa"      column="s_nombre_region"/>
+		<result property="glosa"             column="s_tipo_glosa"/>
+		<result property="cantidadDestinos"  column="i_cantidad_destinos"/>
+	    <result property="cantidadProductos" column="i_cantidad_productos"/>		
+	    <result property="codigoOW"          column="s_codigo_ow"/>
+	</resultMap>
+	
+	
+	
+	<insert id="save" parameterType="Ubicacion" keyColumn="id_ubicacion" keyProperty="id">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_ubicaciones.nextval from dual
+		</selectKey>
+		insert into sstt_ubicaciones (
+			id_ubicacion, 
+			id_comuna, 
+			s_nombre, 
+			s_direccion, 
+			i_rut, 
+			s_giro, 
+			s_telefono, 
+			s_tipo, 
+			s_vigente,
+			s_codigo_ow
+		) values (
+			#{id},
+			#{comuna.id},
+			#{nombre},
+			#{direccion},
+			#{rut, typeHandler=RunTypeHandler},
+			#{giro},
+			#{telefono},
+			#{tipo},
+			#{vigente},
+			#{codigoOW}
+		)
+	</insert>
+	
+	
+	<update id="updateUbicacion" parameterType="Ubicacion">
+	    update sstt_ubicaciones set
+		    s_direccion =        #{direccion},
+		    s_nombre =           #{nombre},
+		    s_telefono =         #{telefono},
+		    id_comuna =          #{comuna.id},
+		    s_giro =             #{giro},
+		    s_codigo_ow =        #{codigoOW},
+		    <if test="tipo != null and !tipo.equals('')">
+		    	s_tipo =             #{tipo},
+		    </if>
+		    id_ubicacion =       #{id},
+		    i_rut =              #{rut, typeHandler=RunTypeHandler}
+	    where 
+	        id_ubicacion =       #{id}
+	</update>
+	
+	<update id="updateVigencia" parameterType="Ubicacion">
+	    update sstt_ubicaciones set 
+	        s_vigente =         #{vigente}
+		where 
+		    id_ubicacion =    #{id}
+	</update>
+	
+	<select id="listUbicacionByFilter" parameterType="FilterUbicacion" resultMap="ubicacion">
+        select   
+            u.id_ubicacion, 
+            u.s_nombre, 
+            u.s_tipo, 
+            u.s_direccion, 
+            u.id_comuna,
+            u.s_telefono, 
+            u.s_vigente,
+            (select count(*) 
+                from sstt_destinos d 
+                where d.id_origen = u.id_ubicacion
+                and d.s_vigente = 'S') as i_cantidad_destinos,
+            u.i_rut, 
+            c.s_nombre as s_nombre_comuna, 
+            r.s_nombre as s_nombre_region,
+            par.s_descripcion as s_tipo_glosa
+        from
+            sstt_ubicaciones u 
+            inner join sstt_comunas c on c.id_comuna = u.id_comuna
+            inner join sstt_provincias p on p.id_provincia = c.id_provincia
+            inner join sstt_regiones r on r.id_region = p.id_region
+            inner join sstt_parametros par on par.s_nombre = u.s_tipo and par.s_string1 = 'UBIC' and par.s_string2 = 'S'
+		<where>
+			<if test="tipo != null and !tipo.equals('')">
+				and u.s_tipo = #{tipo} 
+			</if>
+			<if test="idUbicacion != null">
+				and u.id_ubicacion = #{idUbicacion}
+			</if>
+		</where>
+		<if test="orderBy == null or orderBy.equals('')">
+        order by 
+            u.s_vigente desc, u.s_tipo desc, r.i_orden asc, u.s_nombre asc
+		</if>
+		<if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+		<if test="sortOrder != null and !sortOrder.equals('')">
+			${sortOrder}
+		</if>	
+		</if>
+	</select>
+		
+	<select id="getTotalUbicacionByFilter" parameterType="FilterUbicacion" resultType="Integer">   
+        select   
+            count(*)
+        from
+            sstt_ubicaciones u 
+            inner join sstt_comunas c on c.id_comuna = u.id_comuna
+            inner join sstt_provincias p on p.id_provincia = c.id_provincia
+            inner join sstt_regiones r on r.id_region = p.id_region
+            inner join sstt_parametros par on par.s_nombre = u.s_tipo and par.s_string1 = 'UBIC' and par.s_string2 = 'S'
+		<where>
+			<if test="tipo != null and !tipo.equals('')">
+				and u.s_tipo = #{tipo} 
+			</if>
+			<if test="idUbicacion != null">
+				and u.id_ubicacion = #{idUbicacion}
+			</if>
+		</where>
+	</select>
+	
+	
+		
+	<insert id="saveWithId" parameterType="Ubicacion" >
+		insert into sstt_ubicaciones (
+			id_ubicacion, 
+			id_comuna, 
+			s_nombre, 
+			s_direccion, 
+			i_rut, 
+			s_giro, 
+			s_telefono, 
+			s_tipo, 
+			s_vigente,
+			s_codigo_ow
+		) values (
+			#{id},
+			#{comuna.id},
+			#{nombre},
+			#{direccion},
+			#{rut, typeHandler=RunTypeHandler},
+			#{giro},
+			#{telefono},
+			#{tipo},
+			#{vigente},
+			#{codigo}
+		)
+	</insert>
+	
+	<select id="getUbicacionByUbicacion" parameterType="Ubicacion" resultMap="ubicacion">
+		select 
+			ub.id_ubicacion,
+			ub.id_comuna,
+			ub.s_nombre,
+			ub.s_direccion,
+			ub.i_rut,
+			ub.s_giro,
+			ub.s_telefono,
+			ub.s_tipo,
+			ub.s_vigente,
+			re.id_region,
+            co.s_nombre as s_nombre_comuna,
+            co.s_ciudad as s_nombre_ciudad,
+            re.s_nombre as s_nombre_region
+		from 
+			sstt_ubicaciones ub 
+			inner join sstt_comunas co on co.id_comuna = ub.id_comuna
+			inner join sstt_provincias pr on pr.id_provincia =  co.id_provincia
+    		inner join sstt_regiones re on re.id_region = pr.id_region
+        where 
+        		lower(ub.s_nombre) = lower(#{nombre})
+			and lower(ub.s_direccion) = lower(#{direccion})
+			and ub.id_comuna = #{comuna.id}
+			and ub.i_rut = #{rut, typeHandler=RunTypeHandler}
+	</select>
+
+	<select id="listByIdUsuario" parameterType="Usuario" resultMap="ubicacion">
+        select 
+            ub.id_ubicacion,
+            ub.id_comuna,
+            ub.s_nombre,
+            ub.s_direccion,
+            ub.i_rut,
+            ub.s_giro,
+            ub.s_telefono,
+            ub.s_tipo,
+            ub.s_vigente,
+            re.id_region,
+            co.s_nombre as s_nombre_comuna,
+            co.s_ciudad as s_nombre_ciudad,
+            re.s_nombre as s_nombre_region,
+            pa.s_descripcion as s_tipo_glosa
+        FROM 
+            sstt_usuarios_ubicaciones uub       
+            inner join sstt_ubicaciones ub on uub.id_ubicacion = ub.id_ubicacion and ub.s_vigente = 'S' 
+			inner join sstt_comunas co on co.id_comuna = ub.id_comuna
+			inner join sstt_provincias pr on pr.id_provincia =  co.id_provincia
+    		inner join sstt_regiones re on re.id_region = pr.id_region      
+            inner join sstt_usuarios u on uub.id_usuario = u.id_usuario and u.s_vigente = 'S'
+            left join sstt_parametros pa on pa.s_nombre = ub.s_tipo and pa.s_string1 = 'UBIC'
+        WHERE 
+            uub.id_usuario = #{id}
+	</select>
+
+	<select id="listDependenciasByFilter" resultMap="ubicacion" parameterType="FilterUbicacion">
+        select 
+            ub.id_ubicacion,
+            ub.id_comuna,
+            ub.s_nombre,
+            ub.s_direccion,
+            ub.i_rut,
+            ub.s_giro,
+            ub.s_telefono,
+            ub.s_tipo,
+            ub.s_vigente,
+            re.id_region,
+            co.s_nombre as s_nombre_comuna,
+            co.s_ciudad as s_nombre_ciudad,
+            re.s_nombre as s_nombre_region,
+            pa.s_descripcion as s_tipo_glosa
+        from
+			sstt_ubicaciones ub
+			left join sstt_comunas co on co.id_comuna = ub.id_comuna
+			left join sstt_provincias pr on pr.id_provincia =  co.id_provincia
+    		left join sstt_regiones re on re.id_region = pr.id_region 
+			left join sstt_parametros pa on pa.s_nombre = ub.s_tipo and pa.s_string1 = 'UBIC'      
+    	where            
+    		ub.s_tipo in ('SC', 'BR', 'OF', 'CR', 'CD') 
+    		<if test="idComuna != null">
+    			and ub.id_comuna = #{idComuna}
+    		</if> 
+    		<if test="idRegion != null">
+    			and pr.id_region = #{idRegion}
+    		</if> 
+    		<if test="vigente != null">
+    			and ub.s_vigente = #{vigente}
+    		</if> 
+		order by
+			ub.id_ubicacion
+	</select>
+	
+	<select id="listAllByIdUsuario" parameterType="Usuario" resultMap="ubicacion">
+        select 
+            ub.id_ubicacion,
+            ub.s_nombre,
+            ub.s_direccion,
+            ub.s_tipo,
+            par.s_descripcion as s_tipo_glosa,
+            co.s_nombre as s_nombre_comuna,
+            co.s_ciudad as s_nombre_ciudad,
+            re.s_nombre as s_nombre_region
+        FROM 
+            sstt_usuarios_ubicaciones uub       
+            inner join sstt_ubicaciones ub on uub.id_ubicacion = ub.id_ubicacion
+			inner join sstt_comunas co on co.id_comuna = ub.id_comuna
+			inner join sstt_provincias pr on pr.id_provincia =  co.id_provincia
+    		inner join sstt_regiones re on re.id_region = pr.id_region      
+            inner join sstt_usuarios u on uub.id_usuario = u.id_usuario
+            inner join sstt_parametros par on par.s_string1 = 'UBIC' and par.s_nombre = ub.s_tipo
+        WHERE 
+            uub.id_usuario = #{id}
+	</select>
+
+	<select id="get" parameterType="Long" resultMap="ubicacion">
+        select 
+            ub.id_ubicacion,
+            ub.id_comuna,
+            ub.s_nombre,
+            ub.s_direccion,
+            ub.i_rut,
+            ub.s_giro,
+            ub.s_telefono,
+            ub.s_tipo,
+            ub.s_vigente,
+            ub.s_codigo_ow,
+            re.id_region,
+            co.s_nombre as s_nombre_comuna,
+            co.s_ciudad as s_nombre_ciudad,
+            re.s_nombre as s_nombre_region,
+            pa.s_descripcion as s_tipo_glosa
+        from 
+            sstt_ubicaciones ub 
+			left join sstt_comunas co on co.id_comuna = ub.id_comuna
+			left join sstt_provincias pr on pr.id_provincia =  co.id_provincia
+    		left join sstt_regiones re on re.id_region = pr.id_region
+    		inner join sstt_parametros pa on pa.s_string1 = 'UBIC' and pa.s_nombre = ub.s_tipo
+        where
+            ub.id_ubicacion = #{id}
+	</select>
+	
+	<select id="getIdComunaByIdUbicacion" parameterType="Long" resultMap="ubicacion">
+        select 
+            ub.id_comuna,
+        from 
+            sstt_ubicaciones
+        where 
+            ub.id_ubicacion = #{id}
+	</select>
+
+	<select id="listByTipo" parameterType="String" resultMap="ubicacion">
+        select 
+            ub.id_ubicacion,
+            ub.id_comuna,
+            ub.s_nombre,
+            ub.s_direccion,
+            ub.i_rut,
+            ub.s_giro,
+            ub.s_telefono,
+            ub.s_tipo,
+            ub.s_vigente
+        from 
+            sstt_ubicaciones ub 
+        where 
+            ub.s_tipo = #{tipo}
+            and ub.s_vigente = 'S'
+        ORDER BY 
+        	ub.s_nombre ASC
+	</select>
+
+	<select id="listBodegas" resultMap="ubicacion">
+        select 
+            ub.id_ubicacion,
+            ub.id_comuna,
+            ub.s_nombre,
+            ub.s_direccion,
+            ub.i_rut,
+            ub.s_giro,
+            ub.s_telefono,
+            ub.s_tipo,
+            ub.s_vigente
+        from 
+            sstt_ubicaciones ub 
+        where 
+            ub.s_tipo in ('BR','CD')
+            and ub.s_vigente = 'S'
+        ORDER BY 
+        	ub.s_nombre ASC
+	</select>
+	
+	<select id="listBodegasNotMe" parameterType="ubicacion" resultMap="ubicacion">
+        select 
+            ub.id_ubicacion,
+            ub.id_comuna,
+            ub.s_nombre,
+            ub.s_direccion,
+            ub.i_rut,
+            ub.s_giro,
+            ub.s_telefono,
+            ub.s_tipo,
+            ub.s_vigente
+        from 
+            sstt_ubicaciones ub 
+        where 
+            ub.s_tipo in ('BR','CD')
+            and ub.s_vigente = 'S'
+            and ub.id_ubicacion != #{id}
+        ORDER BY 
+        	ub.s_nombre ASC
+	</select>
+	
+	<resultMap id="ubicacionesByIdAndTipo" type="Ubicacion">
+		<result property="id"                column="id_ubicacion"/>
+		<result property="nombre"            column="s_nombre"/>
+		<result property="tipo"              column="s_tipo"/>
+		<result property="direccion"         column="s_direccion"/>
+		<result property="comuna.id"         column="id_comuna"/>
+		<result property="telefono"          column="s_telefono"/>
+		<result property="rut"               column="i_rut" typeHandler="RunTypeHandler"/>
+		<result property="comuna.glosa"      column="s_comuna"/>
+		<result property="region.glosa"      column="s_region"/>
+	</resultMap>
+	
+	<select id="listUbicacionesByIdAndTipo" parameterType="Map" resultMap="ubicacionesByIdAndTipo">
+		SELECT
+			 ub.id_ubicacion
+             ,ub.s_nombre
+             ,ub.s_tipo
+             ,ub.s_direccion
+             ,ub.id_comuna
+             ,ub.s_telefono
+             ,ub.i_rut
+             ,c.s_nombre AS s_comuna
+             ,r.s_nombre AS s_region
+        FROM sstt_ubicaciones ub
+             INNER JOIN sstt_comunas c ON c.id_comuna = ub.id_comuna
+             INNER JOIN sstt_provincias p ON p.id_provincia = c.id_provincia
+             INNER JOIN sstt_regiones r ON r.id_region = p.id_region
+        WHERE s_vigente = 'S'
+             AND ub.s_tipo IN #{tipo}
+             <if test="idRegion != null and idRegion > 0">
+             	and r.id_region =  #{idRegion}
+             </if>
+	</select>
+	
+	<resultMap type="Ubicacion" id="sTBodegasProducto">
+		<result property="id"			column="i_destino"/>
+		<result property="nombre"		column="s_nombre"/>
+		<result property="direccion"	column="s_direccion"/>
+		<result property="comuna.glosa" column="s_comuna"/>
+		<result property="tipo"			column="s_tipo"/>
+	</resultMap>
+	
+	<select id="listSTBodegasProducto" parameterType="Map" resultMap="sTBodegasProducto">
+		select d.i_destino, u.s_nombre, u.s_direccion, c.s_nombre as s_comuna, u.s_tipo
+        from sstt_destinos d
+           inner join sstt_ubicaciones u on u.id_ubicacion = d.i_destino
+           inner join sstt_stecnicos_productos stp on stp.id_stecnico = u.id_ubicacion
+           inner join sstt_comunas c on c.id_comuna = u.id_comuna
+        where d.s_vigente = 'S'
+             and u.s_vigente = 'S'
+             and stp.s_vigente = 'S'
+             and d.id_origen =  #{idOrigen}
+             and stp.id_producto =  #{idProducto}
+           	 <if test="tipoOT.equals('GPC')">
+      			 and stp.s_garantia = 'GP'
+      		 </if>
+           	 <if test="!tipoOT.equals('GPC')">
+      			 and stp.s_garantia = #{tipoOT}
+      		 </if>
+        union 
+        select d.i_destino, u.s_nombre, u.s_direccion, c.s_nombre as s_comuna, u.s_tipo
+        from sstt_destinos d
+           inner join sstt_ubicaciones u on u.id_ubicacion = d.i_destino
+           inner join sstt_comunas c on c.id_comuna = u.id_comuna
+        where u.s_tipo in ('BR','CD') 
+             and u.s_vigente = 'S'
+             and d.s_vigente = 'S'
+             and d.id_origen =  #{idOrigen}
+        order by s_tipo desc
+	</select>
+	
+	<resultMap id="ubicacion2" type="Ubicacion">
+		<result property="id"                column="id_ubicacion"/>
+		<result property="comuna.id"         column="id_comuna"/>
+		<result property="nombre"            column="s_nombre"/>
+		<result property="direccion"         column="s_direccion"/>
+		<result property="rut"               column="i_rut" typeHandler="RunTypeHandler"/>
+		<result property="giro"              column="s_giro"/>
+		<result property="telefono"          column="s_telefono"/>
+		<result property="tipo"              column="s_tipo"/>
+		<result property="glosa"             column="s_descripcion"/>
+		<result property="vigente"           column="s_vigente"/>
+		<result property="comuna.glosa"      column="s_comuna"/>
+		<result property="region.glosa"      column="s_region"/>
+	</resultMap>
+	
+	 <select id="getUbicacionOT" parameterType="Long" resultMap="ubicacion2">
+		select
+			u.id_ubicacion
+			,u.id_comuna
+			,u.s_nombre
+			,u.s_direccion
+			,u.i_rut
+			,u.s_giro
+			,u.s_telefono
+			,u.s_tipo
+			,pa.s_descripcion
+			,u.s_vigente
+			,c.s_nombre as s_comuna
+			,r.s_nombre as s_region
+		from 
+			sstt_bitacoras b
+			inner join sstt_ubicaciones u on u.id_ubicacion = b.id_ubicacion
+			inner join sstt_comunas c on c.id_comuna = u.id_comuna
+			inner join sstt_provincias p on p.id_provincia = c.id_provincia
+			inner join sstt_regiones r on r.id_region = p.id_region
+			left join sstt_parametros pa on pa.s_nombre = u.s_tipo         
+		where b.id_ot = #{idOT}
+			and pa.s_string1 = 'UBIC'
+			and b.id_bitacora = (select max(bi.id_bitacora) from sstt_bitacoras bi 
+		                              where bi.id_ot = #{idOT}
+		                              and bi.id_ubicacion &gt; 0)
+	</select>	 
+	
+	<select id="getUbicacionOTAccesorios" parameterType="Long" resultMap="ubicacion2">
+		select
+			u.id_ubicacion
+			,u.id_comuna
+			,u.s_nombre
+			,u.s_direccion
+			,u.i_rut
+			,u.s_giro
+			,u.s_telefono
+			,u.s_tipo
+			,pa.s_descripcion
+			,u.s_vigente
+			,c.s_nombre as s_comuna
+			,r.s_nombre as s_region
+		from 
+			sstt_bitacoras_accesorios b
+			inner join sstt_ubicaciones u on u.id_ubicacion = b.id_ubicacion
+			inner join sstt_comunas c on c.id_comuna = u.id_comuna
+			inner join sstt_provincias p on p.id_provincia = c.id_provincia
+			inner join sstt_regiones r on r.id_region = p.id_region
+			left join sstt_parametros pa on pa.s_nombre = u.s_tipo         
+		where b.id_ot = #{idOT}
+			and pa.s_string1 = 'UBIC'
+			and b.id_bitacora_accesorio = (select max(bi.id_bitacora_accesorio) from sstt_bitacoras_accesorios bi 
+		                              where bi.id_ot = #{idOT}
+		                              and bi.id_ubicacion &gt; 0)
+	</select>	
+	
+	<select id="getUltimaUbicacionInterna" parameterType="Long" resultMap="ubicacion2">
+		select 
+		    u.id_ubicacion
+		    ,u.id_comuna
+		    ,u.s_nombre
+		    ,u.s_direccion
+		    ,u.i_rut
+		    ,u.s_giro
+		    ,u.s_telefono
+		    ,u.s_tipo
+		    ,pa.s_descripcion
+		    ,u.s_vigente
+		    ,c.s_nombre as s_comuna
+		    ,r.s_nombre as s_region
+		from 
+		    sstt_bitacoras b
+		    inner join sstt_ubicaciones u on u.id_ubicacion = b.id_ubicacion
+		    inner join sstt_comunas c on c.id_comuna = u.id_comuna
+		    inner join sstt_provincias p on p.id_provincia = c.id_provincia
+		    inner join sstt_regiones r on r.id_region = p.id_region
+		    left join sstt_parametros pa on pa.s_nombre = u.s_tipo         
+		where b.id_ot = #{idOT}
+		    and pa.s_string1 = 'UBIC'
+		    and b.id_bitacora = (   select max(bi.id_bitacora) 
+		                            from sstt_bitacoras bi 
+		                            inner join sstt_ubicaciones ub on ub.id_ubicacion = bi.id_ubicacion
+		                            where bi.id_ot = #{idOT}
+		                            and bi.id_ubicacion is not null
+		                            and ub.s_tipo != 'ST' ) 
+   	</select>
+	
+	<select id="listUbicacionByTipo" parameterType="String" resultMap="ubicacion">
+		select 
+		    u.id_ubicacion,
+		    u.s_nombre,
+		    u.s_direccion,
+		    u.i_rut
+		from 
+		    sstt_ubicaciones u
+		where
+		    s_tipo = #{tipo} 
+	</select>
+	
+	<delete id="deleteUbicacionesUsuarios" parameterType="Usuario">
+		delete sstt_usuarios_ubicaciones where id_usuario = #{id}
+	</delete>
+	
+	<insert id="saveUbicacionUsuario" parameterType="Map" keyProperty="id" keyColumn="id_usuario_ubicacion">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+			select ssts_usuarios_ubicaciones.nextval from dual
+		</selectKey>		
+			insert into sstt_usuarios_ubicaciones (id_usuario_ubicacion, id_usuario, id_ubicacion) values (#{id}, #{idUsuario}, #{idUbicacion})
+	</insert>
+	
+	<select id="listDestinosForIdOrigen" parameterType="Ubicacion" resultType="Ubicacion">
+		select 
+		   d.i_destino as id
+		   ,ub.s_nombre  as nombre
+		from 
+		    sstt_destinos d
+		    left join sstt_ubicaciones ub on ub.id_ubicacion = d.i_destino
+		where
+		    d.s_vigente = 'S'
+		    and d.id_origen = #{id}
+	    order by ub.s_nombre asc
+	</select>
+	
+	<select  id="getDireccionTienda" parameterType="Long" resultType="Ubicacion">
+		select t.s_nombre    as nombre
+		      ,t.s_direccion as direccion
+		      ,t.s_giro 	 as giro
+		      ,c.s_nombre    as comuna             
+		from sstt_ubicaciones t
+		inner join sstt_comunas c on c.id_comuna = t.id_comuna
+		where t.i_rut = #{idFacturar}
+		and t.s_tipo = 'PJ'		
+	</select>
+	
+</mapper>

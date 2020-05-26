@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ordenTrabajoMobile">
+
+	<resultMap type="OrdenTrabajoMobile" id="ordenTrabajoMobile">
+		<result column="id_ot"                 property="id" />
+	    <result column="i_cod_barra"           property="codigoBarras" typeHandler="CodigoBarrasTypeHandler" />
+	    <result column="s_producto"            property="producto" />
+	    <result column="s_marca"               property="marca" />
+	    <result column="s_familia"             property="familia" />
+	    <result column="s_linea"               property="linea" />
+	    <result column="s_clasificacion"       property="clasificacion" />
+	    <result column="s_ubicacion_interna"   property="ubicacionInterna" />
+	    <result column="s_proveedor"           property="proveedor" />
+	    <result column="s_sucursal"            property="sucursal" />
+	    <result column="s_fecha_creacion"      property="fechaCreacion" />
+	    <result column="s_contrato"            property="numeroContrato" />
+	    <result column="s_tecnico"             property="servicioTecnico" />
+	    <result column="s_etapa"               property="etapa" />
+	    <result column="s_nmro_serie"          property="numeroSerie"/>
+	    <result column="id_estado_despacho_detalle" property="idEstadoDespachoDetalle"/>
+	    <result column="s_ruta"                property="ruta"/>
+	    <result column="s_ccalidad_aprueba"    property="cCalidadAprueba"/>
+	</resultMap>
+	
+	<select id="getOTByCodigo" parameterType="String" resultMap="ordenTrabajoMobile">
+		select
+		    ot.id_ot,
+		    ot.i_cod_barra,
+		    ot.id_producto || ' ' || p.S_DESCRIPCION as s_producto,
+		    m.s_nombre as s_marca,
+		    f.s_nombre as s_familia,
+		    l.s_nombre as s_linea,
+		    ot.s_clasificacion || ' ' || cla.s_descripcion as s_clasificacion,
+		    ubii.s_codigo || ' ' || ubii.s_nombre as s_ubicacion_interna,
+		    pro.s_nombre as s_proveedor,
+		    ot.id_sucursal || ' ' || suc.s_nombre as s_sucursal,
+		    to_char(ot.d_fecha_creacion,'DD/MM/YYYY') as s_fecha_creacion,
+		    ot.s_contrato,
+		    st.s_nombre as s_tecnico,
+		    etapa.s_descripcion as s_etapa,
+		    case when ot.s_nmro_serie is not null
+		      then ot.s_nmro_serie
+		    when ot.s_nmro_serie is null
+		      then ot.s_imei
+		    end as s_nmro_serie
+		    ,rst.s_nombre as s_ruta
+		from
+		    sstt_ordenes_trabajo ot
+		    left join owv_productos p on p.id_producto = ot.id_producto
+		    left join owv_marcas m on m.id_marca = p.id_marca
+		    left join owv_familias f on f.id_familia = p.id_familia
+		    left join owv_lineas l on l.id_linea = f.id_linea
+		    left join sstt_parametros cla on cla.s_nombre = ot.s_clasificacion and cla.s_string1 = 'CB'
+		    left join sstt_bitacoras_internas biti on biti.id_ot = ot.id_ot and biti.d_fecha_termino is null
+		    left join sstt_ubicaciones_internas ubii on ubii.id_ubicacion_interna = biti.id_ubicacion_interna
+		    left join owv_proveedores pro on pro.id_proveedor = p.id_proveedor
+		    left join sstt_ubicaciones suc on suc.id_ubicacion = ot.id_sucursal
+		    left join sstt_ubicaciones st on st.id_ubicacion = ot.id_stecnico
+		    left join sstt_bitacoras bit on bit.id_ot = ot.id_ot and bit.d_fecha_salida is null
+		    left join sstt_estados etapa on etapa.id_estado = bit.id_estado
+		    left join sstt_rutas_s_tecnico_detalle rstd on rstd.id_s_tecnico = ot.id_stecnico and exists(select 1 from sstt_rutas_s_tecnico rst where rst.s_vigente ='S' and rst.id_ruta_s_tecnico = rstd.id_ruta_s_tecnico)
+		    left join sstt_rutas_s_tecnico rst on rst.s_vigente ='S' and rstd.id_ruta_s_tecnico = rst.id_ruta_s_tecnico
+		where
+		    ot.i_cod_barra = #{codigoBarras, typeHandler=CodigoBarrasTypeHandler}
+		union               
+		select
+		    ot.id_ot,
+		    ot.i_cod_barra,
+		    ot.id_producto || ' ' || p.S_DESCRIPCION as s_producto,
+		    m.s_nombre as s_marca,
+		    f.s_nombre as s_familia,
+		    l.s_nombre as s_linea,
+		    ot.s_clasificacion || ' ' || cla.s_descripcion as s_clasificacion,
+		    ubii.s_codigo || ' ' || ubii.s_nombre as s_ubicacion_interna,
+		    pro.s_nombre as s_proveedor,
+		    ot.id_sucursal || ' ' || suc.s_nombre as s_sucursal,
+		    to_char(ot.d_fecha_creacion,'DD/MM/YYYY') as s_fecha_creacion,
+		    ot.s_contrato,
+		    st.s_nombre as s_tecnico,
+		    etapa.s_descripcion as s_etapa,
+		    case when ot.s_nmro_serie is not null
+		      then ot.s_nmro_serie
+		    when ot.s_nmro_serie is null
+		      then ot.s_imei
+		    end as s_nmro_serie
+		    ,rst.s_nombre as s_ruta
+		from
+		    sstt_ordenes_trabajo ot
+		    left join owv_productos p on p.id_producto = ot.id_producto
+		    left join owv_marcas m on m.id_marca = p.id_marca
+		    left join owv_familias f on f.id_familia = p.id_familia
+		    left join owv_lineas l on l.id_linea = f.id_linea
+		    left join sstt_parametros cla on cla.s_nombre = ot.s_clasificacion and cla.s_string1 = 'CB'
+		    left join sstt_bitacoras_internas biti on biti.id_ot = ot.id_ot and biti.d_fecha_termino is null
+		    left join sstt_ubicaciones_internas ubii on ubii.id_ubicacion_interna = biti.id_ubicacion_interna
+		    left join owv_proveedores pro on pro.id_proveedor = p.id_proveedor
+		    left join sstt_ubicaciones suc on suc.id_ubicacion = ot.id_sucursal
+		    left join sstt_ubicaciones st on st.id_ubicacion = ot.id_stecnico
+		    left join sstt_bitacoras bit on bit.id_ot = ot.id_ot and bit.d_fecha_salida is null
+		    left join sstt_estados etapa on etapa.id_estado = bit.id_estado
+		    left join sstt_rutas_s_tecnico_detalle rstd on rstd.id_s_tecnico = ot.id_stecnico and exists(select 1 from sstt_rutas_s_tecnico rst where rst.s_vigente ='S' and rst.id_ruta_s_tecnico = rstd.id_ruta_s_tecnico)
+		    left join sstt_rutas_s_tecnico rst on rst.s_vigente ='S' and rstd.id_ruta_s_tecnico = rst.id_ruta_s_tecnico
+		where
+		    exists (select 1 from sstt_accesorios_ot acc where ot.id_ot = acc.id_ot and acc.I_COD_BARRA = #{codigoBarras, typeHandler=CodigoBarrasTypeHandler})
+	</select>
+	
+	<select id="getOTbyFilter" parameterType="FilterOTMobile" resultMap="ordenTrabajoMobile">
+	    select distinct
+            ot.id_ot
+            ,ot.i_cod_barra
+            ,pro.s_descripcion as s_producto
+            ,m.s_nombre as s_marca
+            ,f.s_nombre as s_familia
+            ,l.s_nombre as s_linea
+            ,ot.s_clasificacion || ' ' || cla.s_descripcion as s_clasificacion
+            ,ui.s_nombre as s_ubicacion_interna
+            ,prov.s_nombre as s_proveedor
+            ,trim(ub.id_ubicacion)||' '||trim(ub.s_nombre) as s_sucursal
+        from sstt_despacho_interno_detalles did
+            left join sstt_ordenes_trabajo ot on ot.id_ot = did.id_ot
+            left join owv_productos pro on pro.id_producto = ot.id_producto
+            left join owv_marcas m on m.id_marca = pro.id_marca
+            left join owv_familias f on f.id_familia = pro.id_familia
+            left join owv_lineas l on l.id_linea = f.id_linea
+            left join sstt_bitacoras_internas bi on bi.id_ot = ot.id_ot 
+                                         and bi.d_fecha_termino is null
+            left join sstt_ubicaciones_internas ui on ui.id_ubicacion_interna = bi.id_ubicacion_interna
+            left join owv_proveedores prov on prov.id_proveedor = pro.id_proveedor
+            left join sstt_ubicaciones ub on ub.id_ubicacion = ot.id_sucursal
+            left join sstt_parametros cla on cla.s_nombre = ot.s_clasificacion
+		                                 and cla.s_string1 = 'CB'
+        <where>
+        	<if test="codigoBarra !=null and !codigoBarra.equals('')">
+        		and ot.i_cod_barra = #{codigoBarra} 
+        	</if>
+        	<if test="codigoBarraAccesorio != null and !codigoBarraAccesorio.equals('')">
+				and exists (select 1 from sstt_accesorios_ot aot where aot.i_cod_barra = #{codigoBarraAccesorio, typeHandler=CodigoBarrasTypeHandler} and ot.id_ot = aot.id_ot)
+			</if>
+        	<if test="idDespachoInterno!=null">
+        		and did.id_despacho_interno = #{idDespachoInterno}
+        	</if>
+        </where>
+        
+	</select>
+	
+	<select id="isOtOnDespachoByFilter" parameterType="FilterOTMobile" resultType="Integer">
+		select count(1)
+		from sstt_despacho_interno_detalles
+		where id_despacho_interno = #{idDespachoInterno}
+			and id_ot = #{idOT}
+	</select>
+	
+	<select id="listOtByDespachoMobile" parameterType="Long" resultMap="ordenTrabajoMobile">
+		select 
+            ot.id_ot
+            ,ot.i_cod_barra
+            ,pro.id_producto
+            ,pro.s_descripcion as s_producto
+            ,m.s_nombre as s_marca
+            ,f.s_nombre as s_familia
+            ,l.s_nombre as s_linea
+            ,ot.s_clasificacion || ' ' || cla.s_descripcion as s_clasificacion
+            ,ui.s_nombre as s_ubicacion_interna
+            ,prov.s_nombre as s_proveedor
+            ,trim(ub.id_ubicacion)||' '||trim(ub.s_nombre) as s_sucursal
+        from sstt_despacho_interno_detalles did
+            left join sstt_ordenes_trabajo ot on ot.id_ot = did.id_ot
+            left join owv_productos pro on pro.id_producto = ot.id_producto
+            left join owv_marcas m on m.id_marca = pro.id_marca
+            left join owv_familias f on f.id_familia = pro.id_familia
+            left join owv_lineas l on l.id_linea = f.id_linea
+            left join sstt_bitacoras_internas bi on bi.id_ot = ot.id_ot 
+                                         and bi.d_fecha_termino is null
+            left join sstt_ubicaciones_internas ui on ui.id_ubicacion_interna = bi.id_ubicacion_interna
+            left join owv_proveedores prov on prov.id_proveedor = pro.id_proveedor
+            left join sstt_ubicaciones ub on ub.id_ubicacion = ot.id_sucursal
+            left join sstt_parametros cla on cla.s_nombre = ot.s_clasificacion
+		                                 and cla.s_string1 = 'CB'   
+		where
+			did.id_despacho_interno = #{idDespacho}
+			and did.id_estado != 90004000
+			order by ot.id_producto asc
+	</select>
+	
+	<select id="getOtForSaveTransportista" parameterType="Long" resultType="Integer">
+	select
+	    count(distinct did.id_ot)
+	from 
+	    sstt_despachos_internos di
+       inner join sstt_despacho_interno_detalles did on did.id_despacho_interno = di.id_despacho_interno
+       inner join sstt_bitacoras b on b.id_ot = did.id_ot 
+	where
+		did.id_estado = 90005000
+        and b.id_bitacora = (select max(b1.id_bitacora)
+                            from sstt_bitacoras b1 
+                            where b1.id_ot = did.id_ot 
+                                and b1.d_fecha_salida is null 
+                                and b1.id_guia is null)
+        and di.id_despacho_interno = #{idDespacho}
+	</select>
+	
+	<select id="listOTOnRDEMEByIdEnvioSucursal" parameterType="Long" resultType="ordenTrabajoMobile">
+		select
+			ot.id_ot as "id"
+		from sstt_ordenes_trabajo ot
+			left join sstt_bitacoras_internas bi on bi.id_ot = ot.id_ot and bi.d_fecha_termino is null
+			left join sstt_envio_sucursal_detalle esd on esd.id_ot = ot.id_ot and esd.s_vigente = 'S'
+		where esd.id_envio_sucursal = #{idEnvio}
+			and bi.id_ubicacion_interna = 1001500003
+	</select>
+	
+	<select id="getOTByCodigoHaciaSP" parameterType="FilterOTMobile" resultMap="ordenTrabajoMobile">
+		select
+		    ot.id_ot,
+		    ot.i_cod_barra,
+		    ot.id_producto || ' ' || p.S_DESCRIPCION as s_producto,
+		    m.s_nombre as s_marca,
+		    f.s_nombre as s_familia,
+		    l.s_nombre as s_linea,
+		    ot.s_clasificacion || ' ' || cla.s_descripcion as s_clasificacion,
+		    ubii.s_codigo || ' ' || ubii.s_nombre as s_ubicacion_interna,
+		    pro.s_nombre as s_proveedor,
+		    ot.id_sucursal || ' ' || suc.s_nombre as s_sucursal,
+		    to_char(ot.d_fecha_creacion,'DD/MM/YYYY') as s_fecha_creacion,
+		    ot.s_contrato,
+		    st.s_nombre as s_tecnico,
+		    etapa.s_descripcion as s_etapa,
+		    did.id_estado as id_estado_despacho_detalle,
+		    case when ot.s_nmro_serie is not null
+		      then ot.s_nmro_serie
+		    when ot.s_nmro_serie is null
+		      then ot.s_imei
+		    end as s_nmro_serie
+		    ,rst.s_nombre as s_ruta
+		from
+		    sstt_ordenes_trabajo ot
+		    left join owv_productos p on p.id_producto = ot.id_producto
+		    left join owv_marcas m on m.id_marca = p.id_marca
+		    left join owv_familias f on f.id_familia = p.id_familia
+		    left join owv_lineas l on l.id_linea = f.id_linea
+		    left join sstt_parametros cla on cla.s_nombre = ot.s_clasificacion and cla.s_string1 = 'CB'
+		    left join sstt_bitacoras_internas biti on biti.id_ot = ot.id_ot and biti.d_fecha_termino is null
+		    left join sstt_ubicaciones_internas ubii on ubii.id_ubicacion_interna = biti.id_ubicacion_interna
+		    left join owv_proveedores pro on pro.id_proveedor = p.id_proveedor
+		    left join sstt_ubicaciones suc on suc.id_ubicacion = ot.id_sucursal
+		    left join sstt_ubicaciones st on st.id_ubicacion = ot.id_stecnico
+		    left join sstt_bitacoras bit on bit.id_ot = ot.id_ot and bit.d_fecha_salida is null
+		    left join sstt_estados etapa on etapa.id_estado = bit.id_estado
+		    left join sstt_despacho_interno_detalles did on did.id_ot = ot.id_ot
+		    left join sstt_rutas_s_tecnico_detalle rstd on rstd.id_s_tecnico = ot.id_stecnico and exists(select 1 from sstt_rutas_s_tecnico rst where rst.s_vigente ='S' and rst.id_ruta_s_tecnico = rstd.id_ruta_s_tecnico)
+		    left join sstt_rutas_s_tecnico rst on rst.s_vigente ='S' and rstd.id_ruta_s_tecnico = rst.id_ruta_s_tecnico
+		where
+				did.id_estado = 90003000
+			<if test="codigoBarra != null and !codigoBarra.equals('')">
+				and ot.i_cod_barra = #{codigoBarra, typeHandler=CodigoBarrasTypeHandler}				
+			</if>
+		    <if test="codigoBarraAccesorio != null and !codigoBarraAccesorio.equals('')">
+		    	and exists (select 1 from sstt_accesorios_ot acc where ot.id_ot = acc.id_ot and acc.I_COD_BARRA = #{codigoBarraAccesorio, typeHandler=CodigoBarrasTypeHandler})
+		    </if>
+	</select>
+</mapper>
+

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<mapper namespace="sello">
+	<insert id="save" parameterType="Sello" keyColumn="id_sello_camion" keyProperty="id">
+		<selectKey resultType="Long" keyProperty="id" order="BEFORE">
+            select ssts_sellos_camion.nextval from dual
+        </selectKey>
+        insert into sstt_sellos_camion(
+        	id_sello_camion
+        	,i_sello
+        	,id_despacho_interno_camion
+        )
+        values(
+        	#{id},
+        	#{numero},
+        	#{despachoInternoCamion.id}
+        )
+	</insert>
+	
+	<select id="getSellosByIdGuia" parameterType="Guia" resultType="Sello">
+		select 
+			s.id_sello_camion id,
+		    s.i_sello as numero
+		from
+		    sstt_sellos_camion s
+		    inner join sstt_guias g on g.id_despacho_interno_camion = s.id_despacho_interno_camion
+		where
+		    g.id_guia = #{id}
+	</select>
+</mapper>

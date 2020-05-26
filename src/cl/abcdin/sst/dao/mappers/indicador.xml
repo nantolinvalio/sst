@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="indicador">
+
+	<update id="updateIndicador" parameterType="Indicador">
+	    update 
+	    	sstt_indicadores 
+    	set
+			i_rango_maximo  = #{rangoMaximo},
+			i_rango_minimo  = #{rangoMinimo}
+	    where 
+	    	id_indicador = #{id}
+	</update>
+
+	<select id="calcularSemaforo" statementType="CALLABLE" parameterType="Resultado">
+		{call sstk_procesos.p_actualizar_semaforo(#{idUsuario,mode=IN,jdbcType=INTEGER},#{estado,mode=OUT,jdbcType=INTEGER},#{salida,mode=OUT,jdbcType=VARCHAR})}
+	</select>
+
+	<select id="actualizarVista" statementType="CALLABLE" parameterType="Resultado">
+		{call sstk_procesos.p_actualizar_vista(#{parametro1,mode=IN,jdbcType=VARCHAR},#{estado,mode=OUT,jdbcType=INTEGER},#{salida,mode=OUT,jdbcType=VARCHAR})}
+	</select>
+
+	<select id="calcularIndicadores" statementType="CALLABLE" parameterType="Resultado">
+		{call sstk_procesos.p_calcular_indicadores(#{idUsuario,mode=IN,jdbcType=INTEGER},#{estado,mode=OUT,jdbcType=INTEGER},#{salida,mode=OUT,jdbcType=VARCHAR})}
+	</select>
+
+	<select id="procesoBodega" statementType="CALLABLE" parameterType="Resultado">
+		{call sstk_procesos.p_actualizar_informacion_ot(#{idUsuario,mode=IN,jdbcType=INTEGER},#{estado,mode=OUT,jdbcType=INTEGER},#{salida,mode=OUT,jdbcType=VARCHAR})}
+	</select>
+
+	<select id="procesoProveedores" statementType="CALLABLE" parameterType="Resultado">
+		{call sstk_procesos.p_actualizar_reporte_prov(#{idUsuario,mode=IN,jdbcType=INTEGER},#{estado,mode=OUT,jdbcType=INTEGER},#{salida,mode=OUT,jdbcType=VARCHAR})}
+	</select>
+	
+	<select id="getNivelServicioOTPorCD" parameterType="FilterIndicador" resultType="Double">           
+		select (	
+				select 
+					count(distinct ot.id_ot) as i_cont
+				from 
+					sstt_ordenes_trabajo ot
+					inner join sstt_bitacoras b on ot.id_ot = b.id_ot
+					left outer join owv_productos p on p.id_producto = ot.id_producto
+				where 
+						ot.s_vigente = 'S'
+					and ot.s_tipo in ('GP','GPC')
+					and b.id_ubicacion = ot.id_stecnico
+					<if test="idMarca != null and !idMarca.equals('')">
+						and p.id_marca = #{idMarca}
+					</if>
+					<if test="idProveedor != null">
+						and p.id_proveedor = #{idProveedor}
+					</if>
+					and exists (	select 1 
+									from
+										sstt_bitacoras b1
+										inner join sstt_ubicaciones cd ON cd.id_ubicacion = b1.id_ubicacion
+									where
+										b1.id_ot = ot.id_ot
+										and cd.s_tipo = 'CD')
+					and ((
+							b.d_fecha_salida is not null
+						and ot.s_cambio_autorizado = 'N'
+						and b.d_fecha_salida - b.d_fecha_entrada &lt;= #{diasExigencia}
+						and b.d_fecha_salida &gt;= #{fechaInicio}
+						and b.d_fecha_salida &lt;= #{fechaTermino}
+						) or (
+							ot.s_cambio_autorizado = 'S'
+						and ot.d_fecha_cambio_autorizado is not null
+						and ot.d_fecha_cambio_autorizado &gt;= #{fechaInicio}
+						and ot.d_fecha_cambio_autorizado &lt;= #{fechaTermino}
+						and ot.d_fecha_cambio_autorizado - b.d_fecha_entrada &lt;= #{diasExigencia}
+						))
+			)/(	
+				select 
+					decode(count(distinct ot.id_ot),0,-1,count(distinct ot.id_ot)) as i_cont
+				from 
+					sstt_ordenes_trabajo ot
+					inner join sstt_bitacoras b on ot.id_ot = b.id_ot
+					left outer join owv_productos p on p.id_producto = ot.id_producto
+				where 
+						ot.s_vigente = 'S'
+					and ot.s_tipo in ('GP','GPC')
+					and b.id_ubicacion = ot.id_stecnico
+					<if test="idMarca != null and !idMarca.equals('')">
+						and p.id_marca = #{idMarca}
+					</if>
+					<if test="idProveedor != null">
+						and p.id_proveedor = #{idProveedor}
+					</if>
+					and exists (	select 1 
+									from
+										sstt_bitacoras b1
+										inner join sstt_ubicaciones cd ON cd.id_ubicacion = b1.id_ubicacion
+									where
+										b1.id_ot = ot.id_ot
+										and cd.s_tipo = 'CD')
+					and ((
+							b.d_fecha_salida is not null
+						and ot.s_cambio_autorizado = 'N'
+						and b.d_fecha_salida &gt;= #{fechaInicio}
+						and b.d_fecha_salida &lt;= #{fechaTermino}
+						) or (
+							ot.s_cambio_autorizado = 'S'
+						and ot.d_fecha_cambio_autorizado is not null
+						and ot.d_fecha_cambio_autorizado &gt;= #{fechaInicio}
+						and ot.d_fecha_cambio_autorizado &lt;= #{fechaTermino}
+						))	
+			) from dual
+	</select>
+	
+	<select id="listOTNivelServicioOTPorCD"   parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="ordenTrabajo.listOT"/>
+		where
+			ot.id_ot in (  select 
+								count(distinct ot.id_ot) as i_cont
+							from 
+								sstt_ordenes_trabajo ot
+								inner join sstt_bitacoras b on ot.id_ot = b.id_ot
+								left outer join owv_productos p on p.id_producto = ot.id_producto
+							where 
+									ot.s_vigente = 'S'
+								and ot.s_tipo in ('GP','GPC')
+								and b.id_ubicacion = ot.id_stecnico
+								<if test="idMarca != null and !idMarca.equals('')">
+									and p.id_marca = #{idMarca}
+								</if>
+								<if test="idProveedor != null">
+									and p.id_proveedor = #{idProveedor}
+								</if>
+								and exists (	select 1 
+												from
+													sstt_bitacoras b1
+													inner join sstt_ubicaciones cd ON cd.id_ubicacion = b1.id_ubicacion
+												where
+													b1.id_ot = ot.id_ot
+													and cd.s_tipo = 'CD')
+								and ((
+										b.d_fecha_salida is not null
+									and ot.s_cambio_autorizado = 'N'
+									and b.d_fecha_salida - b.d_fecha_entrada &lt;= #{diasExigencia}
+									and b.d_fecha_salida &gt;= #{fechaInicio}
+									and b.d_fecha_salida &lt;= #{fechaTermino}
+									) or (
+										ot.s_cambio_autorizado = 'S'
+									and ot.d_fecha_cambio_autorizado is not null
+									and ot.d_fecha_cambio_autorizado &gt;= #{fechaInicio}
+									and ot.d_fecha_cambio_autorizado &lt;= #{fechaTermino}
+									and ot.d_fecha_cambio_autorizado - b.d_fecha_entrada &lt;= #{diasExigencia}
+									))
+						)
+	</select>
+	
+	<select id="getNivelServicioOTNOPorCD" parameterType="FilterIndicador" resultType="Double">         
+		select (	
+				select 
+					count(distinct ot.id_ot) as i_cont
+				from 
+					sstt_ordenes_trabajo ot
+					inner join sstt_bitacoras b on ot.id_ot = b.id_ot
+					left outer join owv_productos p on p.id_producto = ot.id_producto
+				where 
+						ot.s_vigente = 'S'
+					and ot.s_tipo in ('GP','GPC')
+					and b.id_ubicacion = ot.id_stecnico
+					<if test="idMarca != null and !idMarca.equals('')">
+						and p.id_marca = #{idMarca}
+					</if>
+					<if test="idProveedor != null">
+						and p.id_proveedor = #{idProveedor}
+					</if>
+					and not exists (	select 1 
+										from
+											sstt_bitacoras b1
+											inner join sstt_ubicaciones cd ON cd.id_ubicacion = b1.id_ubicacion
+										where
+											b1.id_ot = ot.id_ot
+											and cd.s_tipo = 'CD')
+					and ((
+							b.d_fecha_salida is not null
+						and ot.s_cambio_autorizado = 'N'
+						and b.d_fecha_salida - b.d_fecha_entrada &lt;= #{diasExigencia}
+						and b.d_fecha_salida &gt;= #{fechaInicio}
+						and b.d_fecha_salida &lt;= #{fechaTermino}
+						) or (
+							ot.s_cambio_autorizado = 'S'
+						and ot.d_fecha_cambio_autorizado is not null
+						and ot.d_fecha_cambio_autorizado &gt;= #{fechaInicio}
+						and ot.d_fecha_cambio_autorizado &lt;= #{fechaTermino}
+						and ot.d_fecha_cambio_autorizado - b.d_fecha_entrada &lt;= #{diasExigencia}
+						))
+			)/(	
+				select 
+					decode(count(distinct ot.id_ot),0,-1,count(distinct ot.id_ot)) as i_cont
+				from 
+					sstt_ordenes_trabajo ot
+					inner join sstt_bitacoras b on ot.id_ot = b.id_ot
+					left outer join owv_productos p on p.id_producto = ot.id_producto
+				where 
+						ot.s_vigente = 'S'
+					and ot.s_tipo in ('GP','GPC')
+					and b.id_ubicacion = ot.id_stecnico
+					<if test="idMarca != null and !idMarca.equals('')">
+						and p.id_marca = #{idMarca}
+					</if>
+					<if test="idProveedor != null">
+						and p.id_proveedor = #{idProveedor}
+					</if>
+					and not exists (	select 1 
+										from
+											sstt_bitacoras b1
+											inner join sstt_ubicaciones cd ON cd.id_ubicacion = b1.id_ubicacion
+										where
+											b1.id_ot = ot.id_ot
+											and cd.s_tipo = 'CD')
+					and ((
+							b.d_fecha_salida is not null
+						and ot.s_cambio_autorizado = 'N'
+						and b.d_fecha_salida &gt;= #{fechaInicio}
+						and b.d_fecha_salida &lt;= #{fechaTermino}
+						) or (
+							ot.s_cambio_autorizado = 'S'
+						and ot.d_fecha_cambio_autorizado is not null
+						and ot.d_fecha_cambio_autorizado &gt;= #{fechaInicio}
+						and ot.d_fecha_cambio_autorizado &lt;= #{fechaTermino}
+						))	
+			) from dual
+	</select>
+	
+	
+	<select id="listOTNivelServicioOTNOPorCD"   parameterType="FilterIndicador" resultMap="ordenTrabajo.ot">
+		<include refid="ordenTrabajo.listOT"/>
+		where
+			ot.id_ot in (  select 
+								count(distinct ot.id_ot) as i_cont
+							from 
+								sstt_ordenes_trabajo ot
+								inner join sstt_bitacoras b on ot.id_ot = b.id_ot
+								left outer join owv_productos p on p.id_producto = ot.id_producto
+							where 
+									ot.s_vigente = 'S'
+								and ot.s_tipo in ('GP','GPC')
+								and b.id_ubicacion = ot.id_stecnico
+								<if test="idMarca != null and !idMarca.equals('')">
+									and p.id_marca = #{idMarca}
+								</if>
+								<if test="idProveedor != null">
+									and p.id_proveedor = #{idProveedor}
+								</if>
+								and not exists (	select 1 
+													from
+														sstt_bitacoras b1
+														inner join sstt_ubicaciones cd ON cd.id_ubicacion = b1.id_ubicacion
+													where
+														b1.id_ot = ot.id_ot
+														and cd.s_tipo = 'CD')
+								and ((
+										b.d_fecha_salida is not null
+									and ot.s_cambio_autorizado = 'N'
+									and b.d_fecha_salida - b.d_fecha_entrada &lt;= #{diasExigencia}
+									and b.d_fecha_salida &gt;= #{fechaInicio}
+									and b.d_fecha_salida &lt;= #{fechaTermino}
+									) or (
+										ot.s_cambio_autorizado = 'S'
+									and ot.d_fecha_cambio_autorizado is not null
+									and ot.d_fecha_cambio_autorizado &gt;= #{fechaInicio}
+									and ot.d_fecha_cambio_autorizado &lt;= #{fechaTermino}
+									and ot.d_fecha_cambio_autorizado - b.d_fecha_entrada &lt;= #{diasExigencia}
+									))
+						)
+	</select>
+
+	<select id="getIndicadorById" parameterType="Integer" resultType="Indicador">
+		select
+			id_indicador id,
+			s_descripcion descripcion,
+			s_nombre nombre,
+			s_grupo grupo,
+			i_rango_minimo rangoMinimo,
+			i_rango_maximo rangoMaximo
+		from sstt_indicadores
+		where id_indicador = #{id}
+	</select>
+	
+	<select id="getIndicadorByIdParametro" parameterType="Integer" resultType="Indicador">
+		select
+			id_indicador id,
+			s_descripcion descripcion,
+			s_nombre nombre
+		from sstt_indicadores
+		where id_parametro = #{idParametro}
+		order by id_indicador asc
+	</select>
+</mapper>

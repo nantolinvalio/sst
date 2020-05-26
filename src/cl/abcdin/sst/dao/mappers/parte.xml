@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="parte">
+
+
+	<resultMap type="Parte" id="parteOT">
+		<result property="id"				column="id_parte_ot"/>
+		<result property="idOT"				column="id_ot"/>
+		<result property="glosa"			column="s_parte"/>
+		<result property="observaciones"	column="s_observaciones"/>
+		<result property="estado"			column="s_estado"/>
+		<result property="cCalidad"			column="s_ccalidad"/>
+	</resultMap>
+
+
+	<resultMap type="Parte" id="parte">
+		<result property="id"		column="id_parte"/>
+		<result property="glosa"	column="s_descripcion"/>
+	</resultMap>
+	
+	<select id="get" parameterType="Integer" resultType="Parte">
+		select 
+		    pt.id_parte as id
+		    ,pt.id_producto as "producto.id"
+		    ,pt.id_familia as "familia.id"
+		    ,pt.s_descripcion as descripcion
+		    ,pt.s_vigente as vigente 
+		    ,pt.s_tipo as tipo 
+		from 
+		    sstt_partes pt
+		where 
+		    id_parte = #{id}
+	</select>
+	
+	<update id="update"  parameterType="Parte">
+		update 
+			sstt_partes
+		set 
+			id_familia     = #{familia.id}, 
+			id_producto    = #{producto.id},
+			s_descripcion  = #{descripcion},
+			s_tipo         = #{tipo},
+			s_vigente      = #{vigente} 
+		where 
+			id_parte = #{id}
+	</update>
+	
+	<select id="listPartesOTByOT" parameterType="Long" resultMap="parteOT">
+		select
+			pot.id_parte_ot
+     		,p.s_descripcion AS s_parte
+     		,pot.s_observaciones
+     		,pot.s_estado
+ 		from
+ 			sstt_partes_ot pot
+			inner join sstt_partes p on p.id_parte = pot.id_parte
+		where
+			pot.id_ot =  #{idOT}
+		order by p.s_descripcion asc
+	</select>
+	
+	<select id="listPartesByFilter" parameterType="FilterParte" resultMap="parte">
+		select 
+			 pt.id_parte
+		    ,pt.s_descripcion
+		from sstt_partes pt
+		<where>
+             <if test="(idFamilia == null or idFamilia.equals('')) and (idProducto != null and idProducto>0)" >
+                 and pt.id_producto = #{idProducto}
+             </if>
+             <if test="(idFamilia != null and !idFamilia.equals('')) and (idProducto == null or idProducto==0)">
+                 and pt.id_familia = #{idFamilia}
+             </if>
+             <if test="vigente!=null and !vigente.equals('')">
+             	and pt.s_vigente = #{vigente}
+             </if>
+        </where>
+        order by s_vigente desc, s_descripcion asc
+	</select>
+	
+	<select id="listPartesByFilterPartes" parameterType="FilterParte" resultType="parte">
+		select 
+			 pt.id_parte as id
+		    ,pt.s_descripcion as descripcion
+		    ,pt.s_tipo as tipo 
+		    ,pt.s_vigente as vigente 
+		from sstt_partes pt
+		<where>
+			<if test="idProducto != null" >
+			    and pt.id_producto = #{idProducto}
+			</if>
+			<if test="idFamilia != null and !idFamilia.equals('')">
+			    and pt.id_familia = #{idFamilia}
+			</if>
+			<if test="vigente!=null and !vigente.equals('')">
+             	and pt.s_vigente = #{vigente}
+             </if>
+        </where>
+         <if test="orderBy != null and !orderBy.equals('')">
+			order by ${orderBy}
+			<if test="sortOrder != null and !sortOrder.equals('')">
+				${sortOrder}
+			</if>	
+		</if>
+	</select>
+	
+	<select id="getPartesByFilter" parameterType="FilterParte" resultType="Integer">
+		select 
+			count(pt.id_parte)
+		from sstt_partes pt
+		<where>
+			<if test="idProducto != null" >
+			    and pt.id_producto = #{idProducto}
+			</if>
+			<if test="idFamilia != null and !idFamilia.equals('')">
+			    and pt.id_familia = #{idFamilia}
+			</if>
+			<if test="vigente!=null and !vigente.equals('')">
+             	and pt.s_vigente = #{vigente}
+             </if>
+        </where>
+	</select>
+	
+	<insert id="saveParteOT" parameterType="Parte">
+		insert into sstt_partes_ot (
+			id_ot
+			,id_parte
+			,s_observaciones
+			,s_estado
+			,s_ccalidad)
+		values (
+			#{idOT}
+			,#{id}
+			,#{observaciones}
+			,#{estado}
+			,#{cCalidad})
+	</insert>
+	
+	<select id="getParteOTbyId" parameterType="Long" resultMap="parteOT">
+		select
+			id_parte_ot
+			,id_ot
+			,id_parte
+			,s_observaciones
+			,s_estado
+			,s_ccalidad
+		from sstt_partes_ot t 
+		where t.id_parte_ot = #{id}
+	</select>
+	
+	<update id="updateParteOT" parameterType="Parte">
+		update sstt_partes_ot t
+  			set t.s_estado = #{estado}
+     			,t.s_observaciones = #{observacion}
+		where t.id_parte_ot = #{id}
+	</update>
+	
+	<insert id="save" keyColumn="id_parte" keyProperty="id">
+		<selectKey resultType="Integer" keyProperty="id" order="BEFORE">
+			select ssts_partes.nextval from dual
+		</selectKey>
+		insert into sstt_partes (
+			id_parte
+			,id_producto
+			,id_familia
+			,s_descripcion
+			,s_vigente
+			,s_tipo
+		) values (
+			#{id}
+			,#{producto.id}
+			,#{familia.id}
+			,#{descripcion}
+			,#{vigente}
+			,#{tipo}
+		)
+	</insert>
+	
+	<update id="updateParteByEstado" parameterType="Parte">
+		update 
+			sstt_partes
+		set 
+			s_vigente = #{vigente} 
+		where 
+			id_parte = #{id}
+	</update>
+</mapper>

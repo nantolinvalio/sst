@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="despachoDetalleMobile">
+	<update id="updateEstado" parameterType="DespachoDetalleMobile">
+	    update sstt_despacho_interno_detalles
+	        set id_estado = #{estado}
+	            ,d_fecha_estado = sysdate
+	            ,id_usuario = #{usuario}
+	    where
+	        id_despacho_interno = #{despachoInterno}
+	        and id_ot = #{ordenTrabajo}
+	</update>
+	
+	<resultMap type="MoveSPResponse" id="moveSPResponse">
+        <result property="totalOTLeidas" column="i_total_ot_leidas"/>
+        <result property="totalOT"       column="i_total_ot"/>
+	</resultMap>
+	
+	<select id="getOTRecibidasYTotalInSP" parameterType="Long" resultMap="moveSPResponse">
+        select
+            count(id_despacho_interno_detalle) i_total_ot
+            ,sum(case when id_estado = 90005000 then 1 else 0 end) i_total_ot_leidas
+        from sstt_despacho_interno_detalles
+        where id_despacho_interno = #{idDespacho}	
+	</select>
+	
+	<resultMap type="MoveResponse" id="moveResponse">
+        <result property="totalOTLeidas" column="i_total_ot_leidas"/>
+        <result property="totalOT"       column="i_total_ot"/>
+	</resultMap>
+	
+	<select id="getOTRecibidasYTotal" parameterType="Long" resultMap="moveResponse">
+        select
+            sum(case when id_estado != 90004000 then 1 else 0 end) i_total_ot
+            ,sum(case when id_estado = 90005000 then 1 else 0 end) i_total_ot_leidas
+        from sstt_despacho_interno_detalles
+        where id_despacho_interno = #{idDespacho}	
+	</select>
+	
+	<resultMap type="DespachoDetalleMobile" id="despachoDetalleMobile">
+		<result property="id"              column="id_despacho_interno_detalle"/>
+		<result property="ordenTrabajo"    column="id_ot"/>
+		<result property="despachoInterno" column="id_despacho_interno"/>
+		<result property="estado"          column="id_estado"/>
+		<result property="fechaEstado"     column="d_fecha_estado"/>
+		<result property="usuario"         column="id_usuario"/>
+		<result/>
+	</resultMap>
+	
+	<select id="getDespachoDetalleMobileByDespachoDetalleMobile" parameterType="DespachoDetalleMobile" resultMap="despachoDetalleMobile">
+	    select
+            id_despacho_interno_detalle
+            ,id_ot
+            ,id_despacho_interno
+            ,id_estado
+            ,d_fecha_estado
+            ,id_usuario
+        from sstt_despacho_interno_detalles
+        <where>
+        	<if test="id!=null">
+        		and id_despacho_interno = #{id}
+        	</if>
+        	<if test="ordenTrabajo!=null">
+        		and id_ot = #{ordenTrabajo}
+        	</if>
+        	<if test="despachoInterno!=null">
+        		and id_despacho_interno = #{despachoInterno}
+        	</if>
+        	<if test="estado!=null">
+        		and id_estado = #{estado}
+        	</if>
+        	<if test="fechaEstado!=null and !fechaEstado.equasl('')">
+        		and d_fecha_estado = #{fechaEstado}
+        	</if>
+        	<if test="usuario!=null">
+        		and id_usuario = #{usuario}
+        	</if>
+        </where>
+	</select>
+	
+	
+	<select id="listDespachoDetalleMobileByIdDespacho" parameterType="Long" resultMap="despachoDetalleMobile">
+		select
+			did.id_despacho_interno_detalle
+			,did.id_estado
+			,ot.id_ot
+			,pr.id_producto
+		from sstt_despacho_interno_detalles did
+			left join sstt_ordenes_trabajo ot on ot.id_ot = did.id_ot
+			left join owv_productos pr on pr.id_producto = ot.id_producto
+		where did.id_despacho_interno = #{idDespachoDetalle}
+			and did.id_estado != 90004000
+	</select>
+</mapper>
