@@ -1,6 +1,7 @@
 var destino;
 
 var initonbodegaemitirguiadespacho = function() {
+	
 	var moduloDetalle;
 	SSTFacade.getModuloByNombreUsuario('onbodegaemitirguiadespraiz',{async:false, callback:function(modulo) {
 		moduloDetalle = modulo ? modulo : undefined;
@@ -27,14 +28,15 @@ var initonbodegaemitirguiadespacho = function() {
 		var destinoGuia = null;
 		var destinoSelected = null;
 		
+		
 		if ($('#guia').valid() && $('#destino').valid()) {
 			guia = $('#guia').serializeObject();
 			destinoGuia = $('#destino').serializeObject().destino;
 			destinoSelected = $("input[name=destinoGroup]:checked").attr('id');    
 			
 			if (destinoSelected == 'destinoGroup.stecnico') {
-				guia.destino = destinoGuia.stecnico;					
-			} else if (destinoSelected == 'destinoGroup.sucursal') {
+				guia.destino = destinoGuia.stecnico;
+			} else if (destinoSelected == 'destinoGroup.sucursal') {				
 				guia.destino = destinoGuia.sucursal;
 			} else if (destinoSelected == 'destinoGroup.bodega') {
 				guia.destino = destinoGuia.bodega;
@@ -46,6 +48,7 @@ var initonbodegaemitirguiadespacho = function() {
 			guiaAux = guia;
 		}});
 		if(guiaAux.tipoGuia == 'GACC'){
+			console.log(guia.destino);
 			SSTFacade.emitirGuiaAccesorio(ordenTrabajo.id, guia, {async:true,callback:function(g){
 				parent.location = context + "/index.do?e=" + moduloDetalle.codigo+"&m="+moduloInicial.codigo+"&idOT=" + ordenTrabajo.id + "&idGuia=" + g.id;
 			}});
@@ -76,16 +79,56 @@ var initonbodegaemitirguiadespacho = function() {
 		$.alerts.cancelButton = '&nbsp;Cancelar&nbsp;';
 		jConfirm('Al re emitir una guía de despacho se desactiva la guia anterior y se crea una nueva guia de despacho para la orden de trabajo. </br> ¿Esta seguro de bloquear esta guía de despacho y crear una nueva?', 'Confirmación', function(r){
 			if (r) {
-				if(guia.tipoGuia == 'GACC'){
-					SSTFacade.reEmitirGuiaAccesorio(ordenTrabajo.id, guia, null, {async:true,callback:function(g){
-						parent.location = context + "/index.do?e=" + moduloDetalle.codigo + "&m=" + moduloInicial.codigo + "&idOT=" + ordenTrabajo.id + "&idGuia=" + g.id;
-					}});
-				}else{
-					SSTFacade.reEmitirGuia(ordenTrabajo.id, guia, null, {async:true,callback:function(g){
-						parent.location = context + "/index.do?e=" + moduloDetalle.codigo + "&m=" + moduloInicial.codigo + "&idOT=" + ordenTrabajo.id + "&idGuia=" + g.id;
-					}});
+				
+				/* if(guia.numero<20000)
+	                {
+	                    SSTFacade.anularGuiaWs(idGuia,{async:false,callback:function(codigo){
+	                        if (codigo == 101 || codigo == 0) {
+	                            console.log("entre al if, la lista no es null");
+	                            console.log("entre al if: "+ codigo);
+	                            
+	                            if(guiaAux.tipoGuia == 'GACC'){
+	                                console.log("entre al if GAAC");
+	                                SSTFacade.reEmitirGuiaAccesorio(ordenTrabajo.id, guia,{async:true,callback:function(g){
+	                                    parent.location = context + "/index.do?e=" + moduloDetalle.codigo + "&m=" + moduloInicial.codigo + "&idOT=" + ordenTrabajo.id + "&idGuia=" + g.id;
+	                                }});
+	                            }else{
+	                                console.log("entre al else GAAC");
+	                                SSTFacade.reEmitirGuia(ordenTrabajo.id, guia, null, {async:true,callback:function(g){
+	                                    parent.location = context + "/index.do?e=" + moduloDetalle.codigo + "&m=" + moduloInicial.codigo + "&idOT=" + ordenTrabajo.id + "&idGuia=" + g.id;
+	                                }});
+	                            }
+	                            
+	                        }
+	                        }});
+	                }
+	                else
+	                {
+	                    SSTFacade.reEmitirGuia(ordenTrabajo.id, guia, null, {async:true,callback:function(g){
+	                        parent.location = context + "/index.do?e=" + moduloDetalle.codigo + "&m=" + moduloInicial.codigo + "&idOT=" + ordenTrabajo.id + "&idGuia=" + g.id;}});
+	                };
+				
+				*/
+				SSTFacade.anularGuiaWs(idGuia,{async:false,callback:function(codigo)
+					{
+					if (codigo == 101 || codigo==0)
+					{
+						if(guia.tipoGuia == 'GACC')
+						{
+							SSTFacade.reEmitirGuiaAccesorio(ordenTrabajo.id, guia, null, {async:true,callback:function(g)
+								{
+								parent.location = context + "/index.do?e=" + moduloDetalle.codigo + "&m=" + moduloInicial.codigo + "&idOT=" + ordenTrabajo.id + "&idGuia=" + g.id;
+							}});
+						}else{
+							SSTFacade.reEmitirGuia(ordenTrabajo.id, guia, null, {async:true,callback:function(g){
+								parent.location = context + "/index.do?e=" + moduloDetalle.codigo + "&m=" + moduloInicial.codigo + "&idOT=" + ordenTrabajo.id + "&idGuia=" + g.id;
+							}});
+						}
+						
+					}	
+				}});
+			
 				}
-			}
 		});
 	});
 	
@@ -115,11 +158,11 @@ var initonbodegaemitirguiadespacho = function() {
 	};
 	
 	$('#imprimir').click(function(){
-		var url = "/sst/ViewReportServlet?type=pdf" + 
-			"&report=GuiaDetalleReport" +
-			"&idOT=" + ordenTrabajo.id + 
-			"&idGuia=" + idGuia;
-		$.openWindowsMenubar(url, "GuiaDetalleReport", 600, 800);
+//		var url = "/sstnew/ViewReportServlet?type=pdf" + 
+//			"&report=GuiaDetalleReport" +
+//			"&idOT=" + ordenTrabajo.id + 
+//			"&idGuia=" + idGuia;
+//		$.openWindowsMenubar(url, "GuiaDetalleReport", 600, 800);
 
 		if(ordenTrabajo.procesadaOW){
 			$.alerts.okButton = '&nbsp;Confirmar Emisión&nbsp;';
@@ -131,6 +174,56 @@ var initonbodegaemitirguiadespacho = function() {
 					reemitir();
 				}
 			});
+		}else {
+			
+			SSTFacade.getPDFSucursal(idGuia,{async:false,callback:function(documento){
+				if (documento != null) {
+					console.log("entre al if, la lista no es null");
+					var url = "/sstnew/CustomerETDPDFServlet?type=pdf&report=GuiaDetalleReport&documento="+documento;
+					console.log(documento)
+					
+					/*var xhr = new XMLHttpRequest();
+				    xhr.onreadystatechange = function() {
+				        if (xhr.readyState == 4) {
+				            var data = xhr.responseText;
+				            alert(data);
+				        }
+				    }
+				    xhr.open('GET', "/sstV/CustomerETDPDFServlet?type=pdf&report=GuiaDetalleReport&documento="+documento, true);
+				    xhr.send();
+				    var doc = xhttp.responseText; 
+				    console.log(doc);
+				    */
+				    
+					var objbuilder = '';
+				    objbuilder += ('<object width="100%" height="100%"      data="data:application/pdf;base64,');
+				    objbuilder += (documento);
+				    objbuilder += ('" type="application/pdf" class="internal">');
+				    objbuilder += ('<embed src="data:application/pdf;base64,');
+				    objbuilder += (documento);
+				    objbuilder += ('" type="application/pdf" />');
+				    objbuilder += ('</object>');
+
+				    var win = window.open("","_blank","titlebar=yes");
+				        win.document.title = "My Title";
+				        win.document.write('<html><body>');
+				        win.document.write(objbuilder);
+				        win.document.write('</body></html>');
+				        layer = jQuery(win.document);
+					
+				}else{
+					console.log("entre al else");
+                    var url = "/sstnew/CustomerETDPDFServlet?type=pdf&report=GuiaDetalleReport";
+				}
+                                //$.openWindowsMenubar(url, "GuiaDetalleReport", 600, 800);
+                               // window.open(url,
+        //'open_window',
+        //'menubar=no, toolbar=no, location=no, directories=no, status=no, scrollbars=no, resizable=no, dependent, width=800, height=620, left=0, top=0')
+				
+			
+			}});
+			
+			
 		}
 	});
 	
@@ -153,6 +246,10 @@ var initonbodegaemitirguiadespacho = function() {
 		});
 		$('#destino').find('#destino\\.bodega\\.id').addItems(bodegaAux,"id",["id","nombre"],true," : ");
 	}});
+	
+	
+	
+	
 	
 };
 
@@ -231,9 +328,12 @@ var loadonbodegaemitirguiadespacho = function(ordenTrabajo) {
 						$('#destino').find('#destino\\.bodega\\.id').removeAttr('disabled');
 					}
 					$('#grabar').attr('disabled', false);
+					
 					if(!ordenTrabajo.procesadaOW){
 						$('#confirmar').hide();
 					}
+					
+					
 					break;
 				case 50001500:
 					$('#reemitir, #imprimir, #confirmar').attr('disabled', false);
@@ -256,6 +356,13 @@ var loadonbodegaemitirguiadespacho = function(ordenTrabajo) {
 		}
 		
 		$('#guia').loadObject(guia);
+		
+		if(guia.estado.id==50001000){
+			console.log("Dentro de if")
+			console.log(guia.estado.id)
+			document.getElementById('numero').value=" ";
+		}
+		
 	}});
 	
 };
